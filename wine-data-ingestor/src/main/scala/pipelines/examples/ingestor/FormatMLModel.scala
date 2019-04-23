@@ -8,6 +8,7 @@ import pipelines.examples.data.Codecs._
 object FormatMLModel extends FlowProcessor[ModelDescriptor, MlAction] {
   override def createLogic = new FlowLogic() {
     def flow = contextPropagatedFlow().map(model ⇒ {
+      println("Formatting Model")
       MlAction("UPDATE_MODEL", model, WineRecord("", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0))
     })
   }

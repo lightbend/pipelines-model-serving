@@ -21,10 +21,11 @@ class MLModelStreamlet extends Splitter[MlAction, Result, ModelUpdateConfirm] {
           if (action.action.equals("SCORE_RECORD")) {
             val start = new Date().getTime
             val result = currentModel.score(action.record)
-            val time = new Date().getTime - start
-            println("Model Result: " + result + "Time: " + time)
+            val time: Long = new Date().getTime - start
+            println("Model Result: " + result + " Time: " + time)
             Left(Result(modelId, "wine_record", time, result, new Date().getTime))
           } else {
+            println("model is being update to:" + action.model.data)
             currentModel = WinePMMLModel.create(ModelToServe.fromModelDescriptor(action.model)).get
             modelId = "Model_" + UUID.randomUUID()
 
