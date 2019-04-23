@@ -6,8 +6,8 @@ import scala.util.control.NonFatal
 
 object WineRecordUtil {
   def toWineRecord(array: Array[String]): Either[String, WineRecord] = {
-    if (array.length != 12) {
-      Left(s"Input CSV does not have 12 fields: ${arrayToString(array)}")
+    if (array.length != 11) {
+      Left(s"Input CSV does not have 11 fields: ${arrayToString(array)}")
     } else try {
       Right(
         WineRecord(
@@ -23,7 +23,7 @@ object WineRecordUtil {
           array(8).toDouble,
           array(9).toDouble,
           array(10).toDouble,
-          array(11).toDouble,
+          0,
           new Date().getTime))
     } catch {
       case NonFatal(th) => Left(s"Failed to convert CSV to OptionRecord. CSV: ${arrayToString(array)} Error:${th.toString}")
