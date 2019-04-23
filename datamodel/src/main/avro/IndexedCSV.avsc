@@ -1,0 +1,15 @@
+{
+    "namespace": "pipelines.examples.data",
+    "type": "record",
+    "name": "IndexedCSV",
+    "fields":[
+        {
+          "name": "index",
+          "type": "long"
+        },
+        {
+          "name": "csv",
+          "type": "string"
+        }
+    ]
+}

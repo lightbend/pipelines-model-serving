@@ -1,0 +1,19 @@
+{
+  "namespace": "pipelines.examples.data",
+  "type": "record",
+  "name": "MlAction",
+  "fields":[
+    {
+      "name": "action",
+      "type": "string"
+    },
+    {
+      "name": "model",
+      "type": "pipelines.examples.data.ModelDescriptor"
+    },
+    {
+      "name": "record",
+      "type": "pipelines.examples.data.WineRecord"
+    }
+  ]
+}

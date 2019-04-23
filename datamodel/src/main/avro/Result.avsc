@@ -1,0 +1,22 @@
+{
+  "namespace": "pipelines.examples.data",
+  "type": "record",
+  "name": "Result",
+  "fields":[
+    {
+      "name": "name",
+      "type": "string"
+    },{
+      "name": "dataType",
+      "type": "string"
+    },{
+      "name": "duration",
+      "type": "long"
+    },{
+      "name": "result",
+      "type": "double"
+    },{
+      "name": "time",
+      "type": "long"
+    }]
+}

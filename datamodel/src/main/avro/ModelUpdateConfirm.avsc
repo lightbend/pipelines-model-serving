@@ -1,0 +1,34 @@
+{
+  "namespace": "pipelines.examples.data",
+  "type": "record",
+  "name": "ModelUpdateConfirm",
+  "fields":[
+    {
+      "name": "name",
+      "type": "string"
+    },
+    {
+      "name": "description",
+      "type": "string"
+    },
+    {
+      "name": "dataType",
+      "type": "string"
+    },
+    {
+      "name": "modeltype",
+      "type": "string"
+    },
+    {
+      "name": "data",
+      "type": "string"
+    },
+    {
+      "name": "location",
+      "type": "string"
+    },
+    {
+      "name": "update_ts",
+      "type": "long"
+    }]
+}
