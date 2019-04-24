@@ -8,10 +8,10 @@ Make sure you are connected to the kubernetes cluster and run the command below 
 > helm install stable/influxdb --name influxdb --namespace influxdb
 
 Port forward to access InfluxDB locally 
-> kubectl port-forward --namespace influxDB $(kubectl get pods --namespace influxdb -l app=influxdb -o jsonpath='{ .items[0].metadata.name }') 8086:8086
+> kubectl port-forward --namespace influxdb $(kubectl get pods --namespace influxdb -l app=influxdb -o jsonpath='{ .items[0].metadata.name }') 8086:8086
 
 Connect to influxDB and create Database
->  influx -execute 'create database OptionScalping' -host localhost -port 8086
+>  influx -execute 'create database wine_ml' -host localhost -port 8086
 
 
 ### Build and Deploy Ml Pipeline
@@ -24,3 +24,7 @@ Get the image name and tag
 
 Deploy the Project
 > kubectl pipelines deploy docker-registry-default.gsa2.lightbend.com/lightbend/model-serving-pipeline:{tag-name}
+
+
+Data is inspired by this datasource: 
+https://www.kaggle.com/uciml/red-wine-quality-cortez-et-al-2009

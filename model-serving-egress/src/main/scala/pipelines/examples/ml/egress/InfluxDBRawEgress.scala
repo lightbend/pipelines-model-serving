@@ -12,7 +12,7 @@ object InfluxDBRawEgress extends FlowEgress[WineRecord] {
     //
     //    val influxDBDatabase = Try(context.streamletRefConfig.getString("influxdb-database")).getOrElse("wine-ml")
 
-    val influxHost = "influxdb.killrweather.svc"
+    val influxHost = "influxdb.influxdb.svc"
     val influxPort = "8086"
 
     val influxDBDatabase = "wine_ml"
