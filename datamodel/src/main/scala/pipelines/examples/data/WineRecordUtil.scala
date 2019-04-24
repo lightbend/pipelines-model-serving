@@ -33,12 +33,4 @@ object WineRecordUtil {
   private def arrayToString(array: Array[String]): String = {
     array.mkString("[", ", ", "]")
   }
-
-  //  def parseFromAction(action: MlAction): WineRecord = {
-  //
-  //  }
-  //
-  //  def toAction(): MlAction = {
-  //
-  //  }
 }
