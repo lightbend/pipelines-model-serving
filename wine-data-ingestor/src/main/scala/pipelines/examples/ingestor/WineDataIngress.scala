@@ -22,7 +22,7 @@ class WineDataIngress extends SourceIngress[IndexedCSV] {
     def source: Source[IndexedCSV, NotUsed] = {
       val s1 = Source.repeat(NotUsed)
         .map(_ ⇒ getRandomWineRecord())
-        .throttle(100, 1.seconds, 200, ThrottleMode.Shaping) // "dribble" them out
+        .throttle(1, 1.seconds, 200, ThrottleMode.Shaping) // "dribble" them out
         //      .throttle(1, delayMillis)
         .merge(badRecords())
 
