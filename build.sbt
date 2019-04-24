@@ -12,7 +12,7 @@ version := "1.0"
 lazy val modelServingPipeline = (project in file("./model-serving-pipeline"))
   .enablePlugins(PipelinesApplicationPlugin)
   .settings(
-    name := "model-serving-pipeline",
+    name := "ml-serving-pipeline",
     version := "1.0",
     mainBlueprint := Some("blueprint.conf"),
     pipelinesDockerRegistry := Some("docker-registry-default.gsa2.lightbend.com"),
