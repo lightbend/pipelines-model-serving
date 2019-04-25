@@ -22,6 +22,7 @@ object InfluxDBRawEgress extends FlowEgress[WineRecord] {
     def flow = contextPropagatedFlow()
       .map { record ⇒
         {
+          println("Writing Record: " + record.ts)
           InfluxDBUtil.write(record, "wine_record", influxDBDatabase, influxDB)
           record
         }

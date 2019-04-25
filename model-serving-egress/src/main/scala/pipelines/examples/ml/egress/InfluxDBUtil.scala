@@ -11,19 +11,23 @@ import pipelines.examples.data.{ Result, WineRecord }
 object InfluxDBUtil {
 
   def write(record: Result, measurement: String, database: String, influxDB: InfluxDB): Unit = {
-    val dailyTempPoint = Point.measurement(measurement).time(record.time, TimeUnit.MILLISECONDS)
-    dailyTempPoint.addField("result", record.result)
-    dailyTempPoint.addField("duration", record.duration)
-    dailyTempPoint.tag("model", record.name)
-    write(dailyTempPoint.build(), database, influxDB)
+    val time = new Date().getTime
+
+    val point = Point.measurement(measurement).time(time, TimeUnit.MILLISECONDS)
+    point.addField("result", record.result)
+    point.addField("duration", record.duration)
+    point.tag("model", record.name)
+    write(point.build(), database, influxDB)
   }
 
   def write(record: WineRecord, measurement: String, database: String, influxDB: InfluxDB): Unit = {
-    val dailyTempPoint = Point.measurement(measurement).time(record.ts, TimeUnit.MILLISECONDS)
-    dailyTempPoint.addField("alchohal", record.alcohol)
-    dailyTempPoint.addField("ph", record.pH)
-    dailyTempPoint.addField("citric_acid", record.citric_acid)
-    write(dailyTempPoint.build(), database, influxDB)
+    val time = new Date().getTime
+
+    val point = Point.measurement(measurement).time(time, TimeUnit.MILLISECONDS)
+    point.addField("alchohal", record.alcohol)
+    point.addField("ph", record.pH)
+    point.addField("citric_acid", record.citric_acid)
+    write(point.build(), database, influxDB)
   }
 
   private def write(point: Point, database: String, influxDB: InfluxDB): Unit = {
