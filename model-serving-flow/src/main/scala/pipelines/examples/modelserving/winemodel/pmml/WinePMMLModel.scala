@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-package com.lightbend.modelserving.winemodel.pmml
+package pipelines.examples.modelserving.winemodel.pmml
 
 import com.lightbend.modelserving.model.{ Model, ModelFactory }
 import com.lightbend.modelserving.model.ModelToServe
@@ -33,7 +33,7 @@ class WinePMMLModel(inputStream: Array[Byte]) extends PMMLModel[WineRecord, Doub
     // Clear arguments (from previous run)
     arguments.clear()
     // Populate input based on record
-    inputFields.asScala.foreach(field => {
+    inputFields.asScala.foreach(field ⇒ {
       arguments.put(field.getName, field.prepare(input.get(field.getName.getValue.replaceAll(" ", "_"))))
     })
 

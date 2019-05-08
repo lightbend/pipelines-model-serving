@@ -16,7 +16,7 @@ lazy val modelServingPipeline = (project in file("./model-serving-pipeline"))
     pipelinesDockerRegistry := Some("docker-registry-default.gsa2.lightbend.com"),
     libraryDependencies += "org.slf4j" % "slf4j-log4j12" % "1.7.25"
   )
-  .dependsOn(wineDataIngestor,modelServingFlow, modelServingEgress)
+  .dependsOn(DataIngestors,modelServingFlow, modelServingEgress)
 
 lazy val datamodel = (project in file("./datamodel"))
   .enablePlugins(PipelinesLibraryPlugin)
@@ -32,7 +32,7 @@ lazy val model = (project in file("./modellibrary"))
     (sourceGenerators in Compile) += (avroScalaGenerateSpecific in Compile).taskValue,
   )
 
-lazy val wineDataIngestor= (project in file("./wine-data-ingestor"))
+lazy val DataIngestors = (project in file("./data-ingestors"))
     .enablePlugins(PipelinesAkkaStreamsLibraryPlugin)
     .settings(
       commonSettings,

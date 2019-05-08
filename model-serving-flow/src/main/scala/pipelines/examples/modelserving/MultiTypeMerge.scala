@@ -1,17 +1,16 @@
 package pipelines.examples.modelserving
 
-
 import akka.NotUsed
 import akka.stream.ClosedShape
-import akka.stream.scaladsl.{GraphDSL, RunnableGraph}
-import com.lightbend.modelserving.model.{Model, ModelToServe}
+import akka.stream.scaladsl.{ GraphDSL, RunnableGraph }
+import com.lightbend.modelserving.model.{ Model, ModelToServe }
 import pipelines.akkastream.scaladsl.RunnableGraphLogic
-import pipelines.akkastream.{AkkaStreamlet, StreamletContext}
+import pipelines.akkastream.{ AkkaStreamlet, StreamletContext }
 import pipelines.examples.data._
 import com.lightbend.modelserving.model.ModelCodecs._
-import com.lightbend.modelserving.winemodel.WineFactoryResolver
 import pipelines.examples.data.DataCodecs._
-import pipelines.streamlets.{FanIn, _}
+import pipelines.examples.modelserving.winemodel.WineFactoryResolver
+import pipelines.streamlets.{ FanIn, _ }
 
 abstract class MultiTypeMerge extends AkkaStreamlet {
   override implicit val shape = new FanInOut[WineRecord, ModelDescriptor, Result]
@@ -34,7 +33,7 @@ class MultiTypeMergeLogic()(implicit shape: FanInOut[WineRecord, ModelDescriptor
     RunnableGraph.fromGraph(GraphDSL.create() { implicit builder: GraphDSL.Builder[NotUsed] ⇒
       import GraphDSL.Implicits._
 
-      in0.map(data => {
+      in0.map(data ⇒ {
         currentModel match {
           case Some(model) ⇒ // There is model defined, process data
             val start = System.currentTimeMillis
@@ -46,15 +45,15 @@ class MultiTypeMergeLogic()(implicit shape: FanInOut[WineRecord, ModelDescriptor
         }
       }) ~> out
 
-      in1.map(model => {
+      in1.map(model ⇒ {
         ModelToServe.toModel[WineRecord, Double](ModelToServe.fromModelRecord(model)) match {
-          case Some(m) => // Successfully got a new model
+          case Some(m) ⇒ // Successfully got a new model
             // close current model first
             currentModel.foreach(_.cleanup())
             // Update model and state
             currentModel = Some(m)
             currentModelName = model.name
-           case _ =>   // Failed converting
+          case _ ⇒ // Failed converting
             println(s"Failed to convert model: ${model.name}")
         }
       })

@@ -1,4 +1,4 @@
-package com.lightbend.modelserving.winemodel.tensorflow
+package pipelines.examples.modelserving.winemodel.tensorflow
 
 import com.lightbend.modelserving.model.tensorflow.TensorFlowBundleModel
 import com.lightbend.modelserving.model.{ Model, ModelFactory }

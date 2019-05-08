@@ -20,13 +20,13 @@ object InfluxDBEgress extends FlowEgress[Result] {
     val influxDB = InfluxDBUtil.getInfluxDB(influxHost, influxPort)
 
     def flow = contextPropagatedFlow()
-      .map { result =>
+      .map { result ⇒
         {
           result.result match {
-            case Some(value) =>
+            case Some(value) ⇒
               println("Result: " + value)
               InfluxDBUtil.write(result, "wine_result", influxDBDatabase, influxDB)
-            case _ =>
+            case _ ⇒
           }
           result
         }
