@@ -3,14 +3,15 @@ package pipelines.examples.modelserving
 
 import akka.NotUsed
 import akka.stream.ClosedShape
-import akka.stream.scaladsl.{ GraphDSL, RunnableGraph }
-import com.lightbend.modelserving.model.{ Model, ModelToServe }
+import akka.stream.scaladsl.{GraphDSL, RunnableGraph}
+import com.lightbend.modelserving.model.{Model, ModelToServe}
 import pipelines.akkastream.scaladsl.RunnableGraphLogic
-import pipelines.akkastream.{ AkkaStreamlet, StreamletContext }
+import pipelines.akkastream.{AkkaStreamlet, StreamletContext}
 import pipelines.examples.data._
 import com.lightbend.modelserving.model.ModelCodecs._
+import com.lightbend.modelserving.winemodel.WineFactoryResolver
 import pipelines.examples.data.DataCodecs._
-import pipelines.streamlets.{ FanIn, _ }
+import pipelines.streamlets.{FanIn, _}
 
 abstract class MultiTypeMerge extends AkkaStreamlet {
   override implicit val shape = new FanInOut[WineRecord, ModelDescriptor, Result]
@@ -20,7 +21,7 @@ abstract class MultiTypeMerge extends AkkaStreamlet {
 
 class MultiTypeMergeLogic()(implicit shape: FanInOut[WineRecord, ModelDescriptor, Result], context: StreamletContext) extends RunnableGraphLogic {
 
-  //  final def contextPropagatedFlow() = ContextPropagatedFlow[Either[WineRecord, ModelDescriptor]]
+  ModelToServe.setResolver[WineRecord, Double](WineFactoryResolver)
 
   override def runnableGraph() = {
 
