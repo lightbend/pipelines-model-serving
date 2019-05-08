@@ -4,10 +4,6 @@
     "name": "WineRecord",
     "fields":[
       {
-        "name": "model_name",
-        "type": "string"
-      },
-      {
           "name": "fixed_acidity",
           "type": "double"
       },
@@ -53,7 +49,7 @@
       },
       {
         "name": "dataType",
-        "type": "double"
+        "type": "string"
       },
       {
         "name": "ts",

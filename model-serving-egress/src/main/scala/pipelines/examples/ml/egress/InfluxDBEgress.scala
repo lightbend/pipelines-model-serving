@@ -2,9 +2,7 @@ package pipelines.examples.ml.egress
 
 import pipelines.akkastream.scaladsl.{ FlowEgress, FlowEgressLogic }
 import pipelines.examples.data._
-import pipelines.examples.data.Codecs._
-
-import scala.util.Try
+import pipelines.examples.data.DataCodecs._
 
 object InfluxDBEgress extends FlowEgress[Result] {
   override def createLogic = new FlowEgressLogic() {
@@ -22,10 +20,14 @@ object InfluxDBEgress extends FlowEgress[Result] {
     val influxDB = InfluxDBUtil.getInfluxDB(influxHost, influxPort)
 
     def flow = contextPropagatedFlow()
-      .map { result ⇒
+      .map { result =>
         {
-          println("Result: " + result.result + " TS:" + result.time)
-          InfluxDBUtil.write(result, "wine_result", influxDBDatabase, influxDB)
+          result.result match {
+            case Some(value) =>
+              println("Result: " + value)
+              InfluxDBUtil.write(result, "wine_result", influxDBDatabase, influxDB)
+            case _ =>
+          }
           result
         }
       }

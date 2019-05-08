@@ -38,7 +38,7 @@ class WineTensorFlowModel(inputStream: Array[Byte]) extends TensorFlowModel[Wine
     // Get result shape
     val rshape = result.shape
     // Map output tensor to shape
-    var rMatrix = Array.ofDim[Float](rshape(0).asInstanceOf[Int], rshape(1).asInstanceOf[Int])
+    val rMatrix = Array.ofDim[Float](rshape(0).asInstanceOf[Int], rshape(1).asInstanceOf[Int])
     result.copyTo(rMatrix)
     // Get result
     rMatrix(0).indices.maxBy(rMatrix(0)).toDouble
@@ -69,7 +69,7 @@ object WineTensorFlowModel extends ModelFactory[WineRecord, Double] {
     try {
       Some(new WineTensorFlowModel(input.model))
     } catch {
-      case t: Throwable ⇒ None
+      case _: Throwable ⇒ None
     }
   }
 

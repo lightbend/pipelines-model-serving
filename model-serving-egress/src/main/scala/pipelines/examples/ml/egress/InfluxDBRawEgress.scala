@@ -1,29 +1,26 @@
 package pipelines.examples.ml.egress
 
 import pipelines.akkastream.scaladsl.{ FlowEgress, FlowEgressLogic }
-import pipelines.examples.data.Codecs._
+import pipelines.examples.data.DataCodecs._
 import pipelines.examples.data._
 
 object InfluxDBRawEgress extends FlowEgress[WineRecord] {
+
+  // Config parameters
+  val influxHost = "InfluxHost"
+  val influxPort = "InfluxPort"
+  val influxDatabase = "InfluxDatabase"
+  override def configKeys = Set(influxHost, influxPort, influxDatabase)
+
   override def createLogic = new FlowEgressLogic() {
 
-    //    val influxHost = context.streamletRefConfig.getString("influxdb-hostname")
-    //    val influxPort = Try(context.streamletRefConfig.getString("influxdb-port")).getOrElse("8086")
-    //
-    //    val influxDBDatabase = Try(context.streamletRefConfig.getString("influxdb-database")).getOrElse("wine-ml")
-
-    val influxHost = "influxdb.influxdb.svc"
-    val influxPort = "8086"
-
-    val influxDBDatabase = "wine_ml"
-
-    val influxDB = InfluxDBUtil.getInfluxDB(influxHost, influxPort)
+    val influxDB = InfluxDBUtil.getInfluxDB(streamletRefConfig.getString(influxHost), streamletRefConfig.getString(influxPort))
 
     def flow = contextPropagatedFlow()
       .map { record ⇒
         {
           println("Writing Record: " + record.ts)
-          InfluxDBUtil.write(record, "wine_record", influxDBDatabase, influxDB)
+          InfluxDBUtil.write(record, "wine_record", streamletRefConfig.getString(influxDatabase), influxDB)
           record
         }
       }

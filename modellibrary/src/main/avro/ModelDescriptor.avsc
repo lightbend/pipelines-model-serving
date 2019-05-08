@@ -1,0 +1,33 @@
+{
+  "namespace": "pipelines.examples.data",
+  "type": "record",
+  "name": "ModelDescriptor",
+  "fields":[
+    {
+      "name": "name",
+      "type": "string"
+    },
+    {
+      "name": "description",
+      "type": "string"
+    },
+    {
+      "name": "dataType",
+      "type": "string"
+    },
+    {
+      "name": "modeltype",
+      "type" : {"type": "enum",
+                "name": "ModelType",
+                "symbols" : ["TENSORFLOW","TENSORFLOWSAVED","PMML"]}
+    },
+    {
+      "name": "modeldata",
+      "type": ["bytes","null"]
+    },
+    {
+      "name": "modeldatalocation",
+      "type": ["string","null"]
+    }
+  ]
+}

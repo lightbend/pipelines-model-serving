@@ -1,11 +1,9 @@
 import sbt._
 import sbt.Keys._
 import scalariform.formatter.preferences._
+import Dependencies._
 
 lazy val root = modelServingPipeline
-
-val tensorflowVersion     = "1.12.0"
-val PMMLVersion           = "1.4.3"
 
 version := "1.0"
 
@@ -23,11 +21,14 @@ lazy val modelServingPipeline = (project in file("./model-serving-pipeline"))
 lazy val datamodel = (project in file("./datamodel"))
   .enablePlugins(PipelinesLibraryPlugin)
   .settings(
-    libraryDependencies ++= Seq(
-      "com.twitter"   %% "bijection-avro" % "0.9.6",
-      "org.scalatest" %% "scalatest"      % "3.0.5"    % "test",
-      "tech.allegro.schema.json2avro" % "converter" % "0.2.8"
-    ),
+    libraryDependencies ++= Seq(bijection,json2avro, scalaTest),
+    (sourceGenerators in Compile) += (avroScalaGenerateSpecific in Compile).taskValue,
+  )
+
+lazy val model = (project in file("./modellibrary"))
+  .enablePlugins(PipelinesLibraryPlugin)
+  .settings(
+    libraryDependencies ++= Seq(tensorflow, tensorflowProto,pmml,pmmlextensions, bijection,json2avro),
     (sourceGenerators in Compile) += (avroScalaGenerateSpecific in Compile).taskValue,
   )
 
@@ -35,42 +36,25 @@ lazy val wineDataIngestor= (project in file("./wine-data-ingestor"))
     .enablePlugins(PipelinesAkkaStreamsLibraryPlugin)
     .settings(
       commonSettings,
-      libraryDependencies ++= Seq(
-        "com.typesafe.akka"         %% "akka-http-spray-json"   % "10.1.6",
-        "org.scalatest"             %% "scalatest"              % "3.0.5"    % "test",
-        "com.lightbend.akka" %% "akka-stream-alpakka-file" % "1.0-RC1"
-      )
+      libraryDependencies ++= Seq(akkaSprayJson,alpakkaFile,scalaTest),
     )
-  .dependsOn(datamodel)
+  .dependsOn(datamodel, model)
 
 lazy val modelServingFlow= (project in file("./model-serving-flow"))
   .enablePlugins(PipelinesAkkaStreamsLibraryPlugin)
   .settings(
     commonSettings,
-    libraryDependencies ++= Seq(
-      "com.typesafe.akka"         %% "akka-http-spray-json"   % "10.1.6",
-      "org.scalatest"             %% "scalatest"              % "3.0.5"    % "test",
-      "com.lightbend.akka" %% "akka-stream-alpakka-file" % "1.0-RC1",
-      "org.tensorflow"          % "tensorflow"                          % tensorflowVersion,
-      "org.tensorflow"          % "proto"                               % tensorflowVersion,
-      "org.jpmml"               % "pmml-evaluator"                      % PMMLVersion,
-      "org.jpmml"               % "pmml-evaluator-extension"            % PMMLVersion
-    )
+    libraryDependencies ++= Seq(akkaSprayJson,alpakkaFile,scalaTest)
   )
-  .dependsOn(datamodel)
+  .dependsOn(model, datamodel)
 
 lazy val modelServingEgress = (project in file("./model-serving-egress"))
   .enablePlugins(PipelinesAkkaStreamsLibraryPlugin)
   .settings(
     commonSettings,
-    libraryDependencies ++= Seq(
-      "com.typesafe.akka"         %% "akka-http-spray-json"   % "10.1.6",
-      "org.scalatest"             %% "scalatest"              % "3.0.5"    % "test",
-      "com.lightbend.akka" %% "akka-stream-alpakka-file" % "1.0-RC1",
-      "org.influxdb"  % "influxdb-java" % "2.15"
-    )
+    libraryDependencies ++= Seq(akkaSprayJson,alpakkaFile,influx, scalaTest)
   )
-  .dependsOn(datamodel)
+  .dependsOn(datamodel, model)
 
 lazy val commonSettings = Seq(
   scalaVersion := "2.12.8",

@@ -22,7 +22,6 @@ import org.jpmml.evaluator.Computable
 import pipelines.examples.data.WineRecord
 
 import scala.collection.JavaConverters._
-import scala.collection._
 
 /**
  * PMML model implementation for wine data.
@@ -34,15 +33,12 @@ class WinePMMLModel(inputStream: Array[Byte]) extends PMMLModel[WineRecord, Doub
     // Clear arguments (from previous run)
     arguments.clear()
     // Populate input based on record
-    inputFields.asScala.foreach(field ⇒ {
-      //      println("field-Name: " + field.getName + " Value: " + input.get(field.getName.getValue.replaceAll(" ", "_")))
+    inputFields.asScala.foreach(field => {
       arguments.put(field.getName, field.prepare(input.get(field.getName.getValue.replaceAll(" ", "_"))))
     })
 
     // Calculate Output
     val result = evaluator.evaluate(arguments.asJava)
-
-    //    println("Result: " + result)
 
     // Prepare output
     result.get(tname) match {
@@ -50,33 +46,18 @@ class WinePMMLModel(inputStream: Array[Byte]) extends PMMLModel[WineRecord, Doub
       case v: Any        ⇒ v.asInstanceOf[Double]
     }
   }
-
-  // Support function to get values
-  //  private def getValueByName(inputs: WineRecord, name: String): Double =
-  //    WinePMMLModel.names.get(name) match {
-  //      case Some(index) ⇒ {
-  //        val v = inputs.getFieldByNumber(index + 1)
-  //        v.asInstanceOf[Double]
-  //      }
-  //      case _ ⇒ .0
-  //    }
 }
 
 /**
  * Factory for wine data PMML model
  */
 object WinePMMLModel extends ModelFactory[WineRecord, Double] {
-  private val names = Map(
-    "fixed acidity" -> 0,
-    "volatile acidity" -> 1, "citric acid" -> 2, "residual sugar" -> 3,
-    "chlorides" -> 4, "free sulfur dioxide" -> 5, "total sulfur dioxide" -> 6,
-    "density" -> 7, "pH" -> 8, "sulphates" -> 9, "alcohol" -> 10)
 
   override def create(input: ModelToServe): Option[Model[WineRecord, Double]] = {
     try {
       Some(new WinePMMLModel(input.model))
     } catch {
-      case t: Throwable ⇒ None
+      case _: Throwable ⇒ None
     }
   }
 
