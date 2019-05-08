@@ -22,4 +22,4 @@ case class ServingResult[RESULT](
   name: String,
   dataType: String = "",
   duration: Long = 0,
-  result: RESULT = null.asInstanceOf[RESULT])
+  result: Option[RESULT] = None)

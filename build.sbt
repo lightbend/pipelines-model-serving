@@ -27,6 +27,7 @@ lazy val datamodel = (project in file("./datamodel"))
 
 lazy val model = (project in file("./modellibrary"))
   .enablePlugins(PipelinesLibraryPlugin)
+  .enablePlugins(PipelinesAkkaStreamsLibraryPlugin)
   .settings(
     libraryDependencies ++= Seq(tensorflow, tensorflowProto,pmml,pmmlextensions, bijection,json2avro),
     (sourceGenerators in Compile) += (avroScalaGenerateSpecific in Compile).taskValue,
