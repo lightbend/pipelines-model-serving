@@ -14,7 +14,7 @@ lazy val modelServingPipeline = (project in file("./model-serving-pipeline"))
     version := "1.0",
     mainBlueprint := Some("blueprint.conf"),
     pipelinesDockerRegistry := Some("docker-registry-default.gsa2.lightbend.com"),
-    libraryDependencies += "org.slf4j" % "slf4j-log4j12" % "1.7.25"
+    libraryDependencies += slf4j
   )
   .dependsOn(DataIngestors,modelServingFlow, modelServingEgress)
 

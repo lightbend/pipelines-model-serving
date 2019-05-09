@@ -13,7 +13,7 @@ import pipelines.examples.modelserving.winemodel.WineFactoryResolver
 import scala.concurrent.duration._
 import pipelines.streamlets.{ FanIn, _ }
 
-class ModelServer(implicit shape: FanInOut[WineRecord, ModelDescriptor, Result], context: StreamletContext) extends StreamletLogic {
+class ModelServer()(implicit shape: FanInOut[WineRecord, ModelDescriptor, Result], context: StreamletContext) extends StreamletLogic {
 
   ModelToServe.setResolver[WineRecord, Double](WineFactoryResolver)
   val in0 = atLeastOnceSource[WineRecord](shape.inlet0)

@@ -5,18 +5,10 @@ import akka.stream.ClosedShape
 import akka.stream.scaladsl.{ GraphDSL, RunnableGraph }
 import com.lightbend.modelserving.model.{ Model, ModelToServe }
 import pipelines.akkastream.scaladsl.RunnableGraphLogic
-import pipelines.akkastream.{ AkkaStreamlet, StreamletContext }
+import pipelines.akkastream.StreamletContext
 import pipelines.examples.data._
-import com.lightbend.modelserving.model.ModelCodecs._
-import pipelines.examples.data.DataCodecs._
 import pipelines.examples.modelserving.winemodel.WineFactoryResolver
 import pipelines.streamlets.{ FanIn, _ }
-
-abstract class MultiTypeMerge extends AkkaStreamlet {
-  override implicit val shape = new FanInOut[WineRecord, ModelDescriptor, Result]
-
-  override final def createLogic: MultiTypeMergeLogic = new MultiTypeMergeLogic()
-}
 
 class MultiTypeMergeLogic()(implicit shape: FanInOut[WineRecord, ModelDescriptor, Result], context: StreamletContext) extends RunnableGraphLogic {
 
