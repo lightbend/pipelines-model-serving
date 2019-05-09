@@ -5,13 +5,13 @@ import akka.stream.scaladsl.Sink
 import akka.util.Timeout
 import akka.pattern.ask
 import com.lightbend.modelserving.model.actor.ModelServingManager
-import com.lightbend.modelserving.model.{ModelToServe, ServingResult}
-import pipelines.akkastream.{StreamletContext, StreamletLogic}
+import com.lightbend.modelserving.model.{ ModelToServe, ServingResult }
+import pipelines.akkastream.{ StreamletContext, StreamletLogic }
 import pipelines.examples.data._
 import pipelines.examples.modelserving.winemodel.WineFactoryResolver
 
 import scala.concurrent.duration._
-import pipelines.streamlets.{FanIn, _}
+import pipelines.streamlets.{ FanIn, _ }
 
 class ModelServer(implicit shape: FanInOut[WineRecord, ModelDescriptor, Result], context: StreamletContext) extends StreamletLogic {
 
@@ -25,14 +25,14 @@ class ModelServer(implicit shape: FanInOut[WineRecord, ModelDescriptor, Result],
     implicit val askTimeout: Timeout = Timeout(30.seconds)
 
     // Data stream processing
-    in0.mapAsync(1)(data => modelserver.ask(data).mapTo[ServingResult[Result]])
-      .filter(r => r.result != None)
-      .map(r => Result(r.name, r.dataType, r.duration, r.result.asInstanceOf[Option[Double]]))
+    in0.mapAsync(1)(data ⇒ modelserver.ask(data).mapTo[ServingResult[Result]])
+      .filter(r ⇒ r.result != None)
+      .map(r ⇒ Result(r.name, r.dataType, r.duration, r.result.asInstanceOf[Option[Double]]))
       .runWith(out)
 
     // Model stream processing
-    in1.map(model => ModelToServe.fromModelRecord(model))
-      .mapAsync(1)(model => modelserver.ask(model).mapTo[Done])
+    in1.map(model ⇒ ModelToServe.fromModelRecord(model))
+      .mapAsync(1)(model ⇒ modelserver.ask(model).mapTo[Done])
       .runWith(Sink.ignore)
   }
 }
