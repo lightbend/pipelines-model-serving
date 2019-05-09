@@ -6,12 +6,20 @@ import akka.util.Timeout
 import akka.pattern.ask
 import com.lightbend.modelserving.model.actor.ModelServingManager
 import com.lightbend.modelserving.model.{ ModelToServe, ServingResult }
-import pipelines.akkastream.{ StreamletContext, StreamletLogic }
+import pipelines.akkastream.{ AkkaStreamlet, StreamletContext, StreamletLogic }
 import pipelines.examples.data._
 import pipelines.examples.modelserving.winemodel.WineFactoryResolver
+import pipelines.examples.data.DataCodecs._
+import com.lightbend.modelserving.model.ModelCodecs._
 
 import scala.concurrent.duration._
 import pipelines.streamlets.{ FanIn, _ }
+
+class ModelServerStreamlet extends AkkaStreamlet {
+  override implicit val shape = new FanInOut[WineRecord, ModelDescriptor, Result]
+
+  override final def createLogic: ModelServer = new ModelServer()
+}
 
 class ModelServer()(implicit shape: FanInOut[WineRecord, ModelDescriptor, Result], context: StreamletContext) extends StreamletLogic {
 
@@ -37,12 +45,12 @@ class ModelServer()(implicit shape: FanInOut[WineRecord, ModelDescriptor, Result
   }
 }
 
-object FanInOutActor {
+object FanInOut {
   val InletName = new IndexedPrefix("in", 2)
   val outletName = new IndexedPrefix("out", 1)
 }
 
-final class FanInOutActor[In0: KeyedSchema, In1: KeyedSchema, Out0: KeyedSchema] extends StreamletShape {
+final class FanInOut[In0: KeyedSchema, In1: KeyedSchema, Out0: KeyedSchema] extends StreamletShape {
   val inlet0 = KeyedInletPort[In0](FanIn.inletName(0))
   val inlet1 = KeyedInletPort[In1](FanIn.inletName(1))
 
