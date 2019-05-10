@@ -7,37 +7,37 @@ import pipelines.examples.data.DataCodecs._
 import pipelines.examples.data._
 
 import scala.concurrent.duration._
-import scala.io.BufferedSource
 
 class WineDataIngress extends SourceIngress[WineRecord] {
 
-  var records: Seq[WineRecord] = Seq.empty
-  var recordsIterator: Iterator[WineRecord] = _
+  val recordsSource = scala.io.Source.fromResource("winequality_red.csv")
+  val records =  getListOfDataRecords()
+  var recordsIterator = records.iterator
 
   override def createLogic = new SourceIngressLogic() {
 
-    records = getListOfDataRecords(scala.io.Source.fromResource("winequality_red.csv"))
     recordsIterator = records.iterator
 
     def source: Source[WineRecord, NotUsed] = {
       Source.repeat(NotUsed)
-        .map(_ ⇒ getWineRecord())
+        .map(_ => getWineRecord())
         .throttle(1, 1.seconds) // "dribble" them out
     }
   }
 
   def getWineRecord(): WineRecord = {
     recordsIterator.hasNext match {
-      case false ⇒ recordsIterator = records.iterator
-      case _     ⇒
+      case false => recordsIterator = records.iterator
+      case _     =>
     }
     recordsIterator.next()
   }
 
-  def getListOfDataRecords(source: BufferedSource): Seq[WineRecord] = {
+  def getListOfDataRecords(): Seq[WineRecord] = {
+
 
     var result = Seq.empty[WineRecord]
-    for (line ← source.getLines) {
+    for (line ← recordsSource.getLines) {
       val cols = line.split(";").map(_.trim)
       val record = new WineRecord(
         fixed_acidity = cols(0).toDouble,
@@ -56,7 +56,15 @@ class WineDataIngress extends SourceIngress[WineRecord] {
       )
       result = record +: result
     }
-    source.close
+    recordsSource.close
     result
+  }
+}
+
+object WineDataIngress {
+  def main(args: Array[String]): Unit = {
+    val ingress = new WineDataIngress()
+    while (true)
+      println(ingress.getWineRecord())
   }
 }

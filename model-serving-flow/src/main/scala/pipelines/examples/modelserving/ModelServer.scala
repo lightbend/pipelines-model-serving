@@ -40,7 +40,7 @@ class ModelServer()(implicit shape: FanInOut[WineRecord, ModelDescriptor, Result
 
     // Model stream processing
     in1.map(model ⇒ ModelToServe.fromModelRecord(model))
-      .mapAsync(1)(model ⇒ modelserver.ask(model).mapTo[Done])
+      .mapAsync(1)(model => modelserver.ask(model).mapTo[Done])
       .runWith(Sink.ignore)
   }
 }
