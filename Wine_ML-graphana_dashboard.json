@@ -310,7 +310,7 @@
             },
             {
               "params": [
-                "null"
+                "previous"
               ],
               "type": "fill"
             }
@@ -460,5 +460,5 @@
   "timezone": "",
   "title": "Wine ML",
   "uid": "CpZ17NzWz",
-  "version": 2
+  "version": 3
 }

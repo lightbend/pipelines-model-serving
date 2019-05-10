@@ -25,6 +25,7 @@ Get the image name and tag
 Deploy the Project
 > kubectl pipelines deploy docker-registry-default.gsa2.lightbend.com/lightbend/model-serving-pipeline:{tag-name}
 
+> kubectl pipelines deploy docker-registry-default.gsa2.lightbend.com/lightbend/ml-serving-pipeline:{tag-name} raw-egress.InfluxHost="influxdb.influxdb.svc" raw-egress.InfluxPort="8086" raw-egress.InfluxDatabase="wine_ml" influx-result-egress.InfluxHost="influxdb.influxdb.svc" influx-result-egress.InfluxPort="8086" influx-result-egress.InfluxDatabase="wine_ml"
 
 Data is inspired by this datasource: 
 https://www.kaggle.com/uciml/red-wine-quality-cortez-et-al-2009
