@@ -5,16 +5,16 @@ import akka.actor.ActorSystem
 import akka.stream.scaladsl.Sink
 import akka.pattern.ask
 import akka.util.Timeout
-import com.lightbend.modelserving.model.actor.{ ModelServingActor, ModelServingManager }
-import com.lightbend.modelserving.model.{ ModelToServe, ServingResult }
-import pipelines.akkastream.{ AkkaStreamlet, StreamletContext, StreamletLogic }
+import com.lightbend.modelserving.model.actor.{ModelServingActor, ModelServingManager}
+import com.lightbend.modelserving.model.{ModelToServe, ServingActorResolver, ServingResult}
+import pipelines.akkastream.{AkkaStreamlet, StreamletContext, StreamletLogic}
 import pipelines.examples.data._
 import pipelines.examples.data.DataCodecs._
 import com.lightbend.modelserving.model.ModelCodecs._
-import pipelines.examples.modelserving.winemodel.{ DataRecord, WineFactoryResolver }
+import pipelines.examples.modelserving.winemodel.{DataRecord, WineFactoryResolver}
 
 import scala.concurrent.duration._
-import pipelines.streamlets.{ FanIn, _ }
+import pipelines.streamlets.{FanIn, _}
 
 class ModelServerStreamlet extends AkkaStreamlet {
 
@@ -33,9 +33,8 @@ class ModelServer()(implicit shape: FanInOut[WineRecord, ModelDescriptor, Result
   override def init(): Unit = {
 
     val actors = Map("wine" -> system.actorOf(ModelServingActor.props[WineRecord, Double]))
-    ServingActorResolver.setActors(actors)
 
-    val modelserver = system.actorOf(ModelServingManager.props(ServingActorResolver))
+    val modelserver = system.actorOf(ModelServingManager.props(new ServingActorResolver(actors)))
     implicit val askTimeout: Timeout = Timeout(30.seconds)
 
     // Data stream processing
@@ -73,9 +72,8 @@ object ModelServer {
     implicit val askTimeout: Timeout = Timeout(30.seconds)
 
     val actors = Map("wine" -> system.actorOf(ModelServingActor.props[WineRecord, Double]))
-    ServingActorResolver.setActors(actors)
 
-    val modelserver = system.actorOf(ModelServingManager.props(ServingActorResolver))
+    val modelserver = system.actorOf(ModelServingManager.props(new ServingActorResolver(actors)))
     val record = WineRecord(.0, .0, .0, .0, .0, .0, .0, .0, .0, .0, .0, "wine")
     val result = modelserver.ask(DataRecord(record)).mapTo[Double]
     Thread.sleep(10000000)

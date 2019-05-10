@@ -8,7 +8,7 @@ import com.lightbend.modelserving.model._
  * Router actor, which routes both model and data (records) to an appropriate actor
  * Based on http://michalplachta.com/2016/01/23/scalability-using-sharding-from-akka-cluster/
  */
-class ModelServingManager(actorResolver: ActorResolver) extends Actor {
+class ModelServingManager(actorResolver: ServingActorResolver) extends Actor {
 
   println(s"Creating model serving manager")
 
@@ -43,7 +43,7 @@ class ModelServingManager(actorResolver: ActorResolver) extends Actor {
 }
 
 object ModelServingManager {
-  def props(actorResolver: ActorResolver): Props = Props(new ModelServingManager(actorResolver))
+  def props(actorResolver: ServingActorResolver): Props = Props(new ModelServingManager(actorResolver))
 }
 
 /** Used as an Actor message. */
