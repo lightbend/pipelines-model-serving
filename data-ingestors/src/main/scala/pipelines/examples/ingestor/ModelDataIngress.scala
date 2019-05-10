@@ -23,7 +23,7 @@ class ModelDataIngress extends SourceIngress[ModelDescriptor] {
 
     def source: Source[ModelDescriptor, NotUsed] = {
       Source.repeat(NotUsed)
-        .map(_ => getModelDescriptor())
+        .map(_ ⇒ getModelDescriptor())
         .throttle(1, 2.minutes) // "dribble" them out
     }
   }

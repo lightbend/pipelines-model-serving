@@ -1,37 +1,49 @@
 package com.lightbend.modelserving.model.actor
 
-import akka.actor.{ Actor, ActorRef, Props }
-import com.lightbend.modelserving.model.{ DataToServe, ModelToServe, ModelToServeStats }
+import akka.Done
+import akka.actor.{ Actor, Props }
+import com.lightbend.modelserving.model._
 
 /**
  * Router actor, which routes both model and data (records) to an appropriate actor
  * Based on http://michalplachta.com/2016/01/23/scalability-using-sharding-from-akka-cluster/
  */
-class ModelServingManager[RECORD, RESULT] extends Actor {
+class ModelServingManager(actorResolver: ActorResolver) extends Actor {
 
-  private def getModelServer(dataType: String): ActorRef = {
-    context.child(dataType).getOrElse(context.actorOf(ModelServingActor.props[RECORD, RESULT](dataType), dataType))
-  }
-
-  private def getInstances: GetModelsResult =
-    GetModelsResult(context.children.map(_.path.name).toSeq)
+  println(s"Creating model serving manager")
 
   override def receive: PartialFunction[Any, Unit] = {
-    case model: ModelToServe => getModelServer(model.dataType) forward model
+    case model: ModelToServe =>
+      actorResolver.getActor(model.dataType) match {
+        case Some(modelServer) =>
+          //          println(s"forwarding model request to $modelServer")
+          modelServer forward model
+        case _ =>
+          println(s"no model server skipping")
+          sender() ! Done
+      }
 
-    case record: DataToServe[RECORD] => getModelServer(record.getType) forward record
+    case record: DataToServe =>
+      actorResolver.getActor(record.getType) match {
+        case Some(modelServer) =>
+          //          println(s"forwarding data request to $modelServer")
+          modelServer forward record
+        case _ =>
+          println(s"no model server skipping")
+          sender() ! ServingResult("No model server available")
+      }
 
-    case getState: GetState => context.child(getState.dataType) match {
+    case getState: GetState => actorResolver.getActor(getState.dataType) match {
       case Some(server) => server forward getState
       case _ => sender() ! ModelToServeStats()
     }
 
-    case _: GetModels => sender() ! getInstances
+    case _: GetModels => sender() ! GetModelsResult(actorResolver.getActors())
   }
 }
 
 object ModelServingManager {
-  def props[RECORD, RESULT]: Props = Props(new ModelServingManager[RECORD, RESULT]())
+  def props(actorResolver: ActorResolver): Props = Props(new ModelServingManager(actorResolver))
 }
 
 /** Used as an Actor message. */

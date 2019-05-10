@@ -8,9 +8,9 @@ import com.lightbend.modelserving.model._
  * Actor that handles messages to update a model and to score records using the current model.
  * @param dataType indicating either the record type or model parameters. Used as a file name.
  */
-class ModelServingActor[RECORD, RESULT](dataType: String) extends Actor {
+class ModelServingActor[RECORD, RESULT] extends Actor {
 
-  println(s"Creating model serving actor $dataType")
+  println("Creating model serving actor for wine")
   private var currentModel: Option[Model[RECORD, RESULT]] = None
   var currentState: Option[ModelToServeStats] = None
 
@@ -31,17 +31,19 @@ class ModelServingActor[RECORD, RESULT](dataType: String) extends Actor {
       }
       sender() ! Done
 
-    case record: DataToServe[RECORD] =>
+    case record: DataToServe =>
       // Process data
       currentModel match {
         case Some(model) =>
           val start = System.currentTimeMillis()
-          val quality = model.score(record.getRecord)
+          val quality = model.score(record.getRecord.asInstanceOf[RECORD])
           val duration = System.currentTimeMillis() - start
           currentState = currentState.map(_.incrementUsage(duration))
+          println(s"Processed data in $duration ms with result $quality")
           sender() ! ServingResult(currentState.get.name, record.getType, duration, Some(quality))
 
         case None =>
+          println(s"no model skipping")
           sender() ! ServingResult("No model available")
       }
 
@@ -53,7 +55,7 @@ class ModelServingActor[RECORD, RESULT](dataType: String) extends Actor {
 }
 
 object ModelServingActor {
-  def props[RECORD, RESULT](dataType: String): Props = Props(new ModelServingActor[RECORD, RESULT](dataType))
+  def props[RECORD, RESULT](): Props = Props(new ModelServingActor[RECORD, RESULT])
 }
 
 /** Used as an Actor message. */

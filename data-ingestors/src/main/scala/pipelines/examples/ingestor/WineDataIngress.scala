@@ -11,7 +11,7 @@ import scala.concurrent.duration._
 class WineDataIngress extends SourceIngress[WineRecord] {
 
   val recordsSource = scala.io.Source.fromResource("winequality_red.csv")
-  val records =  getListOfDataRecords()
+  val records = getListOfDataRecords()
   var recordsIterator = records.iterator
 
   override def createLogic = new SourceIngressLogic() {
@@ -20,21 +20,20 @@ class WineDataIngress extends SourceIngress[WineRecord] {
 
     def source: Source[WineRecord, NotUsed] = {
       Source.repeat(NotUsed)
-        .map(_ => getWineRecord())
+        .map(_ ⇒ getWineRecord())
         .throttle(1, 1.seconds) // "dribble" them out
     }
   }
 
   def getWineRecord(): WineRecord = {
     recordsIterator.hasNext match {
-      case false => recordsIterator = records.iterator
-      case _     =>
+      case false ⇒ recordsIterator = records.iterator
+      case _     ⇒
     }
     recordsIterator.next()
   }
 
   def getListOfDataRecords(): Seq[WineRecord] = {
-
 
     var result = Seq.empty[WineRecord]
     for (line ← recordsSource.getLines) {
@@ -52,7 +51,6 @@ class WineDataIngress extends SourceIngress[WineRecord] {
         sulphates = cols(9).toDouble,
         alcohol = cols(10).toDouble,
         dataType = "wine",
-        ts = System.currentTimeMillis()
       )
       result = record +: result
     }

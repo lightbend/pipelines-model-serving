@@ -50,10 +50,6 @@
       {
         "name": "dataType",
         "type": "string"
-      },
-      {
-        "name": "ts",
-        "type": "long"
       }
     ]
 }
