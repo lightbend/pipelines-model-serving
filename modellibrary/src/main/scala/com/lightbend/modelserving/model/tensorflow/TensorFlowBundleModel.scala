@@ -91,7 +91,7 @@ abstract class TensorFlowBundleModel[RECORD, RESULT](inputStream: Array[Byte]) e
   private def writeObject(output: ObjectOutputStream): Unit = {
     val start = System.currentTimeMillis()
     output.writeObject(bytes)
-    println(s"TensorFlow java serialization in ${System.currentTimeMillis() - start} ms")
+    println(s"TensorFlow bundled serialization in ${System.currentTimeMillis() - start} ms")
   }
 
   private def readObject(input: ObjectInputStream): Unit = {
@@ -99,12 +99,11 @@ abstract class TensorFlowBundleModel[RECORD, RESULT](inputStream: Array[Byte]) e
     bytes = input.readObject().asInstanceOf[Array[Byte]]
     try {
       setup()
-      println(s"TensorFlow java deserialization in ${System.currentTimeMillis() - start} ms")
+      println(s"TensorFlow bundled deserialization in ${System.currentTimeMillis() - start} ms")
     } catch {
       case t: Throwable =>
         t.printStackTrace
-        println(s"TensorFlow java deserialization failed in ${System.currentTimeMillis() - start} ms")
-        println(s"Restored TensorFlow ${new String(bytes)}")
+        println(s"TensorFlow bundled deserialization failed in ${System.currentTimeMillis() - start} ms")
     }
   }
 

@@ -21,23 +21,23 @@ lazy val modelServingPipeline = (project in file("./model-serving-pipeline"))
 lazy val datamodel = (project in file("./datamodel"))
   .enablePlugins(PipelinesLibraryPlugin)
   .settings(
-    libraryDependencies ++= Seq(bijection,json2avro, scalaTest, alpakkaKafka),
+    libraryDependencies ++= Seq(bijection,json2avro, scalaTest),
     (sourceGenerators in Compile) += (avroScalaGenerateSpecific in Compile).taskValue,
   )
 
 lazy val model = (project in file("./modellibrary"))
   .enablePlugins(PipelinesAkkaStreamsLibraryPlugin)
   .settings(
-    libraryDependencies ++= Seq(tensorflow, tensorflowProto,pmml,pmmlextensions, bijection,json2avro, alpakkaKafka),
+    libraryDependencies ++= Seq(tensorflow, tensorflowProto,pmml,pmmlextensions, bijection,json2avro, gson),
     (sourceGenerators in Compile) += (avroScalaGenerateSpecific in Compile).taskValue,
   )
 
 lazy val DataIngestors = (project in file("./data-ingestors"))
-    .enablePlugins(PipelinesAkkaStreamsLibraryPlugin)
-    .settings(
-      commonSettings,
-      libraryDependencies ++= Seq(akkaSprayJson,alpakkaFile,scalaTest, alpakkaKafka),
-    )
+  .enablePlugins(PipelinesAkkaStreamsLibraryPlugin)
+  .settings(
+    commonSettings,
+    libraryDependencies ++= Seq(akkaSprayJson,alpakkaFile,scalaTest, alpakkaKafka),
+  )
   .dependsOn(datamodel, model)
 
 lazy val modelServingFlow= (project in file("./model-serving-flow"))

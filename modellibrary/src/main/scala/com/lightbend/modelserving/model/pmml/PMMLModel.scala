@@ -75,7 +75,7 @@ abstract class PMMLModel[RECORD, RESULT](inputStream: Array[Byte]) extends Model
   private def writeObject(output: ObjectOutputStream): Unit = {
     val start = System.currentTimeMillis()
     output.writeObject(bytes)
-    println(s"PMML java serialization in ${System.currentTimeMillis() - start} ms")
+    println(s"PMML serialization in ${System.currentTimeMillis() - start} ms")
   }
 
   private def readObject(input: ObjectInputStream): Unit = {
@@ -84,12 +84,11 @@ abstract class PMMLModel[RECORD, RESULT](inputStream: Array[Byte]) extends Model
     // Marshall PMML
     try {
       setup()
-      println(s"PMML java deserialization in ${System.currentTimeMillis() - start} ms")
+      println(s"PMML deserialization in ${System.currentTimeMillis() - start} ms")
     } catch {
       case t: Throwable ⇒
-        println(s"PMML java deserialization failed in ${System.currentTimeMillis() - start} ms")
+        println(s"PMML deserialization failed in ${System.currentTimeMillis() - start} ms")
         println(s"Exception $t")
-        println(s"Restored PMML ${new String(bytes)}")
     }
   }
 }

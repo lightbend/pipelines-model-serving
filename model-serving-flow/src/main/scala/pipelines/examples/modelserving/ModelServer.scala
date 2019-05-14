@@ -5,16 +5,16 @@ import akka.actor.ActorSystem
 import akka.stream.scaladsl.Sink
 import akka.pattern.ask
 import akka.util.Timeout
-import com.lightbend.modelserving.model.actor.{ModelServingActor, ModelServingManager}
-import com.lightbend.modelserving.model.{ModelToServe, ServingActorResolver, ServingResult}
-import pipelines.akkastream.{AkkaStreamlet, StreamletContext, StreamletLogic}
+import com.lightbend.modelserving.model.actor.{ ModelServingActor, ModelServingManager }
+import com.lightbend.modelserving.model.{ ModelToServe, ServingActorResolver, ServingResult }
+import pipelines.akkastream.{ AkkaStreamlet, StreamletContext, StreamletLogic }
 import pipelines.examples.data._
 import pipelines.examples.data.DataCodecs._
 import com.lightbend.modelserving.model.ModelCodecs._
-import pipelines.examples.modelserving.winemodel.{DataRecord, WineFactoryResolver}
+import pipelines.examples.modelserving.winemodel.{ DataRecord, WineFactoryResolver }
 
 import scala.concurrent.duration._
-import pipelines.streamlets.{FanIn, _}
+import pipelines.streamlets.{ FanIn, _ }
 
 class ModelServerStreamlet extends AkkaStreamlet {
 
