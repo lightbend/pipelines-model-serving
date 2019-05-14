@@ -5,7 +5,6 @@ import java.util.concurrent.TimeUnit
 
 import org.influxdb.{ InfluxDB, InfluxDBFactory }
 import org.influxdb.dto.Point
-import org.joda.time.DateTime
 import pipelines.examples.data.{ Result, WineRecord }
 
 object InfluxDBUtil {
@@ -14,7 +13,7 @@ object InfluxDBUtil {
     val time = new Date().getTime
 
     val point = Point.measurement(measurement).time(time, TimeUnit.MILLISECONDS)
-    point.addField("result", record.result)
+    point.addField("result", record.result.get)
     point.addField("duration", record.duration)
     point.tag("model", record.name)
     write(point.build(), database, influxDB)

@@ -14,9 +14,6 @@
       "type": "long"
     },{
       "name": "result",
-      "type": "double"
-    },{
-      "name": "time",
-      "type": "long"
+      "type": ["double", "null"]
     }]
 }
