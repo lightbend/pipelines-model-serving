@@ -66,7 +66,7 @@ abstract class TensorFlowModel[RECORD, RESULT](inputStream: Array[Byte]) extends
   private def writeObject(output: ObjectOutputStream): Unit = {
     val start = System.currentTimeMillis()
     output.writeObject(bytes)
-    println(s"TensorFlow java serialization in ${System.currentTimeMillis() - start} ms")
+    println(s"TensorFlow optimized serialization in ${System.currentTimeMillis() - start} ms")
   }
 
   private def readObject(input: ObjectInputStream): Unit = {
@@ -76,12 +76,11 @@ abstract class TensorFlowModel[RECORD, RESULT](inputStream: Array[Byte]) extends
       graph = new Graph
       graph.importGraphDef(bytes)
       session = new Session(graph)
-      println(s"TensorFlow java deserialization in ${System.currentTimeMillis() - start} ms")
+      println(s"TensorFlow optimized deserialization in ${System.currentTimeMillis() - start} ms")
     } catch {
       case t: Throwable ⇒
         t.printStackTrace
-        println(s"TensorFlow java deserialization failed in ${System.currentTimeMillis() - start} ms")
-        println(s"Restored TensorFlow ${new String(bytes)}")
+        println(s"TensorFlow optimized deserialization failed in ${System.currentTimeMillis() - start} ms")
     }
   }
 }

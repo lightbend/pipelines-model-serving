@@ -13,6 +13,7 @@ object Dependencies {
   val pmmlextensions= "org.jpmml"                       % "pmml-evaluator-extension"  % PMMLVersion
   val influx        = "org.influxdb"                    % "influxdb-java"             % influxVerion
   val slf4j         = "org.slf4j"                       % "slf4j-log4j12"             % slf4jVersion
+  val gson          = "com.google.code.gson"            % "gson"                      % gsonVersion
 
   val scalaTest     = "org.scalatest"                  %% "scalatest"                 % scaltestVersion         % "test"
 }

@@ -16,4 +16,6 @@ object Versions {
   val influxVerion          = "2.15"
   
   val slf4jVersion          = "1.7.25"
+
+  val gsonVersion           = "2.8.5"
 }

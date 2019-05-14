@@ -1,18 +1,3 @@
-/*
- * Copyright (C) 2017-2019  Lightbend
- *
- * This file is part of the Lightbend model-serving-tutorial (https://github.com/lightbend/model-serving-tutorial)
- *
- * The model-serving-tutorial is free software: you can redistribute it and/or modify
- * it under the terms of the Apache License Version 2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package com.lightbend.modelserving.model.tensorflow
 
 import java.io.{ File, ObjectInputStream, ObjectOutputStream }
@@ -36,6 +21,8 @@ import scala.collection.JavaConverters._
  */
 abstract class TensorFlowBundleModel[RECORD, RESULT](inputStream: Array[Byte]) extends Model[RECORD, RESULT] with Serializable {
 
+  // Make sure data is not empty
+  if (inputStream.length < 1) throw new Exception("Empty URL")
   var bytes = inputStream
   setup()
   var tags: Seq[String] = _
@@ -91,7 +78,7 @@ abstract class TensorFlowBundleModel[RECORD, RESULT](inputStream: Array[Byte]) e
   private def writeObject(output: ObjectOutputStream): Unit = {
     val start = System.currentTimeMillis()
     output.writeObject(bytes)
-    println(s"TensorFlow java serialization in ${System.currentTimeMillis() - start} ms")
+    println(s"TensorFlow serialization in ${System.currentTimeMillis() - start} ms")
   }
 
   private def readObject(input: ObjectInputStream): Unit = {
@@ -99,13 +86,12 @@ abstract class TensorFlowBundleModel[RECORD, RESULT](inputStream: Array[Byte]) e
     bytes = input.readObject().asInstanceOf[Array[Byte]]
     try {
       setup()
-      println(s"TensorFlow java deserialization in ${System.currentTimeMillis() - start} ms")
+      println(s"TensorFlow bundeled deserialization in ${System.currentTimeMillis() - start} ms")
     } catch {
       case t: Throwable =>
         t.printStackTrace
-        println(s"TensorFlow java deserialization failed in ${System.currentTimeMillis() - start} ms")
-        println(s"Restored TensorFlow ${new String(bytes)}")
-    }
+        println(s"TensorFlow bundeled deserialization failed in ${System.currentTimeMillis() - start} ms")
+     }
   }
 
   private def parseSignatures(signatures: MMap[String, SignatureDef]): Map[String, Signature] = {
