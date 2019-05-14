@@ -14,7 +14,7 @@ lazy val modelServingPipeline = (project in file("./model-serving-pipeline"))
     version := "1.0",
     mainBlueprint := Some("blueprint.conf"),
     pipelinesDockerRegistry := Some("docker-registry-default.gsa2.lightbend.com"),
-    libraryDependencies += slf4j
+    libraryDependencies ++= Seq(slf4j, alpakkaKafka)
   )
   .dependsOn(DataIngestors,modelServingFlow, modelServingEgress)
 
@@ -36,7 +36,7 @@ lazy val DataIngestors = (project in file("./data-ingestors"))
     .enablePlugins(PipelinesAkkaStreamsLibraryPlugin)
     .settings(
       commonSettings,
-      libraryDependencies ++= Seq(akkaSprayJson,alpakkaFile,scalaTest),
+      libraryDependencies ++= Seq(akkaSprayJson,alpakkaFile,scalaTest, alpakkaKafka),
     )
   .dependsOn(datamodel, model)
 
@@ -44,7 +44,7 @@ lazy val modelServingFlow= (project in file("./model-serving-flow"))
   .enablePlugins(PipelinesAkkaStreamsLibraryPlugin)
   .settings(
     commonSettings,
-    libraryDependencies ++= Seq(akkaSprayJson,alpakkaFile,scalaTest)
+    libraryDependencies ++= Seq(akkaSprayJson,alpakkaFile,scalaTest, alpakkaKafka)
   )
   .dependsOn(model, datamodel)
 
@@ -52,7 +52,7 @@ lazy val modelServingEgress = (project in file("./model-serving-egress"))
   .enablePlugins(PipelinesAkkaStreamsLibraryPlugin)
   .settings(
     commonSettings,
-    libraryDependencies ++= Seq(akkaSprayJson,alpakkaFile,influx, scalaTest)
+    libraryDependencies ++= Seq(akkaSprayJson,alpakkaFile,influx, scalaTest, alpakkaKafka)
   )
   .dependsOn(datamodel, model)
 

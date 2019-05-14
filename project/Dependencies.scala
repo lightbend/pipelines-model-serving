@@ -7,6 +7,7 @@ object Dependencies {
   val json2avro     = "tech.allegro.schema.json2avro"  % "converter"                  % json2javaVersion
   val akkaSprayJson =  "com.typesafe.akka"             %% "akka-http-spray-json"      % akkaHTTPJSONVersion
   val alpakkaFile   = "com.lightbend.akka"             %% "akka-stream-alpakka-file"  % alpakkaFileVersion
+  val alpakkaKafka  = "com.typesafe.akka"              %% "akka-stream-kafka"         % alpakkaKafkaVersion
   val tensorflow    = "org.tensorflow"                  % "tensorflow"                % tensorflowVersion
   val tensorflowProto="org.tensorflow"                  % "proto"                     % tensorflowVersion
   val pmml          = "org.jpmml"                       % "pmml-evaluator"            % PMMLVersion
