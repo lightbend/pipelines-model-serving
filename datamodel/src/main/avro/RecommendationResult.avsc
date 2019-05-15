@@ -1,0 +1,29 @@
+{
+  "namespace": "pipelines.examples.data",
+  "type": "record",
+  "name": "RecommendationResult",
+  "fields":[
+    {
+      "name": "name",
+      "type": "string"
+    },{
+      "name": "dataType",
+      "type": "string"
+    },{
+      "name": "duration",
+      "type": "long"
+    },{
+      "name": "result",
+      "type": {
+            "type": "array", "items":
+                {
+                    "name":"ProductPrediction",
+                    "type":"record",
+                    "fields":[
+                        {"name":"product", "type":"long"},
+                        {"name":"probability", "type": "double"}
+                    ]
+                }
+      }
+    }]
+}

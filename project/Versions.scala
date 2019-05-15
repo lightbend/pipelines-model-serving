@@ -20,4 +20,6 @@ object Versions {
   val slf4jVersion          = "1.7.25"
 
   val gsonVersion           = "2.8.5"
+
+  val ScalajHTTPVersion     = "2.4.1"
 }

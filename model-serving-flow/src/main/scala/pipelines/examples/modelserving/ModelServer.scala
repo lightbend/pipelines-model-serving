@@ -11,7 +11,7 @@ import pipelines.akkastream.{ AkkaStreamlet, StreamletContext, StreamletLogic }
 import pipelines.examples.data._
 import pipelines.examples.data.DataCodecs._
 import com.lightbend.modelserving.model.ModelCodecs._
-import pipelines.examples.modelserving.winemodel.{ DataRecord, WineFactoryResolver }
+import pipelines.examples.modelserving.winemodel.{ WineDataRecord, WineFactoryResolver }
 
 import scala.concurrent.duration._
 import pipelines.streamlets.{ FanIn, _ }
@@ -38,7 +38,7 @@ class ModelServer()(implicit shape: FanInOut[WineRecord, ModelDescriptor, Result
     implicit val askTimeout: Timeout = Timeout(30.seconds)
 
     // Data stream processing
-    in0.mapAsync(1)(data ⇒ modelserver.ask(DataRecord(data)).mapTo[ServingResult[Result]])
+    in0.mapAsync(1)(data ⇒ modelserver.ask(WineDataRecord(data)).mapTo[ServingResult[Result]])
       .filter(r ⇒ r.result != None)
       .map(r ⇒ Result(r.name, r.dataType, r.duration, r.result.asInstanceOf[Option[Double]]))
       .runWith(out)
@@ -75,7 +75,7 @@ object ModelServer {
 
     val modelserver = system.actorOf(ModelServingManager.props(new ServingActorResolver(actors)))
     val record = WineRecord(.0, .0, .0, .0, .0, .0, .0, .0, .0, .0, .0, "wine")
-    val result = modelserver.ask(DataRecord(record)).mapTo[Double]
+    val result = modelserver.ask(WineDataRecord(record)).mapTo[Double]
     Thread.sleep(10000000)
     println(result)
   }

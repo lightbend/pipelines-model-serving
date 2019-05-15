@@ -1,0 +1,19 @@
+{
+    "namespace": "pipelines.examples.data",
+    "type": "record",
+    "name": "RecommenderRecord",
+    "fields":[
+      {
+          "name": "user",
+          "type": "long"
+      },
+      {
+        "name": "products",
+        "type": {"type": "array", "items": "long"}
+      },
+      {
+        "name": "dataType",
+        "type": "string"
+      }
+    ]
+}

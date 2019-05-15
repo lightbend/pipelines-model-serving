@@ -40,7 +40,7 @@ object WineTensorFlowBundledModel extends ModelFactory[WineRecord, Double] {
   /**
    * Creates a new TensorFlow bundled model.
    *
-   * @param descriptor model to serve representation of PMML model.
+   * @param descriptor model to serve representation of TensorFlow bundled model.
    * @return model
    */
   override def create(input: ModelToServe): Option[Model[WineRecord, Double]] =
@@ -53,7 +53,7 @@ object WineTensorFlowBundledModel extends ModelFactory[WineRecord, Double] {
   /**
    * Restore PMML model from binary.
    *
-   * @param bytes binary representation of PMML model.
+   * @param bytes binary representation of TensorFlow bundled model.
    * @return model
    */
   override def restore(bytes: Array[Byte]): Model[WineRecord, Double] = new WineTensorFlowBundledModel(bytes)
