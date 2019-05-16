@@ -1,7 +1,7 @@
 package pipelines.examples.modelserving.recommedermodel
 
-import com.lightbend.modelserving.model.{ModelFactory, ModelFactoryResolver}
-import pipelines.examples.data.{ModelType, ProductPrediction, RecommenderRecord}
+import com.lightbend.modelserving.model.{ ModelFactory, ModelFactoryResolver }
+import pipelines.examples.data.{ ModelType, ProductPrediction, RecommenderRecord }
 import pipelines.examples.modelserving.recommedermodel.tensorflow.RecommenderTensorflowServingModel
 
 /**

@@ -43,7 +43,7 @@ abstract class TensorFlowServingModel[RECORD, RESULT, HTTPREQUEST, HTTPRESULT](i
   def getHTTPRequest(input: RECORD): HTTPREQUEST
 
   // Convert HTTPResult to Result
-  def getResult(result: HTTPRESULT, input : RECORD): RESULT
+  def getResult(result: HTTPRESULT, input: RECORD): RESULT
 
   /** Score a record with the model */
   override def score(input: RECORD): RESULT = {

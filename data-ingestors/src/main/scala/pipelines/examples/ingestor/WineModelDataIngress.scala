@@ -10,7 +10,7 @@ import pipelines.examples.data._
 
 import scala.concurrent.duration._
 
-class ModelDataIngress extends SourceIngress[ModelDescriptor] {
+class WineModelDataIngress extends SourceIngress[ModelDescriptor] {
 
   val PMMLnames: Seq[String] = Seq("/winequalityDecisionTreeClassification.pmml", "/winequalityDesisionTreeRegression.pmml",
     "/winequalityGeneralizedLinearRegressionGamma.pmml", "/winequalityGeneralizedLinearRegressionGaussian.pmml",
@@ -60,9 +60,9 @@ class ModelDataIngress extends SourceIngress[ModelDescriptor] {
   }
 }
 
-object ModelDataIngress {
+object WineModelDataIngress {
   def main(args: Array[String]): Unit = {
-    val ingress = new ModelDataIngress()
+    val ingress = new WineModelDataIngress()
     while (true)
       println(ingress.getModelDescriptor())
   }

@@ -5,11 +5,11 @@ import java.util.concurrent.TimeUnit
 
 import org.influxdb.{ InfluxDB, InfluxDBFactory }
 import org.influxdb.dto.Point
-import pipelines.examples.data.{ Result, WineRecord }
+import pipelines.examples.data.{ WineResult, WineRecord }
 
 object InfluxDBUtil {
 
-  def write(record: Result, measurement: String, database: String, influxDB: InfluxDB): Unit = {
+  def write(record: WineResult, measurement: String, database: String, influxDB: InfluxDB): Unit = {
     val time = new Date().getTime
 
     val point = Point.measurement(measurement).time(time, TimeUnit.MILLISECONDS)

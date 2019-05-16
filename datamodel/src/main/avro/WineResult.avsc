@@ -1,7 +1,7 @@
 {
   "namespace": "pipelines.examples.data",
   "type": "record",
-  "name": "Result",
+  "name": "WineResult",
   "fields":[
     {
       "name": "name",

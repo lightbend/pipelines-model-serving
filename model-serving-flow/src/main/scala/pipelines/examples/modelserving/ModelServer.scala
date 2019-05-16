@@ -18,17 +18,17 @@ import pipelines.streamlets.{ FanIn, _ }
 
 class ModelServerStreamlet extends AkkaStreamlet {
 
-  override implicit val shape = new FanInOut[WineRecord, ModelDescriptor, Result]
+  override implicit val shape = new RecommenderFanInOut[WineRecord, ModelDescriptor, WineResult]
 
   override final def createLogic: ModelServer = new ModelServer()
 }
 
-class ModelServer()(implicit shape: FanInOut[WineRecord, ModelDescriptor, Result], context: StreamletContext) extends StreamletLogic {
+class ModelServer()(implicit shape: RecommenderFanInOut[WineRecord, ModelDescriptor, WineResult], context: StreamletContext) extends StreamletLogic {
 
   ModelToServe.setResolver[WineRecord, Double](WineFactoryResolver)
   val in0 = atLeastOnceSource[WineRecord](shape.inlet0)
   val in1 = atLeastOnceSource[ModelDescriptor](shape.inlet1)
-  val out = atLeastOnceSink[Result](shape.outlet0)
+  val out = atLeastOnceSink[WineResult](shape.outlet0)
 
   override def init(): Unit = {
 
@@ -38,9 +38,9 @@ class ModelServer()(implicit shape: FanInOut[WineRecord, ModelDescriptor, Result
     implicit val askTimeout: Timeout = Timeout(30.seconds)
 
     // Data stream processing
-    in0.mapAsync(1)(data ⇒ modelserver.ask(WineDataRecord(data)).mapTo[ServingResult[Result]])
+    in0.mapAsync(1)(data ⇒ modelserver.ask(WineDataRecord(data)).mapTo[ServingResult[WineResult]])
       .filter(r ⇒ r.result != None)
-      .map(r ⇒ Result(r.name, r.dataType, r.duration, r.result.asInstanceOf[Option[Double]]))
+      .map(r ⇒ WineResult(r.name, r.dataType, r.duration, r.result.asInstanceOf[Option[Double]]))
       .runWith(out)
 
     // Model stream processing
