@@ -38,9 +38,9 @@ class RecommenderModelServer()(implicit shape: RecommenderFanInOut[RecommenderRe
     implicit val askTimeout: Timeout = Timeout(30.seconds)
 
     // Data stream processing
-    in0.mapAsync(1)(data ⇒ modelserver.ask(RecommendationDataRecord(data)).mapTo[ServingResult[RecommendationResult]])
+    in0.mapAsync(1)(data ⇒ modelserver.ask(RecommendationDataRecord(data)).mapTo[ServingResult[Seq[ProductPrediction]]])
       .filter(r ⇒ r.result != None)
-      .map(r ⇒ RecommendationResult(r.name, r.dataType, r.duration, r.result.asInstanceOf[Seq[ProductPrediction]]))
+      .map(r ⇒ new RecommendationResult(r.name, r.dataType, r.duration, r.result.get))
       .runWith(out)
 
     // Model stream processing
@@ -82,8 +82,8 @@ object RecommenderModelServer {
     modelserver.ask(ModelToServe.fromModelRecord(model))
     val record = new RecommenderRecord(10L, Seq(1L, 2L, 3L, 4L), "recommender")
     Thread.sleep(1000)
-    val result = modelserver.ask(RecommendationDataRecord(record)).mapTo[Seq[ProductPrediction]]
-    Thread.sleep(10000000)
+    val result = modelserver.ask(RecommendationDataRecord(record)).mapTo[ServingResult[Seq[ProductPrediction]]]
+    Thread.sleep(1000)
     println(result)
   }
 }

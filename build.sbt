@@ -12,8 +12,8 @@ lazy val modelServingPipeline = (project in file("./model-serving-pipeline"))
   .settings(
     name := "ml-serving-pipeline",
     version := "1.0",
-    mainBlueprint := Some("blueprint1.conf"),
-    pipelinesDockerRegistry := Some("docker-registry-default.gsa2.lightbend.com"),
+    mainBlueprint := Some("recommendorblueprint.conf"),
+    pipelinesDockerRegistry := Some("docker-registry-default.lightshift.lightbend.com"),
     libraryDependencies ++= Seq(slf4j, alpakkaKafka)
   )
   .dependsOn(DataIngestors,modelServingFlow, modelServingEgress)

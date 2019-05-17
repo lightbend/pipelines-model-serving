@@ -19,12 +19,8 @@ object InfluxDBEgress extends FlowEgress[WineResult] {
     def flow = contextPropagatedFlow()
       .map { result ⇒
         {
-          result.result match {
-            case Some(value) ⇒
-              println("Result: " + value)
-              InfluxDBUtil.write(result, "wine_result", streamletRefConfig.getString(influxDatabase), influxDB)
-            case _ ⇒
-          }
+          println("Result: " + result)
+          InfluxDBUtil.write(result, "wine_result", streamletRefConfig.getString(influxDatabase), influxDB)
           result
         }
       }

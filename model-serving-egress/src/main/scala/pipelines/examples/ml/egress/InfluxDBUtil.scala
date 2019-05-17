@@ -13,7 +13,7 @@ object InfluxDBUtil {
     val time = new Date().getTime
 
     val point = Point.measurement(measurement).time(time, TimeUnit.MILLISECONDS)
-    point.addField("result", record.result.get)
+    point.addField("result", record.result)
     point.addField("duration", record.duration)
     point.tag("model", record.name)
     write(point.build(), database, influxDB)

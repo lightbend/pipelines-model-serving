@@ -36,11 +36,11 @@ class ModelServingActor[RECORD, RESULT] extends Actor {
       currentModel match {
         case Some(model) =>
           val start = System.currentTimeMillis()
-          val quality = model.score(record.getRecord.asInstanceOf[RECORD])
+          val prediction = model.score(record.getRecord.asInstanceOf[RECORD])
           val duration = System.currentTimeMillis() - start
           currentState = currentState.map(_.incrementUsage(duration))
-          println(s"Processed data in $duration ms with result $quality")
-          sender() ! ServingResult(currentState.get.name, record.getType, duration, Some(quality))
+          println(s"Processed data in $duration ms with result $prediction")
+          sender() ! ServingResult(currentState.get.name, record.getType, duration, Some(prediction))
 
         case None =>
           println(s"no model skipping")
