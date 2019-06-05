@@ -7,13 +7,21 @@ lazy val root = modelServingPipeline
 
 version := "1.0"
 
+// The following assumes an environment variable that defines the OpenShift cluster
+// domain name and uses the default registry prefix. Adapt for your environment or
+// simply use this (The "Some" is required):
+// lazy val dockerRegistry = Some("registry-on-my.server.name")
+lazy val dockerRegistry =
+  sys.env.get("OPENSHIFT_CLUSTER_DOMAIN").map(
+    server => s"docker-registry-default.$server")
+
 lazy val modelServingPipeline = (project in file("./model-serving-pipeline"))
   .enablePlugins(PipelinesApplicationPlugin)
   .settings(
     name := "ml-serving-pipeline",
     version := "1.0",
-    mainBlueprint := Some("recommendorblueprint.conf"),
-    pipelinesDockerRegistry := Some("docker-registry-default.lightshift.lightbend.com"),
+    mainBlueprint := Some("recommender-blueprint.conf"),
+    pipelinesDockerRegistry := dockerRegistry,
     libraryDependencies ++= Seq(slf4j, alpakkaKafka)
   )
   .dependsOn(DataIngestors,modelServingFlow, modelServingEgress)
