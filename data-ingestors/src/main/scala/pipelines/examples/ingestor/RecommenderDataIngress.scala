@@ -10,6 +10,10 @@ import scala.collection.mutable.ListBuffer
 import scala.concurrent.duration._
 import scala.util.Random
 
+/**
+  * Ingress of data for recommendations. In this case, every second we
+  * load and send downstream one record that is randomly generated.
+  */
 class RecommenderDataIngress extends SourceIngress[RecommenderRecord] {
 
   val generator = Random

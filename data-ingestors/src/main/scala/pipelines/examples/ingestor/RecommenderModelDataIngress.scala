@@ -8,6 +8,11 @@ import pipelines.examples.data._
 
 import scala.concurrent.duration._
 
+/**
+  * Ingress of model updates. In this case, every two minutes we load and
+  * send downstream a model from the previously-trained models that are
+  * found in the "datamodel" subproject.
+  */
 class RecommenderModelDataIngress extends SourceIngress[ModelDescriptor] {
 
   var server = 1
