@@ -8,6 +8,10 @@ import pipelines.examples.data._
 
 import scala.concurrent.duration._
 
+/**
+  * Reads wine records from a CSV file (which actually uses ; as the separator),
+  * parses it into a {@link WineRecord} and sends it downstream.
+  */
 class WineDataIngress extends SourceIngress[WineRecord] {
 
   val recordsSource = scala.io.Source.fromResource("winequality_red.csv")
@@ -27,7 +31,7 @@ class WineDataIngress extends SourceIngress[WineRecord] {
 
   def getWineRecord(): WineRecord = {
     recordsIterator.hasNext match {
-      case false ⇒ recordsIterator = records.iterator
+      case false ⇒ recordsIterator = records.iterator  // start over
       case _     ⇒
     }
     recordsIterator.next()
@@ -35,25 +39,41 @@ class WineDataIngress extends SourceIngress[WineRecord] {
 
   def getListOfDataRecords(): Seq[WineRecord] = {
 
-    var result = Seq.empty[WineRecord]
-    for (line ← recordsSource.getLines) {
-      val cols = line.split(";").map(_.trim)
-      val record = new WineRecord(
-        fixed_acidity = cols(0).toDouble,
-        volatile_acidity = cols(1).toDouble,
-        citric_acid = cols(2).toDouble,
-        residual_sugar = cols(3).toDouble,
-        chlorides = cols(4).toDouble,
-        free_sulfur_dioxide = cols(5).toDouble,
-        total_sulfur_dioxide = cols(6).toDouble,
-        density = cols(7).toDouble,
-        pH = cols(8).toDouble,
-        sulphates = cols(9).toDouble,
-        alcohol = cols(10).toDouble,
-        dataType = "wine",
-      )
-      result = record +: result
+    val result = recordsSource.getLines.foldLeft(
+        Vector.empty[WineRecord]) { case (seq, line) =>
+      val cols = line.split(";").map(_.trim.toDouble)
+      if (cols.length != 11) {
+        printf("ERROR: record does not have 11 fields after splitting string on ';': "+line)
+        seq
+      } else {
+        val Array(
+          fixed_acidity,
+          volatile_acidity,
+          citric_acid,
+          residual_sugar,
+          chlorides,
+          free_sulfur_dioxide,
+          total_sulfur_dioxide,
+          density,
+          pH,
+          sulphates,
+          alcohol) = cols
+        val record = WineRecord(fixed_acidity,
+          volatile_acidity,
+          citric_acid,
+          residual_sugar,
+          chlorides,
+          free_sulfur_dioxide,
+          total_sulfur_dioxide,
+          density,
+          pH,
+          sulphates,
+          alcohol,
+          dataType = "wine")
+        seq :+ record
+      }
     }
+
     recordsSource.close
     result
   }
