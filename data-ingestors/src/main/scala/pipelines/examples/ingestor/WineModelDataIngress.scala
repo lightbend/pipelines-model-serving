@@ -10,11 +10,20 @@ import pipelines.examples.data._
 
 import scala.concurrent.duration._
 
+/**
+  * One at a time every two minutes, loads a PMML or TensorFlow model and
+  * sends it downstream.
+  */
 class WineModelDataIngress extends SourceIngress[ModelDescriptor] {
 
-  val PMMLnames: Seq[String] = Seq("/winequalityDecisionTreeClassification.pmml", "/winequalityDesisionTreeRegression.pmml",
-    "/winequalityGeneralizedLinearRegressionGamma.pmml", "/winequalityGeneralizedLinearRegressionGaussian.pmml",
-    "/winequalityLinearRegression.pmml", "/winequalityMultilayerPerceptron.pmml", "/winequalityRandonForrestClassification.pmml")
+  val PMMLnames: Seq[String] = Seq(
+    "/winequalityDecisionTreeClassification.pmml",
+    "/winequalityDesisionTreeRegression.pmml",
+    "/winequalityGeneralizedLinearRegressionGamma.pmml",
+    "/winequalityGeneralizedLinearRegressionGaussian.pmml",
+    "/winequalityLinearRegression.pmml",
+    "/winequalityMultilayerPerceptron.pmml",
+    "/winequalityRandonForrestClassification.pmml")
   val TFOptimized = "/optimized_WineQuality.pb"
   var PMML = false
   var PMMLIterator: Iterator[String] = _
