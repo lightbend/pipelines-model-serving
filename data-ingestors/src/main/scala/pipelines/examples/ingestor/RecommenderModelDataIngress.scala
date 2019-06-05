@@ -3,10 +3,12 @@ package pipelines.examples.ingestor
 import akka.NotUsed
 import akka.stream.scaladsl.Source
 import com.lightbend.modelserving.model.ModelCodecs._
+import com.typesafe.config.ConfigFactory
 import pipelines.akkastream.scaladsl._
 import pipelines.examples.data._
 
 import scala.concurrent.duration._
+imoprt scala.collection.JavaConverters._
 
 /**
   * Ingress of model updates. In this case, every two minutes we load and
@@ -15,7 +17,12 @@ import scala.concurrent.duration._
   */
 class RecommenderModelDataIngress extends SourceIngress[ModelDescriptor] {
 
-  var server = 1
+  protected lazy val config = ConfigFactory.load()
+
+  protected lazy val serverLocations =
+    config.getStringList("recommenders.urls").asScala.toVector
+
+  var serverIndex: Int = 0 // will be between 0 and serverLocations.size-1
 
   override def createLogic = new SourceIngressLogic() {
 
@@ -28,25 +35,24 @@ class RecommenderModelDataIngress extends SourceIngress[ModelDescriptor] {
 
   def getModelDescriptor(): ModelDescriptor = {
 
-    val s = getserver()
-    val location = s"http://recommender$s-service-kubeflow.lightshift.lightbend.com/v1/models/recommender$s/versions/1:predict"
+    val i = nextServerIndex()
+    val location = serverLocations(i)
     new ModelDescriptor(
       name = "Tensorflow Model", description = "For model Serving",
       modeltype = ModelType.TENSORFLOWSERVING, modeldata = None,
       modeldatalocation = Some(location), dataType = "recommender")
   }
 
-  def getserver(): String = {
-    server = server + 1
-    if (server > 1) server = 0
-    server match {
-      case 0 ⇒ ""
-      case _ ⇒ "1"
-    }
+  def nextServerIndex(): Int = {
+    val i = serverIndex
+    // increment for next call
+    serverIndex = (serverIndex + 1) % serverLocations.size
+    i
   }
 }
 
 object RecommenderModelDataIngress {
+
   def main(args: Array[String]): Unit = {
     val ingress = new RecommenderModelDataIngress()
     while (true)
