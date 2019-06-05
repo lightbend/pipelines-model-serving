@@ -4,18 +4,14 @@ import pipelines.akkastream.scaladsl.{ FlowEgress, FlowEgressLogic }
 import pipelines.examples.data.DataCodecs._
 import pipelines.examples.data._
 
-object LoggerEgress extends FlowEgress[RecommendationResult] {
+object WineResultLoggerEgress extends FlowEgress[WineResult] {
 
   override def createLogic = new FlowEgressLogic() {
 
     def flow = contextPropagatedFlow()
       .map { result ⇒
         {
-          result.result.size match {
-            case 0 ⇒
-            case _ ⇒
-              println(s"Result: $result")
-          }
+          println(s"Result: $result")
           result
         }
       }

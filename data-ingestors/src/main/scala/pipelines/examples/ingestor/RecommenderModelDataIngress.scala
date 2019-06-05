@@ -3,24 +3,21 @@ package pipelines.examples.ingestor
 import akka.NotUsed
 import akka.stream.scaladsl.Source
 import com.lightbend.modelserving.model.ModelCodecs._
-import com.typesafe.config.ConfigFactory
 import pipelines.akkastream.scaladsl._
 import pipelines.examples.data._
 
 import scala.concurrent.duration._
-imoprt scala.collection.JavaConverters._
+import scala.collection.JavaConverters._
 
 /**
-  * Ingress of model updates. In this case, every two minutes we load and
-  * send downstream a model from the previously-trained models that are
-  * found in the "datamodel" subproject.
-  */
+ * Ingress of model updates. In this case, every two minutes we load and
+ * send downstream a model from the previously-trained models that are
+ * found in the "datamodel" subproject.
+ */
 class RecommenderModelDataIngress extends SourceIngress[ModelDescriptor] {
 
-  protected lazy val config = ConfigFactory.load()
-
   protected lazy val serverLocations =
-    config.getStringList("recommenders.urls").asScala.toVector
+    this.context.config.getStringList("recommenders.urls").asScala.toVector
 
   var serverIndex: Int = 0 // will be between 0 and serverLocations.size-1
 

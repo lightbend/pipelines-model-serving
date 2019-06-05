@@ -9,9 +9,9 @@ import pipelines.examples.data._
 import scala.concurrent.duration._
 
 /**
-  * Reads wine records from a CSV file (which actually uses ; as the separator),
-  * parses it into a {@link WineRecord} and sends it downstream.
-  */
+ * Reads wine records from a CSV file (which actually uses ; as the separator),
+ * parses it into a {@link WineRecord} and sends it downstream.
+ */
 class WineDataIngress extends SourceIngress[WineRecord] {
 
   val recordsSource = scala.io.Source.fromResource("winequality_red.csv")
@@ -31,7 +31,7 @@ class WineDataIngress extends SourceIngress[WineRecord] {
 
   def getWineRecord(): WineRecord = {
     recordsIterator.hasNext match {
-      case false ⇒ recordsIterator = records.iterator  // start over
+      case false ⇒ recordsIterator = records.iterator // start over
       case _     ⇒
     }
     recordsIterator.next()
@@ -40,39 +40,41 @@ class WineDataIngress extends SourceIngress[WineRecord] {
   def getListOfDataRecords(): Seq[WineRecord] = {
 
     val result = recordsSource.getLines.foldLeft(
-        Vector.empty[WineRecord]) { case (seq, line) =>
-      val cols = line.split(";").map(_.trim.toDouble)
-      if (cols.length != 11) {
-        printf("ERROR: record does not have 11 fields after splitting string on ';': "+line)
-        seq
-      } else {
-        val Array(
-          fixed_acidity,
-          volatile_acidity,
-          citric_acid,
-          residual_sugar,
-          chlorides,
-          free_sulfur_dioxide,
-          total_sulfur_dioxide,
-          density,
-          pH,
-          sulphates,
-          alcohol) = cols
-        val record = WineRecord(fixed_acidity,
-          volatile_acidity,
-          citric_acid,
-          residual_sugar,
-          chlorides,
-          free_sulfur_dioxide,
-          total_sulfur_dioxide,
-          density,
-          pH,
-          sulphates,
-          alcohol,
-          dataType = "wine")
-        seq :+ record
+      Vector.empty[WineRecord]) {
+        case (seq, line) ⇒
+          val cols = line.split(";").map(_.trim.toDouble)
+          if (cols.length < 11) {
+            printf("ERROR: record does not have 11 fields after splitting string on ';': " + line)
+            seq
+          } else {
+            val Array(
+              fixed_acidity,
+              volatile_acidity,
+              citric_acid,
+              residual_sugar,
+              chlorides,
+              free_sulfur_dioxide,
+              total_sulfur_dioxide,
+              density,
+              pH,
+              sulphates,
+              alcohol) = cols.take(11)
+            val record = WineRecord(
+              fixed_acidity,
+              volatile_acidity,
+              citric_acid,
+              residual_sugar,
+              chlorides,
+              free_sulfur_dioxide,
+              total_sulfur_dioxide,
+              density,
+              pH,
+              sulphates,
+              alcohol,
+              dataType = "wine")
+            seq :+ record
+          }
       }
-    }
 
     recordsSource.close
     result

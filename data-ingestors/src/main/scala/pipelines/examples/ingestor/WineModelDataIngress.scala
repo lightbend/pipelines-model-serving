@@ -11,9 +11,9 @@ import pipelines.examples.data._
 import scala.concurrent.duration._
 
 /**
-  * One at a time every two minutes, loads a PMML or TensorFlow model and
-  * sends it downstream.
-  */
+ * One at a time every two minutes, loads a PMML or TensorFlow model and
+ * sends it downstream.
+ */
 class WineModelDataIngress extends SourceIngress[ModelDescriptor] {
 
   val PMMLnames: Seq[String] = Seq(

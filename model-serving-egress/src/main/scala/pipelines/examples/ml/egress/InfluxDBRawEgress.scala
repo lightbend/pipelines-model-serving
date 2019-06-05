@@ -19,7 +19,7 @@ object InfluxDBRawEgress extends FlowEgress[WineRecord] {
     def flow = contextPropagatedFlow()
       .map { record ⇒
         {
-          println(s"Writing Record: ${record.dataType}")
+          println(s"InfluxDBRawEgress: record of type = ${record.dataType}")
           InfluxDBUtil.write(record, "wine_record", streamletRefConfig.getString(influxDatabase), influxDB)
           record
         }

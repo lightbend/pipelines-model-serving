@@ -18,11 +18,9 @@ object InfluxDBEgress extends FlowEgress[WineResult] {
 
     def flow = contextPropagatedFlow()
       .map { result ⇒
-        {
-          println("Result: " + result)
-          InfluxDBUtil.write(result, "wine_result", streamletRefConfig.getString(influxDatabase), influxDB)
-          result
-        }
+        println("InfluxDBEgress: result = " + result)
+        InfluxDBUtil.write(result, "wine_result", streamletRefConfig.getString(influxDatabase), influxDB)
+        result
       }
   }
 }
