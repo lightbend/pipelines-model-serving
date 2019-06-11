@@ -30,13 +30,16 @@ final case class WineRecordsReader(
       currentIndex = (currentIndex + 1) % resourceNames.size
       iterator = init(currentIndex) // start over
     }
-    parse(iterator.next()) match {
+    WineRecordsReader.parse(iterator.next(), separator) match {
       case None         ⇒ next()
       case Some(record) ⇒ record
     }
   }
+}
 
-  def parse(line: String): Option[WineRecord] = {
+object WineRecordsReader {
+
+  def parse(line: String, separator: String): Option[WineRecord] = {
     val cols = line.split(separator)
     if (cols.length < 11) {
       Console.err.println(
@@ -64,9 +67,7 @@ final case class WineRecordsReader(
         None
     }
   }
-}
 
-object WineRecordsReader {
   def main(args: Array[String]): Unit = {
     val count = if (args.length > 0) args(0).toInt else 100000
 

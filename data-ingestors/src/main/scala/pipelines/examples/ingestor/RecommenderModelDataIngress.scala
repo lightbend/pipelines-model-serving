@@ -17,7 +17,9 @@ import scala.collection.JavaConverters._
 class RecommenderModelDataIngress extends SourceIngress[ModelDescriptor] {
 
   protected lazy val serverLocations =
-    this.context.config.getStringList("recommenders.urls").asScala.toVector
+    this.context.config.getStringList("recommenders.service-urls").asScala.toVector
+  protected lazy val modelFrequencySeconds =
+    this.context.config.getInt("recommenders.model-frequency-seconds")
 
   var serverIndex: Int = 0 // will be between 0 and serverLocations.size-1
 
@@ -26,7 +28,7 @@ class RecommenderModelDataIngress extends SourceIngress[ModelDescriptor] {
     def source: Source[ModelDescriptor, NotUsed] = {
       Source.repeat(NotUsed)
         .map(_ ⇒ getModelDescriptor())
-        .throttle(1, 2.minutes) // "dribble" them out
+        .throttle(1, modelFrequencySeconds.seconds)
     }
   }
 

@@ -17,13 +17,15 @@ import scala.util.Random
 class RecommenderDataIngress extends SourceIngress[RecommenderRecord] {
 
   val generator = Random
+  protected lazy val dataFrequencySeconds =
+    this.context.config.getInt("recommenders.data-frequency-seconds")
 
   override def createLogic = new SourceIngressLogic() {
 
     def source: Source[RecommenderRecord, NotUsed] = {
       Source.repeat(NotUsed)
         .map(_ ⇒ getRecommenderRecord())
-        .throttle(1, 1.seconds) // "dribble" them out
+        .throttle(1, dataFrequencySeconds.seconds)
     }
   }
 

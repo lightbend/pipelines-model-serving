@@ -1,7 +1,6 @@
 package pipelines.examples.ingestor
 
 import org.scalatest.{ FunSpec, BeforeAndAfter }
-import java.io.ByteArrayOutputStream
 
 class WineRecordsReaderTest extends FunSpec with BeforeAndAfter with OutputInterceptor {
 
