@@ -10,11 +10,9 @@ object RecommenderLoggerEgress extends FlowEgress[RecommendationResult] {
 
     def flow = contextPropagatedFlow()
       .map { result ⇒
-        {
-          if (result.result.size > 0)
-            println(s"Result: $result")
-          result
-        }
+        if (result.result.size > 0)
+          println(s"Result: $result")
+        result
       }
   }
 }
