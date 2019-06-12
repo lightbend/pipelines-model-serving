@@ -16,7 +16,7 @@ object InfluxDBRawEgress extends FlowEgress[WineRecord] {
 
     val influxDB = InfluxDBUtil.getInfluxDB(streamletRefConfig.getString(influxHost), streamletRefConfig.getString(influxPort))
 
-    def flow = contextPropagatedFlow()
+    def flow = flowWithPipelinesContext()
       .map { record ⇒
         {
           println(s"InfluxDBRawEgress: record of type = ${record.dataType}")

@@ -15,7 +15,11 @@ object Dependencies {
   val influx          = "org.influxdb"                    % "influxdb-java"             % influxVerion
   val slf4j           = "org.slf4j"                       % "slf4j-log4j12"             % slf4jVersion
   val gson            = "com.google.code.gson"            % "gson"                      % gsonVersion
-  val ScalajHTTP      = "org.scalaj"                     %% "scalaj-http"               % scalajHTTPVersion
+  val scalajHTTP      = "org.scalaj"                     %% "scalaj-http"               % scalajHTTPVersion
+  // val scalaLogging    = "com.typesafe.scala-logging"     %% "scala-logging"             % scalaLoggingVersion
+  // val logback         = "ch.qos.logback"                  % "logback-classic"           % logbackClassicVersion
 
-  val scalaTest       = "org.scalatest"                  %% "scalatest"                 % scaltestVersion         % "test"
+  val scalaTest       = "org.scalatest"                  %% "scalatest"                 % scaltestVersion    % "test"
+  // Only used in tests:
+  val SprayJson       = "io.spray"                       %% "spray-json"                % sprayJsonVersion   % "test"
 }

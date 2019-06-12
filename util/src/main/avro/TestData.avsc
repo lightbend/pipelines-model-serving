@@ -1,0 +1,14 @@
+{
+    "namespace": "pipelines.examples.util.test",
+    "type": "record",
+    "name": "TestData",
+    "fields":[
+         {
+            "name": "id", "type": "int"
+         },
+         {
+            "name": "name", "type": "string"
+         }
+    ]
+}
+

@@ -7,6 +7,7 @@ import akka.stream._
 import pipelines.akkastream.testkit._
 import pipelines.examples.data.WineRecord
 import pipelines.examples.data.DataCodecs._
+import pipelines.examples.util.test.OutputInterceptor
 import com.typesafe.config.ConfigFactory
 
 class WineDataIngressTest extends FunSpec with BeforeAndAfterAll with OutputInterceptor {

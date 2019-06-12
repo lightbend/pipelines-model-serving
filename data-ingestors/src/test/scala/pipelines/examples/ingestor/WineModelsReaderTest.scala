@@ -2,6 +2,7 @@ package pipelines.examples.ingestor
 
 import org.scalatest.{ FunSpec, BeforeAndAfter }
 import pipelines.examples.data._
+import pipelines.examples.util.test.OutputInterceptor
 
 class WineModelsReaderTest extends FunSpec with BeforeAndAfter with OutputInterceptor {
 
@@ -43,8 +44,8 @@ class WineModelsReaderTest extends FunSpec with BeforeAndAfter with OutputInterc
       }
 
       it("Continuously rereads the resource until terminated") {
-        val outMsgs = Array.fill(2)(initializingMsgFmt.format(testGoodModelsResources(0)))
-        ignoreOutput {
+        // val outMsgs = Array.fill(2)(initializingMsgFmt.format(testGoodModelsResources(0)))
+        expectOutput() {
           val reader = WineModelsReader(WineModelDataIngress.WineModelsResources)
           val totalPMML = WineModelDataIngress.WineModelsResources(ModelType.PMML).size * 2
           val totalTensorFlow = WineModelDataIngress.WineModelsResources(ModelType.TENSORFLOW).size * 2

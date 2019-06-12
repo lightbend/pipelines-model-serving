@@ -1,6 +1,7 @@
 object Versions {
 
   val tensorflowVersion     = "1.12.0"
+
   val PMMLVersion           = "1.4.3"
 
   val bijectionVersion      = "0.9.6"
@@ -24,4 +25,10 @@ object Versions {
   val scalajHTTPVersion     = "2.4.1"
 
   val typesafeConfigVersion = "1.3.4"
+
+  val logbackClassicVersion = "1.2.3"
+
+  val scalaLoggingVersion   = "3.9.2"
+
+  val sprayJsonVersion      = "1.3.5"
 }

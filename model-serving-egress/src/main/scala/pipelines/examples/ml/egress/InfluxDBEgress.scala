@@ -16,7 +16,7 @@ object InfluxDBEgress extends FlowEgress[WineResult] {
 
     val influxDB = InfluxDBUtil.getInfluxDB(streamletRefConfig.getString(influxHost), streamletRefConfig.getString(influxPort))
 
-    def flow = contextPropagatedFlow()
+    def flow = flowWithPipelinesContext()
       .map { result ⇒
         println("InfluxDBEgress: result = " + result)
         InfluxDBUtil.write(result, "wine_result", streamletRefConfig.getString(influxDatabase), influxDB)
