@@ -25,9 +25,10 @@ class LogEgressTest extends FunSpec with BeforeAndAfterAll with OutputIntercepto
   // dumpOutputStreams = true
 
   describe("LogEgress") {
-    it("Writes output to stdout - CURRENTLY DOESN'T WORK!!") {
+    it("Writes output to stdout - DOESN'T CURRENTLY TEST ANYTHING!!") {
       val data = Vector(TestData(1, "one"), TestData(2, "two"), TestData(3, "three"))
-      // I would prefer to test the output, but at this time, no output is captured!
+      // I would prefer to test the output, but the output isn't captured!
+      // I believe it's because the code is actually run by Akka on a different thread.
       // val expectedOut = data.map(_.toString)
       // expectOutput(expectedOut) {
       ignoreOutput {

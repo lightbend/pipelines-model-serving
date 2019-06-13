@@ -13,12 +13,20 @@ import scala.collection.JavaConverters._
  * send downstream a model from the previously-trained models that are
  * found in the "datamodel" subproject.
  */
-class RecommenderModelDataIngress extends SourceIngress[ModelDescriptor] {
+class RecommenderModelDataIngress extends AkkaStreamlet {
 
+  val out = AvroOutlet[ModelDescriptor]("out", _.name)
+  final override val shape = StreamletShape.withOutlets(out)
+
+  def getWithDefault[T](key: String)(default: ⇒ T): T = try {
+
+  }
   protected lazy val serverLocations =
     this.context.config.getStringList("recommenders.service-urls").asScala.toVector
   protected lazy val modelFrequencySeconds =
     this.context.config.getInt("recommenders.model-frequency-seconds")
+
+  override def configParameters = Vector(RecordsPerSecond)
 
   var serverIndex: Int = 0 // will be between 0 and serverLocations.size-1
 

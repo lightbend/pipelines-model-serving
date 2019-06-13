@@ -12,7 +12,7 @@
   <logger name="org.apache.kafka.clients.consumer" level="${LOGLEVEL_KAFKA:-WARN}" />
   <logger name="org.apache.kafka.clients.producer" level="${LOGLEVEL_KAFKA:-WARN}" />
 
-  <root level="${LOGLEVEL_ROOT:-WARN}">
+  <root level="${LOGLEVEL_ROOT:-INFO}">
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
       <target>System.out</target>
       <encoder>
