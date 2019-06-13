@@ -4,6 +4,7 @@ import java.io.ByteArrayOutputStream
 
 /**
  * Mixin trait to capture stdout and stderr, then assert the content is what's expected (or ignore it).
+ * WARNING: Does not successfully capture output in all cases, such as multi-threaded apps.
  */
 trait OutputInterceptor {
 
@@ -27,13 +28,13 @@ trait OutputInterceptor {
     expectedErrLines: Seq[String] = Seq(""))(test: ⇒ T) = checkOutput(test) { (outLines, errLines) =>
 
     assert(
-      outLines.size == expectedOutLines.size, sizeDiffString(outLines, expectedOutLines))
+      outLines.size == expectedOutLines.size, sizeDiffString("out", outLines, expectedOutLines))
     assert(
-      outLines == expectedOutLines, notEqualDiffString(outLines, expectedOutLines))
+      outLines == expectedOutLines, notEqualDiffString("out", outLines, expectedOutLines))
     assert(
-      errLines.size == expectedErrLines.size, sizeDiffString(errLines, expectedErrLines))
+      errLines.size == expectedErrLines.size, sizeDiffString("err", errLines, expectedErrLines))
     assert(
-      errLines == expectedErrLines, notEqualDiffString(errLines, expectedErrLines))
+      errLines == expectedErrLines, notEqualDiffString("err", errLines, expectedErrLines))
   }
 
   /**
@@ -62,10 +63,10 @@ trait OutputInterceptor {
     checkActualOutErrLines(outLines, errLines)
   }
 
-  private def sizeDiffString(actual: Seq[String], expected: Seq[String]): String =
-    diffString(s"size mismatch: ${actual.size} != ${expected.size}", actual, expected)
-  private def notEqualDiffString(actual: Seq[String], expected: Seq[String]): String =
-    diffString("mismatch", actual, expected)
+  private def sizeDiffString(label: String, actual: Seq[String], expected: Seq[String]): String =
+    diffString(s"$label - size mismatch: ${actual.size} != ${expected.size}", actual, expected)
+  private def notEqualDiffString(label: String, actual: Seq[String], expected: Seq[String]): String =
+    diffString(s"$label - mismatch", actual, expected)
 
   private def diffString(prefix: String, actual: Seq[String], expected: Seq[String]): String =
     s"${name} - ${prefix}:\nActual:   ${actual}\nExpected: ${expected}"
