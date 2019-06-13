@@ -2,7 +2,6 @@ package pipelines.examples.ingestor
 
 import akka.NotUsed
 import akka.stream.scaladsl.Source
-import com.lightbend.modelserving.model.ModelCodecs._
 import pipelines.akkastream.scaladsl._
 import pipelines.examples.data._
 

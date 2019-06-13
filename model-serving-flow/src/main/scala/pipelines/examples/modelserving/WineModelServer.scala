@@ -9,8 +9,6 @@ import com.lightbend.modelserving.model.actor.{ ModelServingActor, ModelServingM
 import com.lightbend.modelserving.model.{ ModelToServe, ServingActorResolver, ServingResult }
 import pipelines.akkastream.{ AkkaStreamlet, StreamletContext, StreamletLogic }
 import pipelines.examples.data._
-import pipelines.examples.data.DataCodecs._
-import com.lightbend.modelserving.model.ModelCodecs._
 import pipelines.examples.modelserving.winemodel.{ WineDataRecord, WineFactoryResolver }
 
 import scala.concurrent.duration._

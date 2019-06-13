@@ -1,8 +1,9 @@
 package pipelines.examples.ml.egress
 
-import pipelines.examples.data.DataCodecs._
 import pipelines.examples.data._
+import akka.event.Logging.{ LogLevel, InfoLevel }
 
-object WineResultLoggerEgress extends PrintlnLoggerEgress[WineResult] {
+final case class WineResultLoggerEgress(logLevel: LogLevel = InfoLevel)
+  extends LogEgress[RecommendationResult](logLevel) {
   val prefix: String = "Wine Quality: "
 }

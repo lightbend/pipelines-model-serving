@@ -1,26 +1,42 @@
 package pipelines.examples.ml.egress
 
-import pipelines.akkastream.scaladsl.{ FlowEgress, FlowEgressLogic }
-import pipelines.examples.data._
-import pipelines.examples.data.DataCodecs._
+import pipelines.streamlets.avro._
+import pipelines.akkastream.scaladsl._
+import akka.actor.ActorSystem
+import scala.reflect.ClassTag
+import org.apache.avro.specific.SpecificRecordBase
 
-object InfluxDBEgress extends FlowEgress[WineResult] {
+/**
+ * Egress abstraction for writing data to InfluxDB.
+ * @param measurement The name of the measurement being written.
+ * @param configKeys the database host, port, etc. are read from the configuration.
+ */
+abstract class InfluxDBEgress[R <: SpecificRecordBase: ClassTag](
+    val measurement: String,
+    val configKeys: InfluxDBEgress.ConfigKeys = InfluxDBEgress.ConfigKeys())
+  extends FlowEgress[R](AvroInlet[R]("in")) {
 
-  // Config parameters
-  val influxHost = "InfluxHost"
-  val influxPort = "InfluxPort"
-  val influxDatabase = "InfluxDatabase"
-  override def configKeys = Set(influxHost, influxPort, influxDatabase)
+  val writer: InfluxDBUtil.Writer[R]
 
-  override def createLogic = new FlowEgressLogic() {
+  //override def configKeys = Set(configKeys.influxHost, configKeys.influxPort, configKeys.influxDatabase)
 
-    val influxDB = InfluxDBUtil.getInfluxDB(streamletRefConfig.getString(influxHost), streamletRefConfig.getString(influxPort))
+  def flowWithContext(system: ActorSystem) = {
+    val influxDB = InfluxDBUtil.getInfluxDB(
+      context.streamletRefConfig.getString(configKeys.influxHost),
+      context.streamletRefConfig.getString(configKeys.influxPort))
 
-    def flow = flowWithPipelinesContext()
-      .map { result ⇒
-        println("InfluxDBEgress: result = " + result)
-        InfluxDBUtil.write(result, "wine_result", streamletRefConfig.getString(influxDatabase), influxDB)
-        result
-      }
+    FlowWithPipelinesContext[R].map { record: R ⇒
+      system.log.debug(s"InfluxDBEgress: to $measurement: $record")
+      writer.write(record, measurement,
+        context.streamletRefConfig.getString(configKeys.influxDatabase), influxDB)
+      record
+    }
   }
+}
+
+object InfluxDBEgress {
+  final case class ConfigKeys(
+      val influxHost: String = "InfluxHost",
+      val influxPort: String = "InfluxPort",
+      val influxDatabase: String = "InfluxDatabase")
 }

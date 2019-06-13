@@ -5,35 +5,26 @@ import java.util.concurrent.TimeUnit
 
 import org.influxdb.{ InfluxDB, InfluxDBFactory }
 import org.influxdb.dto.Point
-import pipelines.examples.data.{ WineResult, WineRecord }
 
 object InfluxDBUtil {
 
-  def write(record: WineResult, measurement: String, database: String, influxDB: InfluxDB): Unit = {
-    val time = new Date().getTime
+  trait Writer[R] {
+    def write(record: R, measurement: String, database: String, influxDB: InfluxDB): Unit = {
+      val time = new Date().getTime
+      val point = Point.measurement(measurement).time(time, TimeUnit.MILLISECONDS)
+      addFields(point, record)
+      doWrite(point.build(), database, influxDB)
+    }
 
-    val point = Point.measurement(measurement).time(time, TimeUnit.MILLISECONDS)
-    point.addField("result", record.result)
-    point.addField("duration", record.duration)
-    point.tag("model", record.name)
-    write(point.build(), database, influxDB)
-  }
+    protected def doWrite(point: Point, database: String, influxDB: InfluxDB): Unit =
+      try {
+        influxDB.write(database, "autogen", point)
+        //      influxDB.flush()
+      } catch {
+        case scala.util.control.NonFatal(th) ⇒ println(s"Exception writing to InfluxDB database $database: $th")
+      }
 
-  def write(record: WineRecord, measurement: String, database: String, influxDB: InfluxDB): Unit = {
-    val time = new Date().getTime
-
-    val point = Point.measurement(measurement).time(time, TimeUnit.MILLISECONDS)
-    point.addField("alchohal", record.alcohol)
-    point.addField("ph", record.pH)
-    point.addField("citric_acid", record.citric_acid)
-    write(point.build(), database, influxDB)
-  }
-
-  private def write(point: Point, database: String, influxDB: InfluxDB): Unit = {
-    try {
-      influxDB.write(database, "autogen", point)
-      //      influxDB.flush()
-    } catch { case t: Throwable ⇒ println(s"Exception writing to Influx $t") }
+    def addFields(point: Point.Builder, record: R): Unit
   }
 
   def getInfluxDB(hostname: String, port: String) = {

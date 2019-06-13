@@ -15,16 +15,7 @@ trait OutputInterceptor {
   /**
    * Simply wrap a thunk to capture and ignore all stdout and stderr output.
    */
-  def ignoreOutput[T](test: ⇒ T) {
-    val outCapture = new ByteArrayOutputStream
-    val errCapture = new ByteArrayOutputStream
-
-    Console.withOut(outCapture) {
-      Console.withErr(errCapture) {
-        test
-      }
-    }
-  }
+  def ignoreOutput[T](test: ⇒ T) = checkOutput(test) { (outLines, errLines) => () }
 
   /**
    * Wrap a thunk to capture and all stdout and stderr output, then assert they have exactly

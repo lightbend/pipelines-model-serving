@@ -2,8 +2,9 @@ package pipelines.examples.ingestor
 
 import akka.NotUsed
 import akka.stream.scaladsl.Source
-import pipelines.akkastream.scaladsl._
-import pipelines.examples.data.DataCodecs._
+import pipelines.akkastream.AkkaStreamlet
+import pipelines.streamlets.avro.AvroOutlet
+
 import pipelines.examples.data._
 
 import scala.collection.mutable.ListBuffer
@@ -14,22 +15,29 @@ import scala.util.Random
  * Ingress of data for recommendations. In this case, every second we
  * load and send downstream one record that is randomly generated.
  */
-class RecommenderDataIngress extends SourceIngress[RecommenderRecord] {
+class RecommenderDataIngress extends AkkaStreamlet {
 
-  val generator = Random
-  protected lazy val dataFrequencySeconds =
-    this.context.config.getInt("recommenders.data-frequency-seconds")
+  val out = AvroOutlet[RecommenderRecord]("out", _.user.toString)
+  final override val shape = StreamletShape.withOutlets(out)
 
-  override def createLogic = new SourceIngressLogic() {
-
-    def source: Source[RecommenderRecord, NotUsed] = {
-      Source.repeat(NotUsed)
-        .map(_ ⇒ getRecommenderRecord())
-        .throttle(1, dataFrequencySeconds.seconds)
-    }
+  override final def createLogic = new RunnableGraphStreamletLogic() {
+    def runnableGraph = source.to(atLeastOnceSink(out))
   }
 
-  def getRecommenderRecord(): RecommenderRecord = {
+  val generator = Random
+
+  protected lazy val dataFrequencySeconds =
+    context.config.getInt("recommenders.data-frequency-seconds")
+
+  def source: Source[RecommenderRecord, NotUsed] = {
+    Source.repeat(NotUsed)
+      .map(_ ⇒ makeRecommenderRecord())
+      .throttle(1, dataFrequencySeconds.seconds)
+  }
+}
+
+object RecommenderDataIngress {
+  def makeRecommenderRecord(): RecommenderRecord = {
     val user = generator.nextInt(1000).toLong
     val nprods = generator.nextInt(30)
     val products = new ListBuffer[Long]()
@@ -37,9 +45,7 @@ class RecommenderDataIngress extends SourceIngress[RecommenderRecord] {
     new RecommenderRecord(user, products, "recommender")
 
   }
-}
 
-object RecommenderDataIngress {
   def main(args: Array[String]): Unit = {
     val ingress = new RecommenderDataIngress()
     while (true)

@@ -3,7 +3,6 @@ package pipelines.examples.ingestor
 import akka.NotUsed
 import akka.stream.scaladsl.Source
 import pipelines.akkastream.scaladsl._
-import pipelines.examples.data.DataCodecs._
 import pipelines.examples.data._
 
 import scala.concurrent.duration._

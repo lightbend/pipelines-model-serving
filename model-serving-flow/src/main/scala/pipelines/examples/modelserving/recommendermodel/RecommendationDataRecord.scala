@@ -1,4 +1,4 @@
-package pipelines.examples.modelserving.recommedermodel
+package pipelines.examples.modelserving.recommendermodel
 
 import com.lightbend.modelserving.model.DataToServe
 import pipelines.examples.data.RecommenderRecord

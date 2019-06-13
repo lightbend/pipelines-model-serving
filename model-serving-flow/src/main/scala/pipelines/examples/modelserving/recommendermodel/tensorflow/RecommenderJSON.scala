@@ -1,4 +1,4 @@
-package pipelines.examples.modelserving.recommedermodel.tensorflow
+package pipelines.examples.modelserving.recommendermodel.tensorflow
 
 import com.google.gson.annotations.SerializedName
 

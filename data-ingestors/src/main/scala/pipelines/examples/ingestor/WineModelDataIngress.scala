@@ -3,7 +3,6 @@ package pipelines.examples.ingestor
 import akka.NotUsed
 import akka.stream.scaladsl.Source
 import pipelines.akkastream.scaladsl._
-import com.lightbend.modelserving.model.ModelCodecs._
 import pipelines.examples.data._
 
 import scala.concurrent.duration._

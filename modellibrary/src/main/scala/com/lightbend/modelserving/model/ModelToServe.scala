@@ -103,7 +103,7 @@ object ModelToServe {
  * exception at runtime. Hence, the integration values for modelType should match the known integer values in the
  * ModelType objects. See also protobufs/src/main/protobuf/modeldescriptor.proto
  */
-case class ModelToServe(
+final case class ModelToServe(
   name: String,
   description: String,
   modelType: Int,
@@ -114,7 +114,7 @@ case class ModelToServe(
 /**
  * Model serving statistics definition
  */
-case class ModelToServeStats(
+final case class ModelToServeStats(
   name: String = "",
   description: String = "",
   modelType: Int = ModelType.PMML.ordinal(),
