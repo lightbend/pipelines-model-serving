@@ -2,11 +2,16 @@ package pipelines.examples.ingestor
 
 import akka.NotUsed
 import akka.stream.scaladsl.Source
-import pipelines.akkastream.scaladsl._
+import pipelines.akkastream.AkkaStreamlet
+import pipelines.akkastream.scaladsl.{ FlowWithPipelinesContext, RunnableGraphStreamletLogic }
+import pipelines.streamlets.avro.AvroOutlet
+import pipelines.streamlets.StreamletShape
 import pipelines.examples.data._
-
+import pipelines.examples.util.ConfigUtil
+import pipelines.examples.util.ConfigUtil.implicits._
 import scala.concurrent.duration._
-import scala.collection.JavaConverters._
+
+// import scala.concurrent.duration._
 
 /**
  * Ingress of model updates. In this case, every two minutes we load and
@@ -18,25 +23,23 @@ class RecommenderModelDataIngress extends AkkaStreamlet {
   val out = AvroOutlet[ModelDescriptor]("out", _.name)
   final override val shape = StreamletShape.withOutlets(out)
 
-  def getWithDefault[T](key: String)(default: ⇒ T): T = try {
-
-  }
+  protected lazy val configUtil = ConfigUtil(this.context.config)
   protected lazy val serverLocations =
-    this.context.config.getStringList("recommenders.service-urls").asScala.toVector
+    configUtil.getOrFail[Seq[String]]("recommenders.service-urls").toVector
   protected lazy val modelFrequencySeconds =
-    this.context.config.getInt("recommenders.model-frequency-seconds")
-
-  override def configParameters = Vector(RecordsPerSecond)
+    configUtil.getOrElse[Int]("recommenders.model-frequency-seconds")(120).seconds
 
   var serverIndex: Int = 0 // will be between 0 and serverLocations.size-1
 
-  override def createLogic = new SourceIngressLogic() {
+  val source: Source[ModelDescriptor, NotUsed] =
+    Source.repeat(NotUsed)
+      .map(_ ⇒ getModelDescriptor())
+      .throttle(1, modelFrequencySeconds)
 
-    def source: Source[ModelDescriptor, NotUsed] = {
-      Source.repeat(NotUsed)
-        .map(_ ⇒ getModelDescriptor())
-        .throttle(1, modelFrequencySeconds.seconds)
-    }
+  override def createLogic = new RunnableGraphStreamletLogic() {
+    // def runnableGraph = source.to(atLeastOnceSink(out))
+    def runnableGraph = source.via(flow).to(atLeastOnceSink(out))
+    def flow = FlowWithPipelinesContext[ModelDescriptor].map(identity)
   }
 
   def getModelDescriptor(): ModelDescriptor = {

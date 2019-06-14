@@ -1,17 +1,20 @@
 package pipelines.examples.ingestor
 
 import akka.NotUsed
+import akka.actor.ActorSystem
+import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{ Source, Sink }
-import pipelines.akkastream.AkkaStreamlet
-import pipelines.akkastream.scaladsl.RunnableGraphStreamletLogic
+import pipelines.akkastream.{ AkkaStreamlet, StreamletLogic }
 import pipelines.streamlets.StreamletShape
 import pipelines.streamlets.avro.AvroOutlet
 
 import pipelines.examples.data._
 
 import scala.collection.mutable.ListBuffer
-import scala.concurrent.duration._
 import scala.util.Random
+import scala.concurrent.duration._
+import pipelines.examples.util.ConfigUtil
+import pipelines.examples.util.ConfigUtil.implicits._
 
 /**
  * Ingress of data for recommendations. In this case, every second we
@@ -22,18 +25,17 @@ class RecommenderDataIngress extends AkkaStreamlet {
   val out = AvroOutlet[RecommenderRecord]("out", _.user.toString)
   final override val shape = StreamletShape.withOutlets(out)
 
-  override final def createLogic = new RunnableGraphStreamletLogic() {
-    def runnableGraph =
-      source.to(atLeastOnceSink(out))
-  }
-
+  protected lazy val configUtil = ConfigUtil(this.context.config)
   protected lazy val dataFrequencySeconds =
-    context.config.getInt("recommenders.data-frequency-seconds")
+    configUtil.getOrElse[Int]("recommenders.data-frequency-seconds")(1).seconds
 
-  def source: Source[RecommenderRecord, NotUsed] = {
+  val source: Source[RecommenderRecord, NotUsed] =
     Source.repeat(NotUsed)
       .map(_ ⇒ RecommenderDataIngress.makeRecommenderRecord())
-      .throttle(1, dataFrequencySeconds.seconds)
+      .throttle(1, dataFrequencySeconds)
+
+  override final def createLogic = new StreamletLogic() {
+    def run() = source.to(atLeastOnceSink(out))
   }
 }
 
@@ -49,6 +51,8 @@ object RecommenderDataIngress {
   }
 
   def main(args: Array[String]): Unit = {
+    implicit val system = ActorSystem("RecommenderDataIngress - Main")
+    implicit val mat = ActorMaterializer()
     val ingress = new RecommenderDataIngress()
     ingress.source.runWith(Sink.foreach(println))
   }

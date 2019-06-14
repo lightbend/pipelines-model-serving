@@ -7,8 +7,8 @@ import akka.pattern.ask
 import akka.util.Timeout
 import com.lightbend.modelserving.model.actor.{ ModelServingActor, ModelServingManager }
 import com.lightbend.modelserving.model.{ ModelToServe, ServingActorResolver, ServingResult }
-import pipelines.akkastream.AkkaStreamlet
-import pipelines.akkastream.scaladsl.{ FlowWithPipelinesContext, RunnableGraphStreamletLogic }
+import pipelines.akkastream.{ AkkaStreamlet, StreamletLogic }
+import pipelines.akkastream.scaladsl.FlowWithPipelinesContext
 import pipelines.examples.data.{ ModelDescriptor, WineRecord, WineResult }
 import pipelines.examples.modelserving.winemodel.{ WineDataRecord, WineFactoryResolver }
 import pipelines.streamlets.StreamletShape
@@ -22,16 +22,19 @@ class WineModelServerStreamlet extends AkkaStreamlet {
   val out = AvroOutlet[WineResult]("out", _.name)
   final override val shape = StreamletShape.withInlets(in0, in1).withOutlets(out)
 
-  override final def createLogic = new RunnableGraphStreamletLogic {
+  override final def createLogic = new StreamletLogic {
 
     ModelToServe.setResolver[WineRecord, Double](WineFactoryResolver)
 
-    val actors = Map("wine" -> system.actorOf(ModelServingActor.props[WineRecord, Double]))
+    val actors = Map("wine" ->
+      context.system.actorOf(ModelServingActor.props[WineRecord, Double]))
 
-    val modelserver = system.actorOf(ModelServingManager.props(new ServingActorResolver(actors)))
+    val modelserver = context.system.actorOf(
+      ModelServingManager.props(new ServingActorResolver(actors)))
+
     implicit val askTimeout: Timeout = Timeout(30.seconds)
 
-    def runnableGraph = {
+    def run() = {
       atLeastOnceSource(in1).via(modelFlow).runWith(Sink.ignore)
       atLeastOnceSource(in0).via(dataFlow).to(atLeastOnceSink(out))
     }
