@@ -17,7 +17,6 @@ abstract class LogEgress[IN <: SpecificRecordBase: ClassTag](logLevel: LogLevel)
   def flowWithContext(system: ActorSystem) =
     FlowWithPipelinesContext[IN].map { message ⇒
       system.log.log(logLevel, s"$prefix: $message")
-      Console.err.println(s"Console.err - $logLevel - $prefix: $message")
       message
     }
 }

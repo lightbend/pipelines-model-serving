@@ -1,4 +1,4 @@
-package pipelines.examples.util
+package pipelines.util
 
 import com.typesafe.config.{ Config, ConfigFactory }
 import com.typesafe.config.ConfigException.{ Missing, WrongType }

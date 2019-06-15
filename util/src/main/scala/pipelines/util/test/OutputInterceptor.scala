@@ -1,4 +1,4 @@
-package pipelines.examples.util.test
+package pipelines.util.test
 
 import java.io.ByteArrayOutputStream
 

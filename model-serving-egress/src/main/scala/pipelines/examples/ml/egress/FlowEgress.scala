@@ -9,7 +9,7 @@ import akka.actor.ActorSystem
 
 /**
  * An abstraction for an "Egress" that has a single inlet and then "disposes" of
- * the data in someway that's transparent to Pipelines, e.g., log it, write it to
+ * the data in some way that's transparent to Pipelines, e.g., log it, write it to
  * to a database, or write it to the console.
  * Note that Akka Streams at-least once semantics are used, so subclasses that
  * implement the `flowWithContext` method may wish to implement deduplication.

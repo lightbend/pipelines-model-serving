@@ -6,7 +6,7 @@ import akka.actor._
 import akka.stream._
 import akka.stream.scaladsl._
 import pipelines.akkastream.testkit._
-import pipelines.examples.util.test.{ OutputInterceptor, TestData }
+import pipelines.util.test.{ OutputInterceptor, TestData }
 import com.typesafe.config.ConfigFactory
 
 class LogEgressTest extends FunSpec with BeforeAndAfterAll with OutputInterceptor {
