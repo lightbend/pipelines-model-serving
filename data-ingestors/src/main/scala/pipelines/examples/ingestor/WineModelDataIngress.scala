@@ -1,10 +1,13 @@
 package pipelines.examples.ingestor
 
 import akka.NotUsed
-import akka.stream.scaladsl.Source
+import akka.actor.ActorSystem
+import akka.stream.ActorMaterializer
+import akka.stream.scaladsl.{ Source, Sink }
+import pipelines.streamlets.avro.AvroOutlet
 import pipelines.streamlets.StreamletShape
-import pipelines.streamlets.avro._
-import pipelines.akkastream.{ AkkaStreamlet, StreamletLogic }
+import pipelines.akkastream.{ AkkaStreamlet, NoContext }
+import pipelines.akkastream.scaladsl.{ RunnableGraphStreamletLogic }
 import pipelines.examples.data._
 import pipelines.examples.util.ConfigUtil
 import pipelines.examples.util.ConfigUtil.implicits._
@@ -18,14 +21,13 @@ import scala.collection.JavaConverters._
 class WineModelDataIngress extends AkkaStreamlet {
 
   val out = AvroOutlet[ModelDescriptor]("out", _.name)
-
   final override val shape = StreamletShape(out)
 
   val recordsReader =
     WineModelsReader(WineModelDataIngress.WineModelsResources)
 
   protected lazy val modelFrequencySeconds =
-    ConfigUtil(this.context.config)
+    ConfigUtil.default
       .getOrElse[Int]("wine-quality.model-frequency-seconds")(120).seconds
 
   val source: Source[ModelDescriptor, NotUsed] =
@@ -33,25 +35,35 @@ class WineModelDataIngress extends AkkaStreamlet {
       .map(_ ⇒ recordsReader.next())
       .throttle(1, modelFrequencySeconds)
 
-  override def createLogic = new StreamletLogic() {
-    def run(): Unit = source.to(atLeastOnceSink(out))
+  override def createLogic = new RunnableGraphStreamletLogic() {
+    def runnableGraph = source
+      .asSourceWithContext[NoContext](_ ⇒ NoContext)
+      .to(atLeastOnceSink(out))
   }
 }
 
 object WineModelDataIngress {
 
-  protected lazy val config = com.typesafe.config.ConfigFactory.load()
-
   // TODO: Add this logic to ConfigUtil?.
   val WineModelsResources: Map[ModelType, Seq[String]] =
-    config.getObject("wine-quality.model-sources").entrySet.asScala.foldLeft(
-      Map.empty[ModelType, Seq[String]]) {
-        case (map, e) ⇒
-          val modelType = ModelType.valueOf(e.getKey.toUpperCase)
-          val list = e.getValue.valueType.toString match {
-            case "LIST"   ⇒ e.getValue.unwrapped.asInstanceOf[java.util.ArrayList[String]].toArray.map(_.toString)
-            case "STRING" ⇒ Array(e.getValue.unwrapped.toString)
-          }
-          map + (modelType -> list)
-      }
+    ConfigUtil.defaultConfig
+      .getObject("wine-quality.model-sources").entrySet.asScala.foldLeft(
+        Map.empty[ModelType, Seq[String]]) {
+          case (map, e) ⇒
+            val modelType = ModelType.valueOf(e.getKey.toUpperCase)
+            val list = e.getValue.valueType.toString match {
+              case "LIST"   ⇒ e.getValue.unwrapped.asInstanceOf[java.util.ArrayList[String]].toArray.map(_.toString)
+              case "STRING" ⇒ Array(e.getValue.unwrapped.toString)
+            }
+            map + (modelType -> list)
+        }
+
+  def main(args: Array[String]): Unit = {
+    implicit val system = ActorSystem("WineModelDataIngress-Main")
+    implicit val mat = ActorMaterializer()
+    val ingress = new WineModelDataIngress()
+    println(s"frequency (seconds): ${ingress.modelFrequencySeconds}")
+    println(s"records sources:     ${WineModelDataIngress.WineModelsResources}")
+    ingress.source.runWith(Sink.foreach(println))
+  }
 }

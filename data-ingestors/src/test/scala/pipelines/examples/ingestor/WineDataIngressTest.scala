@@ -37,7 +37,7 @@ class WineDataIngressTest extends FunSpec with BeforeAndAfterAll with OutputInte
       expectOutput(Seq("WineRecordsReader: Initializing from resource 10_winequality_red.csv")) {
         val testkit = AkkaStreamletTestKit(system, mat, ConfigFactory.load())
         val ingress = new WineDataIngress
-        val out = testkit.outletAsTap(ingress.shape.outlet)
+        val out = testkit.outletAsTap(ingress.out)
 
         ingress.recordsResources = testGoodRecordsResources
         val exp = expected(testGoodRecordsResources)

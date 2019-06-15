@@ -4,9 +4,10 @@ import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{ Source, Sink }
+import pipelines.akkastream.{ AkkaStreamlet, NoContext }
+import pipelines.akkastream.scaladsl.{ RunnableGraphStreamletLogic }
+import pipelines.streamlets.avro.AvroOutlet
 import pipelines.streamlets.StreamletShape
-import pipelines.streamlets.avro._
-import pipelines.akkastream.{ AkkaStreamlet, StreamletLogic }
 import pipelines.examples.data._
 import pipelines.examples.util.ConfigUtil
 import pipelines.examples.util.ConfigUtil.implicits._
@@ -23,7 +24,7 @@ class WineDataIngress extends AkkaStreamlet {
   final override val shape = StreamletShape(out)
 
   protected lazy val dataFrequencySeconds =
-    ConfigUtil(this.context.config)
+    ConfigUtil.default
       .getOrElse[Int]("wine-quality.data-frequency-seconds")(1).seconds
 
   /** Public var to permit overrides in unit tests */
@@ -37,8 +38,10 @@ class WineDataIngress extends AkkaStreamlet {
       .map(_ ⇒ recordsReader.next())
       .throttle(1, dataFrequencySeconds)
 
-  override def createLogic = new StreamletLogic() {
-    def run(): Unit = source.to(atLeastOnceSink(out))
+  override final def createLogic = new RunnableGraphStreamletLogic {
+    def runnableGraph = source
+      .asSourceWithContext[NoContext](_ ⇒ NoContext)
+      .to(atLeastOnceSink(out))
   }
 }
 
@@ -48,7 +51,7 @@ object WineDataIngress {
     ConfigUtil.default.getOrFail[Seq[String]]("wine-quality.data-sources")
 
   def main(args: Array[String]): Unit = {
-    implicit val system = ActorSystem("WineDataIngress - Main")
+    implicit val system = ActorSystem("WineDataIngress-Main")
     implicit val mat = ActorMaterializer()
     val ingress = new WineDataIngress
     println(s"frequency (seconds): ${ingress.dataFrequencySeconds}")

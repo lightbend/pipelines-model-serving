@@ -1,17 +1,17 @@
 package pipelines.examples.ingestor
 
 import akka.NotUsed
-import akka.stream.scaladsl.Source
-import pipelines.akkastream.AkkaStreamlet
-import pipelines.akkastream.scaladsl.{ FlowWithPipelinesContext, RunnableGraphStreamletLogic }
+import akka.actor.ActorSystem
+import akka.stream.ActorMaterializer
+import akka.stream.scaladsl.{ Source, Sink }
+import pipelines.akkastream.{ AkkaStreamlet, NoContext }
+import pipelines.akkastream.scaladsl.{ RunnableGraphStreamletLogic }
 import pipelines.streamlets.avro.AvroOutlet
 import pipelines.streamlets.StreamletShape
 import pipelines.examples.data._
 import pipelines.examples.util.ConfigUtil
 import pipelines.examples.util.ConfigUtil.implicits._
 import scala.concurrent.duration._
-
-// import scala.concurrent.duration._
 
 /**
  * Ingress of model updates. In this case, every two minutes we load and
@@ -23,7 +23,7 @@ class RecommenderModelDataIngress extends AkkaStreamlet {
   val out = AvroOutlet[ModelDescriptor]("out", _.name)
   final override val shape = StreamletShape.withOutlets(out)
 
-  protected lazy val configUtil = ConfigUtil(this.context.config)
+  protected lazy val configUtil = ConfigUtil.default
   protected lazy val serverLocations =
     configUtil.getOrFail[Seq[String]]("recommenders.service-urls").toVector
   protected lazy val modelFrequencySeconds =
@@ -37,9 +37,9 @@ class RecommenderModelDataIngress extends AkkaStreamlet {
       .throttle(1, modelFrequencySeconds)
 
   override def createLogic = new RunnableGraphStreamletLogic() {
-    // def runnableGraph = source.to(atLeastOnceSink(out))
-    def runnableGraph = source.via(flow).to(atLeastOnceSink(out))
-    def flow = FlowWithPipelinesContext[ModelDescriptor].map(identity)
+    def runnableGraph = source
+      .asSourceWithContext[NoContext](_ ⇒ NoContext)
+      .to(atLeastOnceSink(out))
   }
 
   def getModelDescriptor(): ModelDescriptor = {
@@ -63,8 +63,11 @@ class RecommenderModelDataIngress extends AkkaStreamlet {
 object RecommenderModelDataIngress {
 
   def main(args: Array[String]): Unit = {
+    implicit val system = ActorSystem("RecommenderModelDataIngress-Main")
+    implicit val mat = ActorMaterializer()
     val ingress = new RecommenderModelDataIngress()
-    while (true)
-      println(ingress.getModelDescriptor())
+    println(s"frequency (seconds): ${ingress.modelFrequencySeconds}")
+    println(s"server URLs:         ${ingress.serverLocations}")
+    ingress.source.runWith(Sink.foreach(println))
   }
 }
