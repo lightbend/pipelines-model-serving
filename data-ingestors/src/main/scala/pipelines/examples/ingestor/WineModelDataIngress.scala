@@ -6,7 +6,7 @@ import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{ Source, Sink }
 import pipelines.streamlets.avro.AvroOutlet
 import pipelines.streamlets.StreamletShape
-import pipelines.akkastream.{ AkkaStreamlet, NoContext }
+import pipelines.akkastream.AkkaStreamlet
 import pipelines.akkastream.scaladsl.{ RunnableGraphStreamletLogic }
 import pipelines.examples.data._
 import pipelines.examples.util.ConfigUtil
@@ -36,9 +36,7 @@ class WineModelDataIngress extends AkkaStreamlet {
       .throttle(1, modelFrequencySeconds)
 
   override def createLogic = new RunnableGraphStreamletLogic() {
-    def runnableGraph = source
-      .asSourceWithContext[NoContext](_ ⇒ NoContext)
-      .to(atLeastOnceSink(out))
+    def runnableGraph = source.to(atMostOnceSink(out))
   }
 }
 
