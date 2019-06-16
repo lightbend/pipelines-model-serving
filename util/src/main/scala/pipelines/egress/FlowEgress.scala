@@ -1,4 +1,4 @@
-package pipelines.examples.ml.egress
+package pipelines.egress
 
 import pipelines.streamlets._
 import pipelines.akkastream._
@@ -15,7 +15,7 @@ import akka.actor.ActorSystem
  * implement the `flowWithContext` method may wish to implement deduplication.
  */
 abstract class FlowEgress[IN <: SpecificRecordBase: ClassTag](
-    val in: CodecInlet[IN]) extends AkkaStreamlet {
+  val in: CodecInlet[IN]) extends AkkaStreamlet {
 
   final override val shape = StreamletShape.withInlets(in)
 

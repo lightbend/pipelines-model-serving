@@ -1,4 +1,4 @@
-package pipelines.examples.ml.egress
+package pipelines.egress
 
 import pipelines.streamlets.avro._
 import pipelines.akkastream.scaladsl._

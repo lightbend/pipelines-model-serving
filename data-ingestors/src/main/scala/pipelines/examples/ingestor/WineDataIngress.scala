@@ -9,6 +9,7 @@ import pipelines.akkastream.scaladsl.{ RunnableGraphStreamletLogic }
 import pipelines.streamlets.avro.AvroOutlet
 import pipelines.streamlets.StreamletShape
 import pipelines.examples.data._
+import pipelines.ingress.RecordsReader
 import pipelines.util.ConfigUtil
 import pipelines.util.ConfigUtil.implicits._
 import scala.concurrent.duration._
@@ -31,11 +32,12 @@ class WineDataIngress extends AkkaStreamlet {
   var recordsResources: Seq[String] = WineDataIngress.WineQualityRecordsResources
 
   val recordsReader =
-    WineRecordsReader(WineDataIngress.WineQualityRecordsResources)
+    RecordsReader(WineDataIngress.WineQualityRecordsResources)(
+      WineRecordsReader.csvParserWithSeparator(";"))
 
   val source: Source[WineRecord, NotUsed] =
     Source.repeat(NotUsed)
-      .map(_ ⇒ recordsReader.next())
+      .map(_ ⇒ recordsReader.next()._2) // Only keep the record part of the tuple
       .throttle(1, dataFrequencySeconds)
 
   override final def createLogic = new RunnableGraphStreamletLogic {

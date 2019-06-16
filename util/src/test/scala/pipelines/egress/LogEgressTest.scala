@@ -1,4 +1,4 @@
-package pipelines.examples.ml.egress
+package pipelines.egress
 
 import org.scalatest.{ FunSpec, BeforeAndAfterAll }
 import akka.testkit._

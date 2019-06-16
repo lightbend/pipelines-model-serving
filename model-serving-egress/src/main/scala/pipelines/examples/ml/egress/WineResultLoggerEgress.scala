@@ -1,5 +1,6 @@
 package pipelines.examples.ml.egress
 
+import pipelines.egress.LogEgress
 import pipelines.examples.data._
 import akka.event.Logging.{ LogLevel, InfoLevel }
 

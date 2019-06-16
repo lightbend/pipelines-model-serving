@@ -11,9 +11,10 @@ import com.typesafe.config.ConfigFactory
 
 class WineDataIngressTest extends FunSpec with BeforeAndAfterAll with OutputInterceptor {
 
-  val initializingMsgFmt = "WineDataIngress: Initializing from resource %s"
+  val initializingMsgFmt = "RecordsReader: Initializing from resource %s"
   val testGoodRecordsResources = Array("10_winequality_red.csv")
   val testBadRecordsResources = Array("error_winequality_red.csv")
+  val parser = WineRecordsReader.csvParserWithSeparator(";")
 
   private implicit val system = ActorSystem("WineDataIngress")
   private implicit val mat = ActorMaterializer()
@@ -23,7 +24,7 @@ class WineDataIngressTest extends FunSpec with BeforeAndAfterAll with OutputInte
   }
 
   def toKeyedWineRecord(s: String): (String, WineRecord) = {
-    val rec = WineRecordsReader.parse(s, ";").get
+    val rec = parser(s).right.get
     (rec.dataType, rec)
   }
 
@@ -34,7 +35,7 @@ class WineDataIngressTest extends FunSpec with BeforeAndAfterAll with OutputInte
 
   describe("WineDataIngress") {
     it("Loads one or more CSV file resources from the classpath") {
-      expectOutput(Seq("WineRecordsReader: Initializing from resource 10_winequality_red.csv")) {
+      expectOutput(testGoodRecordsResources.map(name ⇒ initializingMsgFmt.format(name))) {
         val testkit = AkkaStreamletTestKit(system, mat, ConfigFactory.load())
         val ingress = new WineDataIngress
         val out = testkit.outletAsTap(ingress.out)

@@ -1,5 +1,6 @@
-package pipelines.examples.ml.egress
+package pipelines.egress.influxdb
 
+import pipelines.egress.FlowEgress
 import pipelines.streamlets.avro._
 import pipelines.akkastream.scaladsl._
 import akka.actor.ActorSystem
@@ -12,8 +13,8 @@ import org.apache.avro.specific.SpecificRecordBase
  * @param configKeys the database host, port, etc. are read from the configuration.
  */
 abstract class InfluxDBEgress[R <: SpecificRecordBase: ClassTag](
-    val measurement: String,
-    val configKeys: InfluxDBEgress.ConfigKeys = InfluxDBEgress.ConfigKeys())
+  val measurement: String,
+  val configKeys: InfluxDBEgress.ConfigKeys = InfluxDBEgress.ConfigKeys())
   extends FlowEgress[R](AvroInlet[R]("in")) {
 
   val writer: InfluxDBUtil.Writer[R]
@@ -36,7 +37,7 @@ abstract class InfluxDBEgress[R <: SpecificRecordBase: ClassTag](
 
 object InfluxDBEgress {
   final case class ConfigKeys(
-      val influxHost: String = "InfluxHost",
-      val influxPort: String = "InfluxPort",
-      val influxDatabase: String = "InfluxDatabase")
+    val influxHost: String = "InfluxHost",
+    val influxPort: String = "InfluxPort",
+    val influxDatabase: String = "InfluxDatabase")
 }

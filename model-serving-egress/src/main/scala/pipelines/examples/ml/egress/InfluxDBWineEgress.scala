@@ -1,5 +1,6 @@
 package pipelines.examples.ml.egress
 
+import pipelines.egress.influxdb.{ InfluxDBEgress, InfluxDBUtil }
 import pipelines.examples.data._
 import org.influxdb.dto.Point
 
