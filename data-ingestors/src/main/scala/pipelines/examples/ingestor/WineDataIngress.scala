@@ -32,7 +32,7 @@ class WineDataIngress extends AkkaStreamlet {
   var recordsResources: Seq[String] = WineDataIngress.WineQualityRecordsResources
 
   val recordsReader =
-    RecordsReader(WineDataIngress.WineQualityRecordsResources)(
+    RecordsReader.fromClasspath(WineDataIngress.WineQualityRecordsResources)(
       WineRecordsReader.csvParserWithSeparator(";"))
 
   val source: Source[WineRecord, NotUsed] =

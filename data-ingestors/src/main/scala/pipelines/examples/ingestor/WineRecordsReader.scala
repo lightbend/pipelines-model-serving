@@ -14,7 +14,7 @@ object WineRecordsReader {
 
   /** Make a reader for [[WineRecord]]s. */
   def makeReader(resourcePaths: Seq[String]): RecordsReader[WineRecord] =
-    RecordsReader(resourcePaths)(csvParserWithSeparator(";"))
+    RecordsReader.fromClasspath(resourcePaths)(csvParserWithSeparator(";"))
 
   /**
    * Used to construct the parser required by an instance of
