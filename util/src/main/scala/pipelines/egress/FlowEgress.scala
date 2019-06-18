@@ -3,9 +3,9 @@ package pipelines.egress
 import pipelines.streamlets._
 import pipelines.akkastream._
 import pipelines.akkastream.scaladsl._
-import scala.reflect.ClassTag
 import org.apache.avro.specific.SpecificRecordBase
 import akka.actor.ActorSystem
+import scala.reflect.ClassTag
 
 /**
  * An abstraction for an "Egress" that has a single inlet and then "disposes" of
@@ -14,8 +14,9 @@ import akka.actor.ActorSystem
  * Note that Akka Streams at-least once semantics are used, so subclasses that
  * implement the `flowWithContext` method may wish to implement deduplication.
  */
-abstract class FlowEgress[IN <: SpecificRecordBase: ClassTag](
-  val in: CodecInlet[IN]) extends AkkaStreamlet {
+abstract class FlowEgress extends AkkaStreamlet {
+  type IN <: SpecificRecordBase
+  val in: CodecInlet[IN]
 
   final override val shape = StreamletShape.withInlets(in)
 

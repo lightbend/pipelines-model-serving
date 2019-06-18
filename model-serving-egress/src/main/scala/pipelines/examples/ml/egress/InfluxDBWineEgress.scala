@@ -1,14 +1,19 @@
 package pipelines.examples.ml.egress
 
+import pipelines.streamlets.avro.AvroInlet
 import pipelines.egress.influxdb.{ InfluxDBEgress, InfluxDBUtil }
 import pipelines.examples.data._
 import org.influxdb.dto.Point
 
-object InfluxDBWineRecordEgress extends InfluxDBEgress[WineRecord]("wine_record") {
+object InfluxDBWineRecordEgress extends InfluxDBEgress("wine_record") {
+  type IN = WineRecord
+  val in = AvroInlet[WineRecord]("in")
   val writer: InfluxDBUtil.Writer[WineRecord] = WineRecordInfluxDBWriter
 }
 
-object InfluxDBWineResultEgress extends InfluxDBEgress[WineResult]("wine_result") {
+object InfluxDBWineResultEgress extends InfluxDBEgress("wine_result") {
+  type IN = WineResult
+  val in = AvroInlet[WineResult]("in")
   val writer: InfluxDBUtil.Writer[WineResult] = WineResultInfluxDBWriter
 }
 

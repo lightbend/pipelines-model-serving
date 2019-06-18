@@ -1,7 +1,7 @@
 package pipelines.egress.influxdb
 
 import pipelines.egress.FlowEgress
-import pipelines.streamlets.avro._
+import pipelines.streamlets.avro.AvroInlet
 import pipelines.akkastream.scaladsl._
 import akka.actor.ActorSystem
 import scala.reflect.ClassTag
@@ -12,12 +12,11 @@ import org.apache.avro.specific.SpecificRecordBase
  * @param measurement The name of the measurement being written.
  * @param configKeys the database host, port, etc. are read from the configuration.
  */
-abstract class InfluxDBEgress[R <: SpecificRecordBase: ClassTag](
+abstract class InfluxDBEgress(
   val measurement: String,
-  val configKeys: InfluxDBEgress.ConfigKeys = InfluxDBEgress.ConfigKeys())
-  extends FlowEgress[R](AvroInlet[R]("in")) {
+  val configKeys: InfluxDBEgress.ConfigKeys = InfluxDBEgress.ConfigKeys()) extends FlowEgress {
 
-  val writer: InfluxDBUtil.Writer[R]
+  val writer: InfluxDBUtil.Writer[IN]
 
   //override def configKeys = Set(configKeys.influxHost, configKeys.influxPort, configKeys.influxDatabase)
 
@@ -26,7 +25,7 @@ abstract class InfluxDBEgress[R <: SpecificRecordBase: ClassTag](
       context.streamletRefConfig.getString(configKeys.influxHost),
       context.streamletRefConfig.getString(configKeys.influxPort))
 
-    FlowWithPipelinesContext[R].map { record: R ⇒
+    FlowWithPipelinesContext[IN].map { record: IN ⇒
       system.log.debug(s"InfluxDBEgress: to $measurement: $record")
       writer.write(record, measurement,
         context.streamletRefConfig.getString(configKeys.influxDatabase), influxDB)

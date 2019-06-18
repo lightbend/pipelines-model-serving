@@ -5,9 +5,11 @@ import akka.testkit._
 import akka.actor._
 import akka.stream._
 import akka.stream.scaladsl._
+import pipelines.streamlets.avro.AvroInlet
 import pipelines.akkastream.testkit._
 import pipelines.util.test.{ OutputInterceptor, TestData }
 import com.typesafe.config.ConfigFactory
+import scala.reflect.ClassTag
 
 class LogEgressTest extends FunSpec with BeforeAndAfterAll with OutputInterceptor {
 
@@ -18,8 +20,11 @@ class LogEgressTest extends FunSpec with BeforeAndAfterAll with OutputIntercepto
     TestKit.shutdownActorSystem(system)
   }
 
-  object TestEgress extends LogEgress[TestData](akka.event.Logging.WarningLevel) {
-    val prefix: String = "TestPrefix"
+  object TestEgress extends LogEgress {
+    val logLevel = akka.event.Logging.WarningLevel
+    val prefix = "TestPrefix"
+    type IN = TestData
+    val in = AvroInlet[TestData]("in")
   }
 
   // dumpOutputStreams = true
