@@ -21,29 +21,30 @@ import scala.collection.JavaConverters._
 class WineModelDataIngress extends AkkaStreamlet {
 
   val out = AvroOutlet[ModelDescriptor]("out", _.name)
+
   final override val shape = StreamletShape(out)
-
-  val recordsReader =
-    WineModelsReader(WineModelDataIngress.WineModelsResources)
-
-  protected lazy val modelFrequencySeconds =
-    ConfigUtil.default
-      .getOrElse[Int]("wine-quality.model-frequency-seconds")(120).seconds
-
-  val source: Source[ModelDescriptor, NotUsed] =
-    Source.repeat(NotUsed)
-      .map(_ ⇒ recordsReader.next())
-      .throttle(1, modelFrequencySeconds)
 
   override def createLogic = new RunnableGraphStreamletLogic() {
     def runnableGraph = source.to(atMostOnceSink(out))
+  }
+
+  protected def source(): Source[ModelDescriptor, NotUsed] = {
+    val recordsReader =
+      WineModelsReader(WineModelDataIngress.wineModelsResources)
+    Source.repeat(recordsReader)
+      .map(reader ⇒ reader.next())
+      .throttle(1, WineModelDataIngress.modelFrequencySeconds)
   }
 }
 
 object WineModelDataIngress {
 
+  lazy val modelFrequencySeconds: FiniteDuration =
+    ConfigUtil.default
+      .getOrElse[Int]("wine-quality.model-frequency-seconds")(120).seconds
+
   // TODO: Add this logic to ConfigUtil?.
-  val WineModelsResources: Map[ModelType, Seq[String]] =
+  lazy val wineModelsResources: Map[ModelType, Seq[String]] =
     ConfigUtil.defaultConfig
       .getObject("wine-quality.model-sources").entrySet.asScala.foldLeft(
         Map.empty[ModelType, Seq[String]]) {
@@ -60,8 +61,8 @@ object WineModelDataIngress {
     implicit val system = ActorSystem("WineModelDataIngress-Main")
     implicit val mat = ActorMaterializer()
     val ingress = new WineModelDataIngress()
-    println(s"frequency (seconds): ${ingress.modelFrequencySeconds}")
-    println(s"records sources:     ${WineModelDataIngress.WineModelsResources}")
+    println(s"frequency (seconds): ${modelFrequencySeconds}")
+    println(s"records sources:     ${wineModelsResources}")
     ingress.source.runWith(Sink.foreach(println))
   }
 }

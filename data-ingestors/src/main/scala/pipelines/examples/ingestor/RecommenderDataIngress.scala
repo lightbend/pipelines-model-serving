@@ -22,25 +22,26 @@ import pipelines.util.ConfigUtil.implicits._
 class RecommenderDataIngress extends AkkaStreamlet {
 
   val out = AvroOutlet[RecommenderRecord]("out", _.user.toString)
+
   final override val shape = StreamletShape.withOutlets(out)
 
-  protected lazy val configUtil = ConfigUtil.default
-  protected lazy val dataFrequencySeconds =
-    configUtil.getOrElse[Int]("recommenders.data-frequency-seconds")(1).seconds
+  override final def createLogic = new RunnableGraphStreamletLogic {
+    def runnableGraph = source().to(atMostOnceSink(out))
+  }
 
-  val source: Source[RecommenderRecord, NotUsed] =
+  protected def source(): Source[RecommenderRecord, NotUsed] =
     Source.repeat(NotUsed)
       .map(_ ⇒ RecommenderDataIngress.makeRecommenderRecord())
-      .throttle(1, dataFrequencySeconds)
-
-  override final def createLogic = new RunnableGraphStreamletLogic {
-    def runnableGraph = source.to(atMostOnceSink(out))
-  }
+      .throttle(1, RecommenderDataIngress.dataFrequencySeconds)
 
 }
 
 object RecommenderDataIngress {
-  val generator = Random
+
+  lazy val dataFrequencySeconds: FiniteDuration =
+    ConfigUtil.default.getOrElse[Int]("recommenders.data-frequency-seconds")(1).seconds
+
+  lazy val generator = Random
 
   def makeRecommenderRecord(): RecommenderRecord = {
     val user = generator.nextInt(1000).toLong
@@ -54,7 +55,7 @@ object RecommenderDataIngress {
     implicit val system = ActorSystem("RecommenderDataIngress-Main")
     implicit val mat = ActorMaterializer()
     val ingress = new RecommenderDataIngress()
-    println(s"frequency (seconds): ${ingress.dataFrequencySeconds}")
-    ingress.source.runWith(Sink.foreach(println))
+    println(s"frequency (seconds): ${dataFrequencySeconds}")
+    ingress.source().runWith(Sink.foreach(println))
   }
 }

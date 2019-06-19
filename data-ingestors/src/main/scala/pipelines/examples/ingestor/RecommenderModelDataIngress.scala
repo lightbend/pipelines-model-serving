@@ -21,51 +21,58 @@ import scala.concurrent.duration._
 class RecommenderModelDataIngress extends AkkaStreamlet {
 
   val out = AvroOutlet[ModelDescriptor]("out", _.name)
+
   final override val shape = StreamletShape.withOutlets(out)
-
-  protected lazy val configUtil = ConfigUtil.default
-  protected lazy val serverLocations =
-    configUtil.getOrFail[Seq[String]]("recommenders.service-urls").toVector
-  protected lazy val modelFrequencySeconds =
-    configUtil.getOrElse[Int]("recommenders.model-frequency-seconds")(120).seconds
-
-  var serverIndex: Int = 0 // will be between 0 and serverLocations.size-1
-
-  val source: Source[ModelDescriptor, NotUsed] =
-    Source.repeat(NotUsed)
-      .map(_ ⇒ getModelDescriptor())
-      .throttle(1, modelFrequencySeconds)
 
   override def createLogic = new RunnableGraphStreamletLogic() {
     def runnableGraph = source.to(atMostOnceSink(out))
   }
 
-  def getModelDescriptor(): ModelDescriptor = {
+  protected def source(): Source[ModelDescriptor, NotUsed] = {
+    val modelFinder = new ModelDescriptorFinder(0)
+    Source.repeat(modelFinder)
+      .map(finder ⇒ finder.getModelDescriptor())
+      .throttle(1, RecommenderModelDataIngress.modelFrequencySeconds)
+  }
+}
 
+/** Encapsulate the logic of iterating through the models ad infinitum. */
+protected final class ModelDescriptorFinder(initialServerIndex: Int) {
+
+  def getModelDescriptor(): ModelDescriptor = {
     val i = nextServerIndex()
-    val location = serverLocations(i)
+    val location = RecommenderModelDataIngress.recommenderServerLocations(i)
     new ModelDescriptor(
       name = "Tensorflow Model", description = "For model Serving",
       modeltype = ModelType.TENSORFLOWSERVING, modeldata = None,
       modeldatalocation = Some(location), dataType = "recommender")
   }
 
-  def nextServerIndex(): Int = {
+  // will be between 0 and recommenderServerLocations.size-1
+  protected var serverIndex: Int = initialServerIndex
+
+  protected def nextServerIndex(): Int = {
     val i = serverIndex
     // increment for next call
-    serverIndex = (serverIndex + 1) % serverLocations.size
+    serverIndex =
+      (serverIndex + 1) % RecommenderModelDataIngress.recommenderServerLocations.size
     i
   }
 }
 
 object RecommenderModelDataIngress {
 
+  lazy val recommenderServerLocations: Vector[String] =
+    ConfigUtil.default.getOrFail[Seq[String]]("recommenders.service-urls").toVector
+  lazy val modelFrequencySeconds: FiniteDuration =
+    ConfigUtil.default.getOrElse[Int]("recommenders.model-frequency-seconds")(120).seconds
+
   def main(args: Array[String]): Unit = {
     implicit val system = ActorSystem("RecommenderModelDataIngress-Main")
     implicit val mat = ActorMaterializer()
     val ingress = new RecommenderModelDataIngress()
-    println(s"frequency (seconds): ${ingress.modelFrequencySeconds}")
-    println(s"server URLs:         ${ingress.serverLocations}")
-    ingress.source.runWith(Sink.foreach(println))
+    println(s"frequency (seconds): ${modelFrequencySeconds}")
+    println(s"server URLs:         ${recommenderServerLocations}")
+    ingress.source().runWith(Sink.foreach(println))
   }
 }

@@ -11,8 +11,8 @@ final case class WineModelsReader(resourceNames: Map[ModelType, Seq[String]]) {
 
   assert(resourceNames.size > 0)
 
-  private var currentModelType: ModelType = ModelType.TENSORFLOW
-  private var currentIndex = 0
+  protected var currentModelType: ModelType = ModelType.TENSORFLOW
+  protected var currentIndex = 0
   init(ModelType.TENSORFLOW)
 
   // ModelTypes defined in the Avro files: ["TENSORFLOW", "TENSORFLOWSAVED", "TENSORFLOWSERVING", "PMML"]
@@ -50,7 +50,7 @@ final case class WineModelsReader(resourceNames: Map[ModelType, Seq[String]]) {
       next()
   }
 
-  private def readBytes(source: String): Array[Byte] = try {
+  protected def readBytes(source: String): Array[Byte] = try {
     val bis = new BufferedInputStream(getClass.getResourceAsStream(source))
     val barray = Stream.continually(bis.read).takeWhile(-1 !=).map(_.toByte).toArray
     bis.close()
@@ -60,14 +60,14 @@ final case class WineModelsReader(resourceNames: Map[ModelType, Seq[String]]) {
       throw new IllegalArgumentException("Bad input source: " + source, e)
   }
 
-  private def finished(modelType: ModelType, currentIndex: Int): Boolean =
+  protected def finished(modelType: ModelType, currentIndex: Int): Boolean =
     resourceNames.get(modelType) match {
       case None                                      ⇒ true
       case Some(names) if currentIndex >= names.size ⇒ true
       case _                                         ⇒ false
     }
 
-  private def init(whichType: ModelType): Unit = {
+  protected def init(whichType: ModelType): Unit = {
     currentModelType = whichType
     currentIndex = 0
     if (finished(whichType, 0))
@@ -79,7 +79,7 @@ object WineModelsReader {
   def main(args: Array[String]): Unit = {
     val count = if (args.length > 0) args(0).toInt else 100000
 
-    val reader = new WineModelsReader(WineModelDataIngress.WineModelsResources)
+    val reader = new WineModelsReader(WineModelDataIngress.wineModelsResources)
     (1 to count).foreach { n ⇒
       val model = reader.next()
       println("%7d: %s".format(n, model))
