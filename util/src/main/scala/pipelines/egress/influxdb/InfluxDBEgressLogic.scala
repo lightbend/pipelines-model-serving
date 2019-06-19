@@ -1,24 +1,26 @@
 package pipelines.egress.influxdb
 
-import pipelines.egress.FlowEgress
-import pipelines.streamlets.avro.AvroInlet
+import pipelines.egress.FlowEgressLogic
+import pipelines.streamlets.CodecInlet
+import pipelines.akkastream.StreamletContext
 import pipelines.akkastream.scaladsl._
 import akka.actor.ActorSystem
 import scala.reflect.ClassTag
 import org.apache.avro.specific.SpecificRecordBase
 
 /**
- * Egress abstraction for writing data to InfluxDB.
+ * Egress logic abstraction for writing data to InfluxDB.
  * @param measurement The name of the measurement being written.
  * @param configKeys the database host, port, etc. are read from the configuration.
  */
-abstract class InfluxDBEgress(
-  val measurement: String,
-  val configKeys: InfluxDBEgress.ConfigKeys = InfluxDBEgress.ConfigKeys()) extends FlowEgress {
-
-  val writer: InfluxDBUtil.Writer[IN]
-
-  //override def configKeys = Set(configKeys.influxHost, configKeys.influxPort, configKeys.influxDatabase)
+final case class InfluxDBEgressLogic[IN](
+  in: CodecInlet[IN],
+  measurement: String,
+  writer: InfluxDBUtil.Writer[IN],
+  configKeys: InfluxDBEgressLogic.ConfigKeys = InfluxDBEgressLogic.ConfigKeys())(
+  implicit
+  context: StreamletContext)
+  extends FlowEgressLogic[IN](in) {
 
   def flowWithContext(system: ActorSystem) = {
     val influxDB = InfluxDBUtil.getInfluxDB(
@@ -26,7 +28,7 @@ abstract class InfluxDBEgress(
       context.streamletRefConfig.getString(configKeys.influxPort))
 
     FlowWithPipelinesContext[IN].map { record: IN ⇒
-      system.log.debug(s"InfluxDBEgress: to $measurement: $record")
+      system.log.debug(s"InfluxDBEgressLogic: to $measurement: $record")
       writer.write(record, measurement,
         context.streamletRefConfig.getString(configKeys.influxDatabase), influxDB)
       record
@@ -34,7 +36,7 @@ abstract class InfluxDBEgress(
   }
 }
 
-object InfluxDBEgress {
+object InfluxDBEgressLogic {
   final case class ConfigKeys(
     val influxHost: String = "InfluxHost",
     val influxPort: String = "InfluxPort",

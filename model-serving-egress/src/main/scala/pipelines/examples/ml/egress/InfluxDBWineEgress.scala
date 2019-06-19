@@ -1,20 +1,33 @@
 package pipelines.examples.ml.egress
 
+import pipelines.streamlets.StreamletShape
 import pipelines.streamlets.avro.AvroInlet
-import pipelines.egress.influxdb.{ InfluxDBEgress, InfluxDBUtil }
+import pipelines.akkastream.AkkaStreamlet
+import pipelines.egress.influxdb.{ InfluxDBEgressLogic, InfluxDBUtil }
 import pipelines.examples.data._
 import org.influxdb.dto.Point
+import pipelines.examples.data._
 
-object InfluxDBWineRecordEgress extends InfluxDBEgress("wine_record") {
-  type IN = WineRecord
-  val in = AvroInlet[WineRecord]("in")
-  val writer: InfluxDBUtil.Writer[WineRecord] = WineRecordInfluxDBWriter
+final case object InfluxDBWineResultEgress extends AkkaStreamlet {
+  val in = AvroInlet[WineResult]("in")
+  final override val shape = StreamletShape.withInlets(in)
+
+  override def createLogic = new InfluxDBEgressLogic[WineResult](
+    in = in,
+    measurement = "wine_result",
+    writer = WineResultInfluxDBWriter)
 }
 
-object InfluxDBWineResultEgress extends InfluxDBEgress("wine_result") {
-  type IN = WineResult
-  val in = AvroInlet[WineResult]("in")
-  val writer: InfluxDBUtil.Writer[WineResult] = WineResultInfluxDBWriter
+final case object InfluxDBWineRecordEgress extends AkkaStreamlet {
+  val in = AvroInlet[WineRecord]("in")
+  final override val shape = StreamletShape.withInlets(in)
+
+  val writer: InfluxDBUtil.Writer[WineRecord] = WineRecordInfluxDBWriter
+
+  override def createLogic = new InfluxDBEgressLogic[WineRecord](
+    in = in,
+    measurement = "wine_record",
+    writer = WineRecordInfluxDBWriter)
 }
 
 object WineResultInfluxDBWriter extends InfluxDBUtil.Writer[WineResult] {

@@ -76,10 +76,12 @@ final case class WineModelsReader(resourceNames: Map[ModelType, Seq[String]]) {
 }
 
 object WineModelsReader {
+
+  /** For testing purposes. */
   def main(args: Array[String]): Unit = {
     val count = if (args.length > 0) args(0).toInt else 100000
 
-    val reader = new WineModelsReader(WineModelDataIngress.wineModelsResources)
+    val reader = new WineModelsReader(WineModelDataIngressUtil.wineModelsResources)
     (1 to count).foreach { n ⇒
       val model = reader.next()
       println("%7d: %s".format(n, model))

@@ -15,7 +15,7 @@ import pipelines.streamlets.StreamletShape
 import pipelines.streamlets.avro.{ AvroInlet, AvroOutlet }
 import scala.concurrent.duration._
 
-class RecommenderModelServerStreamlet extends AkkaStreamlet {
+final case object RecommenderModelServer extends AkkaStreamlet {
 
   val in0 = AvroInlet[RecommenderRecord]("in-0")
   val in1 = AvroInlet[ModelDescriptor]("in-1")
@@ -58,7 +58,7 @@ class RecommenderModelServerStreamlet extends AkkaStreamlet {
   }
 }
 
-object RecommenderModelServerStreamlet {
+object RecommenderModelServerMain {
   def main(args: Array[String]): Unit = {
 
     implicit val system: ActorSystem = ActorSystem("ModelServing")

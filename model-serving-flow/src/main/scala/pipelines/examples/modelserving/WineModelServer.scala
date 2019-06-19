@@ -15,7 +15,7 @@ import pipelines.streamlets.StreamletShape
 import pipelines.streamlets.avro.{ AvroInlet, AvroOutlet }
 import scala.concurrent.duration._
 
-class WineModelServerStreamlet extends AkkaStreamlet {
+final case object WineModelServer extends AkkaStreamlet {
 
   val in0 = AvroInlet[WineRecord]("in-0")
   val in1 = AvroInlet[ModelDescriptor]("in-1")
@@ -55,7 +55,7 @@ class WineModelServerStreamlet extends AkkaStreamlet {
   }
 }
 
-object WineModelServerStreamlet {
+object WineModelServerMain {
   def main(args: Array[String]): Unit = {
 
     implicit val system: ActorSystem = ActorSystem("ModelServing")

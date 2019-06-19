@@ -37,10 +37,9 @@ class WineDataIngressTest extends FunSpec with BeforeAndAfterAll with OutputInte
     it("Loads one or more CSV file resources from the classpath") {
       expectOutput(testGoodRecordsResources.map(name ⇒ initializingMsgFmt.format(name))) {
         val testkit = AkkaStreamletTestKit(system, mat, ConfigFactory.load())
-        val ingress = new WineDataIngress
+        val ingress = WineDataIngress // Relies on the .../test/resources/application.conf to point to the correct files
         val out = testkit.outletAsTap(ingress.out)
 
-        ingress.recordsResources = testGoodRecordsResources
         val exp = expected(testGoodRecordsResources)
         testkit.run(ingress, Nil, out, () ⇒ {
           exp.foreach { e ⇒ out.probe.expectMsg(e) }

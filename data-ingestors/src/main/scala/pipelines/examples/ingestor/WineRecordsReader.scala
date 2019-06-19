@@ -4,11 +4,7 @@ import pipelines.examples.data._
 import pipelines.ingress.RecordsReader
 
 /**
- * To construct a WineRecords reader, use
- * ```
- * import pipelines.ingress.RecordsReader
- * RecordsReader(resourcePaths)(WineRecordsReader.csvParserWithSeparator(";"))
- * ```
+ * To construct a WineRecords reader.
  */
 object WineRecordsReader {
 
@@ -48,10 +44,11 @@ object WineRecordsReader {
       }
     }
 
+  /** For testing purposes. */
   def main(args: Array[String]): Unit = {
     val count = if (args.length > 0) args(0).toInt else 100000
 
-    val reader = WineRecordsReader.makeReader(WineDataIngress.WineQualityRecordsResources)
+    val reader = WineRecordsReader.makeReader(WineDataIngressUtil.wineQualityRecordsResources)
     (1 to count).foreach { n ⇒
       val record = reader.next()
       println("%7d: %s".format(n, record))

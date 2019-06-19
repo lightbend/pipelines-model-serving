@@ -18,44 +18,48 @@ import scala.concurrent.duration._
  * Reads wine records from a CSV file (which actually uses ";" as the separator),
  * parses it into a {@link WineRecord} and sends it downstream.
  */
-class WineDataIngress extends AkkaStreamlet {
+final case object WineDataIngress extends AkkaStreamlet {
 
   val out = AvroOutlet[WineRecord]("out", _.dataType)
 
   final override val shape = StreamletShape(out)
 
   override final def createLogic = new RunnableGraphStreamletLogic {
-    def runnableGraph = source().to(atMostOnceSink(out))
-  }
-
-  protected def source(): Source[WineRecord, NotUsed] = {
-    val reader = WineDataIngress.recordsReader()
-    Source.repeat(NotUsed)
-      .map(_ ⇒ reader.next()._2) // Only keep the record part of the tuple
-      .throttle(1, WineDataIngress.dataFrequencySeconds)
+    def runnableGraph = WineDataIngressUtil.makeSource(
+      WineDataIngressUtil.wineQualityRecordsResources,
+      WineDataIngressUtil.dataFrequencySeconds)
+      .to(atMostOnceSink(out))
   }
 }
 
-object WineDataIngress {
+object WineDataIngressUtil {
 
   lazy val dataFrequencySeconds: FiniteDuration =
     ConfigUtil.default
       .getOrElse[Int]("wine-quality.data-frequency-seconds")(1).seconds
 
-  lazy val WineQualityRecordsResources: Seq[String] =
+  lazy val wineQualityRecordsResources: Seq[String] =
     ConfigUtil.default.getOrFail[Seq[String]]("wine-quality.data-sources")
 
-  def recordsReader(): RecordsReader[WineRecord] =
-    RecordsReader.fromClasspath(WineQualityRecordsResources)(
+  def makeSource(recordsResources: Seq[String], frequency: FiniteDuration): Source[WineRecord, NotUsed] = {
+    val reader = makeRecordsReader(recordsResources)
+    Source.repeat(reader)
+      .map(reader ⇒ reader.next()._2) // Only keep the record part of the tuple
+      .throttle(1, frequency)
+  }
+
+  def makeRecordsReader(sources: Seq[String] = wineQualityRecordsResources): RecordsReader[WineRecord] =
+    RecordsReader.fromClasspath(sources)(
       WineRecordsReader.csvParserWithSeparator(";"))
 
+  /** For testing purposes. */
   def main(args: Array[String]): Unit = {
-    implicit val system = ActorSystem("WineDataIngress-Main")
-    implicit val mat = ActorMaterializer()
-    val ingress = new WineDataIngress
     println(s"frequency (seconds): ${dataFrequencySeconds}")
-    println(s"records sources:     ${WineQualityRecordsResources}")
-    ingress.source().runWith(Sink.foreach(println))
+    println(s"records sources:     ${wineQualityRecordsResources}")
+    implicit val system = ActorSystem("RecommenderDataIngress-Main")
+    implicit val mat = ActorMaterializer()
+    val source = makeSource(wineQualityRecordsResources, dataFrequencySeconds)
+    source.runWith(Sink.foreach(println))
   }
 }
 

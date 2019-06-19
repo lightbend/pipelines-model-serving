@@ -12,7 +12,7 @@ class WineRecordsReaderTest extends FunSpec with BeforeAndAfter with OutputInter
   describe("Reading WineRecords with a RecordsReader") {
     it("Loads one or more CSV file resources from the classpath") {
       ignoreOutput {
-        assert(WineRecordsReader.makeReader(WineDataIngress.WineQualityRecordsResources).next() != null)
+        assert(WineRecordsReader.makeReader(WineDataIngressUtil.wineQualityRecordsResources).next() != null)
       }
     }
 

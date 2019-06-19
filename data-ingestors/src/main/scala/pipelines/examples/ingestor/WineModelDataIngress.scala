@@ -18,26 +18,21 @@ import scala.collection.JavaConverters._
  * One at a time every two minutes, loads a PMML or TensorFlow model and
  * sends it downstream.
  */
-class WineModelDataIngress extends AkkaStreamlet {
+final case object WineModelDataIngress extends AkkaStreamlet {
 
   val out = AvroOutlet[ModelDescriptor]("out", _.name)
 
   final override val shape = StreamletShape(out)
 
   override def createLogic = new RunnableGraphStreamletLogic() {
-    def runnableGraph = source.to(atMostOnceSink(out))
-  }
-
-  protected def source(): Source[ModelDescriptor, NotUsed] = {
-    val recordsReader =
-      WineModelsReader(WineModelDataIngress.wineModelsResources)
-    Source.repeat(recordsReader)
-      .map(reader ⇒ reader.next())
-      .throttle(1, WineModelDataIngress.modelFrequencySeconds)
+    def runnableGraph = WineModelDataIngressUtil.makeSource(
+      WineModelDataIngressUtil.wineModelsResources,
+      WineModelDataIngressUtil.modelFrequencySeconds)
+      .to(atMostOnceSink(out))
   }
 }
 
-object WineModelDataIngress {
+object WineModelDataIngressUtil {
 
   lazy val modelFrequencySeconds: FiniteDuration =
     ConfigUtil.default
@@ -57,12 +52,20 @@ object WineModelDataIngress {
             map + (modelType -> list)
         }
 
+  def makeSource(modelsResources: Map[ModelType, Seq[String]], frequency: FiniteDuration): Source[ModelDescriptor, NotUsed] = {
+    val recordsReader = WineModelsReader(modelsResources)
+    Source.repeat(recordsReader)
+      .map(reader ⇒ reader.next())
+      .throttle(1, frequency)
+  }
+
+  /** For testing purposes. */
   def main(args: Array[String]): Unit = {
-    implicit val system = ActorSystem("WineModelDataIngress-Main")
-    implicit val mat = ActorMaterializer()
-    val ingress = new WineModelDataIngress()
     println(s"frequency (seconds): ${modelFrequencySeconds}")
     println(s"records sources:     ${wineModelsResources}")
-    ingress.source.runWith(Sink.foreach(println))
+    implicit val system = ActorSystem("WineModelDataIngress-Main")
+    implicit val mat = ActorMaterializer()
+    val source = makeSource(wineModelsResources, modelFrequencySeconds)
+    source.runWith(Sink.foreach(println))
   }
 }

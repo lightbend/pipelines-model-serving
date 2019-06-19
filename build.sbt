@@ -3,8 +3,6 @@ import sbt.Keys._
 import scalariform.formatter.preferences._
 import Dependencies._
 
-lazy val root = modelServingPipeline
-
 version := "1.0"
 
 // The following assumes an environment variable that defines the OpenShift cluster
@@ -15,62 +13,80 @@ lazy val dockerRegistry =
   sys.env.get("OPENSHIFT_CLUSTER_DOMAIN").map(
     server => s"docker-registry-default.$server")
 
-lazy val modelServingPipeline = (project in file("./model-serving-pipeline"))
+lazy val wineModelServingPipeline = (project in file("./wine-model-serving-pipeline"))
   .enablePlugins(PipelinesApplicationPlugin)
+  .enablePlugins(PipelinesAkkaStreamsLibraryPlugin)
   .settings(
-    name := "ml-serving-pipeline",
-    version := "1.0",
+    name := "wine-model-serving-pipeline",
+    version := "1.1",
     pipelinesDockerRegistry := dockerRegistry,
     libraryDependencies ++= Seq(slf4j, alpakkaKafka)
   )
-  .dependsOn(util, dataIngestors, modelServingFlow, modelServingEgress)
+  .dependsOn(util, dataModel, modelLibrary, dataIngestors, modelServingFlow, modelServingEgress)
+
+lazy val recommenderModelServingPipeline = (project in file("./recommender-model-serving-pipeline"))
+  .enablePlugins(PipelinesApplicationPlugin)
+  .enablePlugins(PipelinesAkkaStreamsLibraryPlugin)
+  .settings(
+    name := "recommender-model-serving-pipeline",
+    version := "1.1",
+    pipelinesDockerRegistry := dockerRegistry,
+    libraryDependencies ++= Seq(slf4j, alpakkaKafka)
+  )
+  .dependsOn(util, dataModel, modelLibrary, dataIngestors, modelServingFlow, modelServingEgress)
 
 lazy val util = (project in file("./util"))
   .enablePlugins(PipelinesLibraryPlugin)
   .enablePlugins(PipelinesAkkaStreamsLibraryPlugin)
   .settings(
+    name := "util",
     libraryDependencies ++= Seq(alpakkaKafka, slf4j, bijection, json2avro, influx, scalaTest),
     (sourceGenerators in Compile) += (avroScalaGenerateSpecific in Compile).taskValue,
   )
 
-lazy val datamodel = (project in file("./datamodel"))
+lazy val dataModel = (project in file("./data-model"))
   .enablePlugins(PipelinesLibraryPlugin)
   .settings(
-    libraryDependencies ++= Seq(bijection,json2avro, scalaTest), //, scalaLogging, logback),
+    name := "data-model",
+    libraryDependencies ++= Seq(bijection,json2avro, scalaTest),
     (sourceGenerators in Compile) += (avroScalaGenerateSpecific in Compile).taskValue,
   )
 
-lazy val model = (project in file("./modellibrary"))
+lazy val modelLibrary = (project in file("./model-library"))
   .enablePlugins(PipelinesAkkaStreamsLibraryPlugin)
   .settings(
+    name := "model-library",
     libraryDependencies ++= Seq(tensorflow, tensorflowProto,pmml,pmmlextensions, bijection,json2avro, gson, scalajHTTP),
     (sourceGenerators in Compile) += (avroScalaGenerateSpecific in Compile).taskValue,
   )
-  .dependsOn(util, datamodel) //modelServingFlow, modelServingEgress)
+  .dependsOn(util, dataModel)
 
 lazy val dataIngestors = (project in file("./data-ingestors"))
   .enablePlugins(PipelinesAkkaStreamsLibraryPlugin)
   .settings(
+    name := "data-ingestors",
     commonSettings,
     libraryDependencies ++= Seq(akkaSprayJson, alpakkaFile, alpakkaKafka, scalaTest),
   )
-  .dependsOn(util, datamodel, model)
+  .dependsOn(util, dataModel, modelLibrary)
 
-lazy val modelServingFlow= (project in file("./model-serving-flow"))
+lazy val modelServingFlow = (project in file("./model-serving-flow"))
   .enablePlugins(PipelinesAkkaStreamsLibraryPlugin)
   .settings(
+    name := "model-serving-flow",
     commonSettings,
     libraryDependencies ++= Seq(akkaSprayJson, alpakkaFile, alpakkaKafka, scalaTest)
   )
-  .dependsOn(util, model, datamodel, model)
+  .dependsOn(util, dataModel, modelLibrary)
 
 lazy val modelServingEgress = (project in file("./model-serving-egress"))
   .enablePlugins(PipelinesAkkaStreamsLibraryPlugin)
   .settings(
+    name := "model-serving-egress",
     commonSettings,
     libraryDependencies ++= Seq(slf4j, akkaSprayJson, alpakkaFile, alpakkaKafka, influx, scalaTest)
   )
-  .dependsOn(util, datamodel, model)
+  .dependsOn(util, dataModel, modelLibrary)
 
 lazy val commonSettings = Seq(
   scalaVersion := "2.12.8",
