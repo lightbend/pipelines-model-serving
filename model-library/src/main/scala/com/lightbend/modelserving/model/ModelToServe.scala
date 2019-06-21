@@ -126,13 +126,13 @@ final case class ModelToServeStats(
 
   /**
    * Increment model serving statistics; invoked after scoring every record.
-   * @arg execution Long value for the milliseconds it took to score the record.
+   * @param executionTime Long value for the milliseconds it took to score the record.
    */
-  def incrementUsage(execution: Long): ModelToServeStats = {
+  def incrementUsage(executionTime: Long): ModelToServeStats = {
     usage = usage + 1
-    duration = duration + execution
-    if (execution < min) min = execution
-    if (execution > max) max = execution
+    duration = duration + executionTime
+    if (executionTime < min) min = executionTime
+    if (executionTime > max) max = executionTime
     this
   }
 }

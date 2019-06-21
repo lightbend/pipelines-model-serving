@@ -16,7 +16,7 @@ import scala.concurrent.duration._
 
 /**
  * Reads wine records from a CSV file (which actually uses ";" as the separator),
- * parses it into a {@link WineRecord} and sends it downstream.
+ * parses it into a WineRecord and sends it downstream.
  */
 final case object WineDataIngress extends AkkaStreamlet {
 

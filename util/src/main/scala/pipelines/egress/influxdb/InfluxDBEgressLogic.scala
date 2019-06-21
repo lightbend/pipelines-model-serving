@@ -24,13 +24,13 @@ final case class InfluxDBEgressLogic[IN](
 
   def flowWithContext(system: ActorSystem) = {
     val influxDB = InfluxDBUtil.getInfluxDB(
-      context.streamletRefConfig.getString(configKeys.influxHost),
-      context.streamletRefConfig.getString(configKeys.influxPort))
+      context.streamletConfig.getString(configKeys.influxHost),
+      context.streamletConfig.getString(configKeys.influxPort))
 
     FlowWithPipelinesContext[IN].map { record: IN ⇒
       system.log.debug(s"InfluxDBEgressLogic: to $measurement: $record")
       writer.write(record, measurement,
-        context.streamletRefConfig.getString(configKeys.influxDatabase), influxDB)
+        context.streamletConfig.getString(configKeys.influxDatabase), influxDB)
       record
     }
   }

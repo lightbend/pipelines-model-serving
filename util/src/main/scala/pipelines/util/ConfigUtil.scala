@@ -7,27 +7,27 @@ import scala.collection.JavaConverters._
 final case class ConfigUtil(config: Config) {
 
   /**
-   * Get the value of the correct type from the specified [[Config]].
-   * If the type is wrong, throws [[ConfigException.WrongType]].
+   * Get the value of the correct type from the specified Typesafe Config object.
+   * If the type is wrong, throws ConfigException.WrongType.
    * If a value is missing for the key, returns the default value.
-   * @return the value
+   * @return the value if found or the alternative value
    */
   def getOrElse[T](key: String)(orElse: => T)(implicit getter: (Config, String) => T): T =
     if (config.hasPath(key)) getter(config, key) else orElse
 
   /**
-   * Get the value of the correct type from the specified [[Config]].
-   * If the type is wrong, throws [[ConfigException.WrongType]].
+   * Get the value of the correct type from the specified Typesafe Config object.
+   * If the type is wrong, throws ConfigException.WrongType.
    * If a value is missing for the key, throws [[ConfigUtil.UnknownKey]].
    * Use this method when there is no way to recover from a missing configuration setting.
-   * @return the value
+   * @return the value or throw an exception
    */
   def getOrFail[T](key: String, extraMessage: String = "")(implicit getter: (Config, String) => T): T =
     if (config.hasPath(key)) getter(config, key) else throw ConfigUtil.UnknownKey(key, extraMessage)
 
   /**
-   * Get the value of the correct type from the specified [[Config]].
-   * If the type is wrong, [[ConfigException.WrongType]] is thrown.
+   * Get the value of the correct type from the specified Typesafe Config object.
+   * If the type is wrong, ConfigException.WrongType is thrown.
    * If a value is missing for the key, returns None.
    * @return the value wrapped in a Some().
    */

@@ -8,13 +8,13 @@ import pipelines.ingress.RecordsReader
  */
 object WineRecordsReader {
 
-  /** Make a reader for [[WineRecord]]s. */
+  /** Make a reader for WineRecords. */
   def makeReader(resourcePaths: Seq[String]): RecordsReader[WineRecord] =
     RecordsReader.fromClasspath(resourcePaths)(csvParserWithSeparator(";"))
 
   /**
    * Used to construct the parser required by an instance of
-   * [[pipelines.ingress.RecordsReader]] for [[WineRecord]] instances.
+   * RecordsReader for WineRecord instances.
    */
   def csvParserWithSeparator(separator: String = ","): String ⇒ Either[String, WineRecord] =
     (line: String) ⇒ {

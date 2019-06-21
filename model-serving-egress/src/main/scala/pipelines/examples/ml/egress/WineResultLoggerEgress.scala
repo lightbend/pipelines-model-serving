@@ -5,7 +5,6 @@ import pipelines.streamlets.avro.AvroInlet
 import pipelines.akkastream.AkkaStreamlet
 import pipelines.egress.LogEgressLogic
 import pipelines.examples.data._
-import akka.event.Logging.{ LogLevel, InfoLevel }
 
 final case object WineResultLoggerEgress extends AkkaStreamlet {
   val in = AvroInlet[WineResult]("in")
