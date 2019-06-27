@@ -1,50 +1,105 @@
 package pipelines.examples.ingestor
 
 import akka.NotUsed
-import akka.stream.scaladsl.Source
-import com.lightbend.modelserving.model.ModelCodecs._
-import pipelines.akkastream.scaladsl._
+import akka.actor.ActorSystem
+import akka.stream.ActorMaterializer
+import akka.stream.scaladsl.{ Source, Sink }
+import pipelines.akkastream.AkkaStreamlet
+import pipelines.akkastream.scaladsl.{ RunnableGraphStreamletLogic }
+import pipelines.streamlets.avro.AvroOutlet
+import pipelines.streamlets.StreamletShape
 import pipelines.examples.data._
-
+import pipelines.util.ConfigUtil
+import pipelines.util.ConfigUtil.implicits._
 import scala.concurrent.duration._
 
-class RecommenderModelDataIngress extends SourceIngress[ModelDescriptor] {
+/**
+ * Ingress of model updates. In this case, every two minutes we load and
+ * send downstream a model from the previously-trained models that are
+ * found in the "datamodel" subproject.
+ */
+final case object RecommenderModelDataIngress extends AkkaStreamlet {
 
-  var server = 1
+  val out = AvroOutlet[ModelDescriptor]("out", _.name)
 
-  override def createLogic = new SourceIngressLogic() {
+  final override val shape = StreamletShape.withOutlets(out)
 
-    def source: Source[ModelDescriptor, NotUsed] = {
-      Source.repeat(NotUsed)
-        .map(_ ⇒ getModelDescriptor())
-        .throttle(1, 2.minutes) // "dribble" them out
-    }
+  override def createLogic = new RunnableGraphStreamletLogic() {
+
+    def runnableGraph = RecommenderModelDataIngressUtil.makeSource(
+      RecommenderModelDataIngressUtil.recommenderServerLocations,
+      RecommenderModelDataIngressUtil.modelFrequencySeconds)
+      .to(atMostOnceSink(out))
   }
+}
+
+/** Encapsulate the logic of iterating through the models ad infinitum. */
+protected final class ModelDescriptorFinder(
+    initialServerIndex: Int,
+    serverLocations: Vector[String]) {
 
   def getModelDescriptor(): ModelDescriptor = {
-
-    val s = getserver()
-    val location = s"http://recommender$s-service-kubeflow.lightshift.lightbend.com/v1/models/recommender$s/versions/1:predict"
+    val i = nextServerIndex()
+    val location = serverLocations(i)
     new ModelDescriptor(
       name = "Tensorflow Model", description = "For model Serving",
       modeltype = ModelType.TENSORFLOWSERVING, modeldata = None,
       modeldatalocation = Some(location), dataType = "recommender")
   }
 
-  def getserver(): String = {
-    server = server + 1
-    if (server > 1) server = 0
-    server match {
-      case 0 ⇒ ""
-      case _ ⇒ "1"
-    }
+  // will be between 0 and serverLocations.size-1
+  protected var serverIndex: Int = initialServerIndex
+
+  protected def nextServerIndex(): Int = {
+    val i = serverIndex
+    // increment for next call
+    serverIndex =
+      (serverIndex + 1) % serverLocations.size
+    i
   }
 }
 
-object RecommenderModelDataIngress {
+object RecommenderModelDataIngressUtil {
+
+  lazy val recommenderServerLocations: Vector[String] =
+    ConfigUtil.default.getOrFail[Seq[String]]("recommender.service-urls").toVector
+  lazy val modelFrequencySeconds: FiniteDuration =
+    ConfigUtil.default.getOrElse[Int]("recommender.model-frequency-seconds")(120).seconds
+
+  /** Helper method extracted from RecommenderModelDataIngress for easier unit testing. */
+  def makeSource(serverLocations: Vector[String], frequency: FiniteDuration): Source[ModelDescriptor, NotUsed] = {
+    val modelFinder = new ModelDescriptorFinder(0, serverLocations)
+    Source.repeat(modelFinder)
+      .map(finder ⇒ finder.getModelDescriptor())
+      .throttle(1, frequency)
+  }
+
+  /** For testing purposes. */
   def main(args: Array[String]): Unit = {
-    val ingress = new RecommenderModelDataIngress()
-    while (true)
-      println(ingress.getModelDescriptor())
+    def help() = println(s"""
+      |usage: RecommenderModelDataIngressUtil [-h|--help] [N]
+      |where:
+      |  -h | --help       print this message and exit
+      |  N                 N seconds between output model descriptions (default: $modelFrequencySeconds)
+      |""".stripMargin)
+
+    def parseArgs(args2: Seq[String], freq: FiniteDuration): FiniteDuration = args2 match {
+      case ("-h" | "--help") +: _ ⇒
+        help()
+        sys.exit(0)
+      case Nil       ⇒ freq
+      case n +: tail ⇒ parseArgs(tail, n.toInt.seconds)
+      case x +: _ ⇒
+        println(s"ERROR: Unrecognized argument $x. All args: ${args.mkString(" ")}")
+        help()
+        sys.exit(1)
+    }
+    val frequency = parseArgs(args, modelFrequencySeconds)
+    println(s"frequency (seconds): ${frequency}")
+    println(s"server URLs:         ${recommenderServerLocations}")
+    implicit val system = ActorSystem("RecommenderModelDataIngress-Main")
+    implicit val mat = ActorMaterializer()
+    val source = makeSource(recommenderServerLocations, frequency)
+    source.runWith(Sink.foreach(println))
   }
 }
