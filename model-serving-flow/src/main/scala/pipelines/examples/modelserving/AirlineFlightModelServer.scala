@@ -11,7 +11,6 @@ import hex.genmodel.easy.EasyPredictModelWrapper
 import hex.genmodel.easy.RowData
 
 import java.io.{ File, FileOutputStream }
-import java.util.zip.{ ZipInputStream, ZipOutputStream }
 
 class AirlineFlightModelServerStreamlet extends AkkaStreamlet {
 
@@ -58,15 +57,18 @@ class AirlineFlightModelServer() {
     lazy val resource: String =
       config.getStringList("airline-flights.model-sources").get(0)
     val classloader = Thread.currentThread().getContextClassLoader()
-    val is = new ZipInputStream(classloader.getResourceAsStream(resource))
-    val os = new ZipOutputStream(new FileOutputStream(new File(tmpFile)))
+    val is = classloader.getResourceAsStream(resource)
+    val os = new FileOutputStream(new File(tmpFile))
     val n = 1024 * 1024
     val buffer = Array.fill[Byte](n)(0)
+    println("Writing model zip file bytes...")
     var actual = is.read(buffer, 0, n)
     while (actual > 0) {
+      print(s"$actual ")
       os.write(buffer, 0, actual)
       actual = is.read(buffer, 0, n)
     }
+    println()
     is.close()
     os.close()
 
@@ -113,15 +115,3 @@ class AirlineFlightModelServer() {
   }
 }
 
-// object AirlineFlightModelServer {
-//   def main(args: Array[String]): Unit = {
-
-//     implicit val system: ActorSystem = ActorSystem("Airline Flight Records Model Serving")
-
-//     val modelserver = system.actorOf(ModelServingManager.props(new ServingActorResolver(actors)))
-//     val record = AirlineFlightRecord(.0, .0, .0, .0, .0, .0, .0, .0, .0, .0, .0, "wine")
-//     val result = modelserver.ask(AirlineFlightDataRecord(record)).mapTo[ServingResult[Double]]
-//     Thread.sleep(100)
-//     println(result)
-//   }
-// }
