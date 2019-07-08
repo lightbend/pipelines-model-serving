@@ -1,0 +1,63 @@
+{
+    "namespace": "pipelines.examples.data",
+    "type": "record",
+    "name": "AirlineFlightResult",
+    "fields":[
+      {
+        "name": "year",
+        "type": "int"
+      },
+      {
+        "name": "month",
+        "type": "int"
+      },
+      {
+        "name": "dayOfMonth",
+        "type": "int"
+      },
+      {
+        "name": "dayOfWeek",
+        "type": "int"
+      },
+      {
+        "name": "depTime",
+        "type": "int"
+      },
+      {
+        "name": "arrTime",
+        "type": "int"
+      },
+      {
+        "name": "uniqueCarrier",
+        "type": "string"
+      },
+      {
+        "name": "flightNum",
+        "type": "int"
+      },
+      {
+        "name": "arrDelay",
+        "type": "int"
+      },
+      {
+        "name": "depDelay",
+        "type": "int"
+      },
+      {
+        "name": "origin",
+        "type": "string"
+      },
+      {
+        "name": "destination",
+        "type": "string"
+      },
+      {
+        "name": "delayPredictionLabel",
+        "type": "string"
+      },
+      {
+        "name": "delayPredictionProbability",
+        "type": "double"
+      }
+    ]
+}

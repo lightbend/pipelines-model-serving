@@ -4,6 +4,12 @@ import pipelines.streamlets.avro._
 import pipelines.streamlets._
 
 class DataCodecs {
+  implicit val airlineFlightRecordKeyed: Keyed[AirlineFlightRecord] = (a: AirlineFlightRecord) => s"${a.year}-${a.month}-${a.dayOfMonth}_${a.uniqueCarrier}-${a.flightNum}"
+  implicit val airlineFlightRecordCodec: KeyedSchema[AirlineFlightRecord] = AvroKeyedSchema[AirlineFlightRecord](AirlineFlightRecord.SCHEMA$)
+
+  implicit val airlineFlightResultKeyed: Keyed[AirlineFlightResult] = (a: AirlineFlightResult) => s"${a.year}-${a.month}-${a.dayOfMonth}_${a.uniqueCarrier}-${a.flightNum}"
+  implicit val airlineFlightResultCodec: KeyedSchema[AirlineFlightResult] = AvroKeyedSchema[AirlineFlightResult](AirlineFlightResult.SCHEMA$)
+
   implicit val wineRecordKeyed: Keyed[WineRecord] = (m: WineRecord) => m.dataType
   implicit val wineRecordCodec: KeyedSchema[WineRecord] = AvroKeyedSchema[WineRecord](WineRecord.SCHEMA$)
 
