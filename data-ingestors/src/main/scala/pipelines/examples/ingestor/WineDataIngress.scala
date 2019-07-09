@@ -18,8 +18,8 @@ class WineDataIngress extends SourceIngress[WineRecord] {
   /** Public var to permit overrides in unit tests */
   var recordsResources: Seq[String] = WineDataIngress.WineQualityRecordsResources
 
-  protected lazy val dataFrequencySeconds =
-    this.context.config.getInt("wine-quality.data-frequency-seconds")
+  protected lazy val dataFrequencyMilliseconds =
+    this.context.config.getInt("wine-quality.data-frequency-milliseconds")
 
   override def createLogic = new SourceIngressLogic() {
 
@@ -29,7 +29,7 @@ class WineDataIngress extends SourceIngress[WineRecord] {
     def source: Source[WineRecord, NotUsed] = {
       Source.repeat(NotUsed)
         .map(_ ⇒ recordsReader.next())
-        .throttle(1, dataFrequencySeconds.seconds)
+        .throttle(1, dataFrequencyMilliseconds.milliseconds)
     }
   }
 }
@@ -43,7 +43,7 @@ object WineDataIngress {
 
   def main(args: Array[String]): Unit = {
     val wdi = new WineDataIngress
-    println(wdi.dataFrequencySeconds)
+    println(wdi.dataFrequencyMilliseconds)
     println(WineDataIngress.WineQualityRecordsResources)
   }
 }

@@ -14,8 +14,8 @@ import scala.collection.JavaConverters._
  */
 class AirlineFlightRecordsIngress extends SourceIngress[AirlineFlightRecord] {
 
-  protected lazy val dataFrequencySeconds =
-    this.context.config.getInt("airline-flights.data-frequency-seconds")
+  protected lazy val dataFrequencyMilliseconds =
+    this.context.config.getInt("airline-flights.data-frequency-milliseconds")
 
   override def createLogic = new SourceIngressLogic() {
 
@@ -28,7 +28,7 @@ class AirlineFlightRecordsIngress extends SourceIngress[AirlineFlightRecord] {
     def source: Source[AirlineFlightRecord, NotUsed] = {
       Source.repeat(NotUsed)
         .map(_ ⇒ recordsReader.next())
-        .throttle(1, dataFrequencySeconds.seconds)
+        .throttle(1, dataFrequencyMilliseconds.milliseconds)
     }
   }
 }
