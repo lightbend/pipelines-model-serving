@@ -105,13 +105,22 @@ class AirlineFlightModelServer() {
       delayPredictionLabel = label,
       delayPredictionProbability = probability)
 
+  // We cheat a bit; on errors, we stuff the error string in the "prediction" string
+  // and still pretend it's normal.
+  // TODO: write these records to a separate error egress.
   def score(record: AirlineFlightRecord): AirlineFlightResult = {
     val row = toRow(record)
-    val prediction = currentModel.predictBinomial(row)
-    val probs = prediction.classProbabilities
-    val probability = if (probs.length == 2) probs(1) else 0.0
-    println(s"Prediction that flight departure will be delayed: ${prediction.label} (probability: $probability) for $record")
-    toResult(record, prediction.label, probability)
+    try {
+      val prediction = currentModel.predictBinomial(row)
+      val probs = prediction.classProbabilities
+      val probability = if (probs.length == 2) probs(1) else 0.0
+      println(s"Prediction that flight departure will be delayed: ${prediction.label} (probability: $probability) for $record")
+      toResult(record, prediction.label, probability)
+    } catch {
+      case util.control.NonFatal(ex) ⇒
+        println(s"""ERROR: Exception "$ex" while scoring record $record""")
+        toResult(record, ex.getMessage(), 0.0)
+    }
   }
 }
 
