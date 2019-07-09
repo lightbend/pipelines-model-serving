@@ -1,14 +1,15 @@
 package pipelines.examples.ingestor
 
-import java.util.zip.GZIPInputStream
+import java.util.zip.{ GZIPInputStream, ZipInputStream }
+import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream
 import scala.io.Source
 
 /**
  * Provides an infinite stream of CVS records, repeatedly reading them from
  * the specified resources.
  * This class handles the case where one or more of the resource files are
- * actually gzipped, i.e., they have the extension, "*.gz" or "*.gzip".
- * WARNING: This simple implementation does not handle nested, quoted, or escaped delimeters!
+ * actually zipped (extension ".zip"), gzipped ("gz" or "gzip"), or bzipped ("bz2" or "bzip2").
+ * WARNING: This simple implementation does not handle nested, quoted, or escaped separators (e.g., ',')!
  * @param resourceNames file names within the class path resources.
  * @param separator to split the CSV string on.
  * @param dropFirstLines mostly used to skip over column headers, if you know they are there. Otherwise, they will fail to parse.
@@ -57,9 +58,13 @@ final case class CSVReader[R](
   def getLines(name: String): Iterator[String] = {
     val classloader = Thread.currentThread().getContextClassLoader()
     val ris = classloader.getResourceAsStream(name)
-    val is = if (name.endsWith(".gz") || name.endsWith(".gzip")) {
-      new GZIPInputStream(ris)
-    } else { ris }
+    val extensionRE = raw"""^.*\.([^.]+)$$""".r
+    val is = name match {
+      case extensionRE("gz") | extensionRE("gzip")   ⇒ new GZIPInputStream(ris)
+      case extensionRE("zip")                        ⇒ new ZipInputStream(ris)
+      case extensionRE("bz2") | extensionRE("bzip2") ⇒ new BZip2CompressorInputStream(ris)
+      case _                                         ⇒ ris
+    }
     Source.fromInputStream(is).getLines
   }
 }

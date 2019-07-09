@@ -16,6 +16,7 @@ object Dependencies {
   val influx          = "org.influxdb"                    % "influxdb-java"             % influxVerion
   val slf4j           = "org.slf4j"                       % "slf4j-log4j12"             % slf4jVersion
   val gson            = "com.google.code.gson"            % "gson"                      % gsonVersion
+  val compress        = "org.apache.commons"              % "commons-compress"          %apacheCommonsCompress
   val scalajHTTP      = "org.scalaj"                     %% "scalaj-http"               % scalajHTTPVersion
   // val scalaLogging    = "com.typesafe.scala-logging"     %% "scala-logging"             % scalaLoggingVersion
   // val logback         = "ch.qos.logback"                  % "logback-classic"           % logbackClassicVersion

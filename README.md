@@ -36,7 +36,13 @@ Instructions - TBD
 
 ### Air Traffic H20 Example
 
-The large data files are _not_ in the repo. Instructions for getting them are TBD.
+The large data files are _not_ in the repo. The data comes from [this website](http://stat-computing.org/dataexpo/2009/the-data.html). Download one or more of
+the bzip2 data files for each year to the `data-ingestors/src/main/resources/airline-data-csv`
+directory. _Then_ modify `data-ingestors/src/main/resources/application.conf` to
+list those files under the `airline-flights` section, following the example shown.
+
+> WARNING: At this time, these files are bundled into the application Docker image,
+> so avoid downloading too many of them or the size will be huge!
 
 ## Build and Deploy Ml Pipeline
 

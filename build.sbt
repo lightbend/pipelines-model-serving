@@ -21,8 +21,8 @@ lazy val modelServingPipeline = (project in file("./model-serving-pipeline"))
     name := "ml-serving-pipeline",
     version := "1.0",
     pipelinesDockerRegistry := dockerRegistry,
-    libraryDependencies ++= Seq(slf4j, alpakkaKafka),
-    mainBlueprint := Some("airline-flights-blueprint.conf")
+    // mainBlueprint := Some("airline-flights-blueprint.conf"),
+    libraryDependencies ++= Seq(slf4j, alpakkaKafka)
   )
   .dependsOn(util, dataIngestors, modelServingFlow, modelServingEgress)
 
@@ -52,7 +52,7 @@ lazy val dataIngestors = (project in file("./data-ingestors"))
   .enablePlugins(PipelinesAkkaStreamsLibraryPlugin)
   .settings(
     commonSettings,
-    libraryDependencies ++= Seq(akkaSprayJson,alpakkaFile,scalaTest, alpakkaKafka),
+    libraryDependencies ++= Seq(akkaSprayJson, compress, alpakkaFile, alpakkaKafka, scalaTest),
   )
   .dependsOn(util, datamodel, model)
 
@@ -60,7 +60,7 @@ lazy val modelServingFlow= (project in file("./model-serving-flow"))
   .enablePlugins(PipelinesAkkaStreamsLibraryPlugin)
   .settings(
     commonSettings,
-    libraryDependencies ++= Seq(akkaSprayJson, alpakkaFile, scalaTest, alpakkaKafka, h2o)
+    libraryDependencies ++= Seq(akkaSprayJson, alpakkaFile, alpakkaKafka, h2o, scalaTest)
   )
   .dependsOn(util, model, datamodel, model)
 
@@ -68,7 +68,7 @@ lazy val modelServingEgress = (project in file("./model-serving-egress"))
   .enablePlugins(PipelinesAkkaStreamsLibraryPlugin)
   .settings(
     commonSettings,
-    libraryDependencies ++= Seq(akkaSprayJson,alpakkaFile,influx, scalaTest, alpakkaKafka)
+    libraryDependencies ++= Seq(akkaSprayJson, alpakkaFile, influx, alpakkaKafka, scalaTest)
   )
   .dependsOn(util, datamodel, model)
 

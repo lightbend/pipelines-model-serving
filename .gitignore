@@ -28,3 +28,4 @@ project/activator-sbt*
 .*.swp
 .metals
 .bloop
+data-ingestors/src/main/resources/airline-data-csv/

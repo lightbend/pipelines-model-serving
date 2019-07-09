@@ -7,7 +7,7 @@ import pipelines.examples.data.DataCodecs._
 
 object Main {
   def main(args: Array[String]): Unit = {
-    val count = if (args.length > 0) args(0).toInt else 10000
+    val count = if (args.length > 0) args(0).toInt else 1000
     val server = new AirlineFlightModelServer()
     val reader =
       CSVReader[AirlineFlightRecord](

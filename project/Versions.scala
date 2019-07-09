@@ -33,4 +33,6 @@ object Versions {
   val scalaLoggingVersion   = "3.9.2"
 
   val sprayJsonVersion      = "1.3.5"
+
+  val apacheCommonsCompress = "1.18"
 }
