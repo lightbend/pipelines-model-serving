@@ -44,7 +44,7 @@ The large data files are _not_ in the repo. Instructions for getting them are TB
 > and change the `mainBlueprint` to the desired subproject:
 >
 > 1. `mainBlueprint := Some("recommender-blueprint.conf")`
-> 2. `mainBlueprint := Some("wineblueprint.conf")`
+> 2. `mainBlueprint := Some("wine-blueprint.conf")`
 > 3. `mainBlueprint := Some("airline-flights-blueprint.conf")`
 
 Verify blueprint:
