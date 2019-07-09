@@ -18,10 +18,10 @@ lazy val dockerRegistry =
 lazy val modelServingPipeline = (project in file("./model-serving-pipeline"))
   .enablePlugins(PipelinesApplicationPlugin)
   .settings(
-    name := "ml-serving-pipeline",
+    name := "airline-flights-serving-pipeline",
     version := "1.0",
     pipelinesDockerRegistry := dockerRegistry,
-    // mainBlueprint := Some("airline-flights-blueprint.conf"),
+    mainBlueprint := Some("airline-flights-blueprint.conf"),
     libraryDependencies ++= Seq(slf4j, alpakkaKafka)
   )
   .dependsOn(util, dataIngestors, modelServingFlow, modelServingEgress)

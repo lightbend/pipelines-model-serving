@@ -23,7 +23,7 @@ object InfluxDBUtil {
     val time = new Date().getTime
 
     val point = Point.measurement(measurement).time(time, TimeUnit.MILLISECONDS)
-    point.addField("alchohal", record.alcohol)
+    point.addField("alcohol", record.alcohol)
     point.addField("ph", record.pH)
     point.addField("citric_acid", record.citric_acid)
     write(point.build(), database, influxDB)
