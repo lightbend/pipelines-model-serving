@@ -4,6 +4,8 @@ object Versions {
 
   val PMMLVersion           = "1.4.3"
 
+  val h2oVersion            = "3.24.0.4"
+
   val bijectionVersion      = "0.9.6"
 
   val scaltestVersion       = "3.0.5"
@@ -31,4 +33,6 @@ object Versions {
   val scalaLoggingVersion   = "3.9.2"
 
   val sprayJsonVersion      = "1.3.5"
+
+  val apacheCommonsCompress = "1.18"
 }

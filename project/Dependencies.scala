@@ -12,9 +12,11 @@ object Dependencies {
   val tensorflowProto = "org.tensorflow"                  % "proto"                     % tensorflowVersion
   val pmml            = "org.jpmml"                       % "pmml-evaluator"            % PMMLVersion
   val pmmlextensions  = "org.jpmml"                       % "pmml-evaluator-extension"  % PMMLVersion
+  val h2o             = "ai.h2o"                          % "h2o-genmodel"              % h2oVersion
   val influx          = "org.influxdb"                    % "influxdb-java"             % influxVerion
   val slf4j           = "org.slf4j"                       % "slf4j-log4j12"             % slf4jVersion
   val gson            = "com.google.code.gson"            % "gson"                      % gsonVersion
+  val compress        = "org.apache.commons"              % "commons-compress"          %apacheCommonsCompress
   val scalajHTTP      = "org.scalaj"                     %% "scalaj-http"               % scalajHTTPVersion
   // val scalaLogging    = "com.typesafe.scala-logging"     %% "scala-logging"             % scalaLoggingVersion
   // val logback         = "ch.qos.logback"                  % "logback-classic"           % logbackClassicVersion

@@ -58,7 +58,7 @@ class WineDataIngressTest extends FunSpec with BeforeAndAfterAll with OutputInte
   //     val config1 = ConfigFactory.parseMap(
   //       Map(
   //         "wine-quality.data-sources" -> (Seq("fail").asJava),
-  //         "wine-quality.data-frequency-seconds" -> 1
+  //         "wine-quality.data-frequency-milliseconds" -> 1
   //       ).asJava)
   //     val config = config1 //.withFallback(ConfigFactory.load())
   //     val testkit = AkkaStreamletTestKit(system, mat, config)

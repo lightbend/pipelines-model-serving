@@ -3,7 +3,8 @@ import sbt.Keys._
 import scalariform.formatter.preferences._
 import Dependencies._
 
-version := "1.0"
+lazy val thisVersion = "1.2.0"
+version := thisVersion
 
 // The following assumes an environment variable that defines the OpenShift cluster
 // domain name and uses the default registry prefix. Adapt for your environment or
@@ -18,7 +19,7 @@ lazy val wineModelServingPipeline = (project in file("./wine-model-serving-pipel
   .enablePlugins(PipelinesAkkaStreamsLibraryPlugin)
   .settings(
     name := "wine-model-serving-pipeline",
-    version := "1.1",
+    version := thisVersion,
     pipelinesDockerRegistry := dockerRegistry,
     libraryDependencies ++= Seq(slf4j, alpakkaKafka)
   )
@@ -29,7 +30,18 @@ lazy val recommenderModelServingPipeline = (project in file("./recommender-model
   .enablePlugins(PipelinesAkkaStreamsLibraryPlugin)
   .settings(
     name := "recommender-model-serving-pipeline",
-    version := "1.1",
+    version := thisVersion,
+    pipelinesDockerRegistry := dockerRegistry,
+    libraryDependencies ++= Seq(slf4j, alpakkaKafka)
+  )
+  .dependsOn(util, dataModel, modelLibrary, dataIngestors, modelServingFlow, modelServingEgress)
+
+lazy val airlineFlightsModelServingPipeline = (project in file("./airline-flights-model-serving-pipeline"))
+  .enablePlugins(PipelinesApplicationPlugin)
+  .enablePlugins(PipelinesAkkaStreamsLibraryPlugin)
+  .settings(
+    name := "airline-flights-serving-pipeline",
+    version := thisVersion,
     pipelinesDockerRegistry := dockerRegistry,
     libraryDependencies ++= Seq(slf4j, alpakkaKafka)
   )
@@ -66,7 +78,7 @@ lazy val dataIngestors = (project in file("./data-ingestors"))
   .settings(
     name := "data-ingestors",
     commonSettings,
-    libraryDependencies ++= Seq(akkaSprayJson, alpakkaFile, alpakkaKafka, scalaTest),
+    libraryDependencies ++= Seq(akkaSprayJson, compress, alpakkaFile, alpakkaKafka, scalaTest),
   )
   .dependsOn(util, dataModel, modelLibrary)
 
@@ -75,7 +87,7 @@ lazy val modelServingFlow = (project in file("./model-serving-flow"))
   .settings(
     name := "model-serving-flow",
     commonSettings,
-    libraryDependencies ++= Seq(akkaSprayJson, alpakkaFile, alpakkaKafka, scalaTest)
+    libraryDependencies ++= Seq(akkaSprayJson, alpakkaFile, alpakkaKafka, h2o, scalaTest)
   )
   .dependsOn(util, dataModel, modelLibrary)
 
@@ -87,6 +99,16 @@ lazy val modelServingEgress = (project in file("./model-serving-egress"))
     libraryDependencies ++= Seq(slf4j, akkaSprayJson, alpakkaFile, alpakkaKafka, influx, scalaTest)
   )
   .dependsOn(util, dataModel, modelLibrary)
+
+// For testing outside Pipelines, when we need to wire a few components together
+// that don't have explicit dependencies above.
+lazy val main = (project in file("./main"))
+  .settings(
+    name := "main",
+    version := thisVersion,
+    libraryDependencies ++= Seq(slf4j, alpakkaKafka)
+  )
+  .dependsOn(util, model, datamodel, dataIngestors, modelServingFlow, modelServingEgress)
 
 lazy val commonSettings = Seq(
   scalaVersion := "2.12.8",
