@@ -14,7 +14,6 @@ class WineDataIngressTest extends FunSpec with BeforeAndAfterAll with OutputInte
   val initializingMsgFmt = "RecordsFilesReader: Initializing from resource %s"
   val testGoodRecordsResources = Array("10_winequality_red.csv")
   val testBadRecordsResources = Array("error_winequality_red.csv")
-  val parser = WineRecordsFilesReader.csvParserWithSeparator(";")
 
   private implicit val system = ActorSystem("WineDataIngress")
   private implicit val mat = ActorMaterializer()
@@ -24,7 +23,7 @@ class WineDataIngressTest extends FunSpec with BeforeAndAfterAll with OutputInte
   }
 
   def toKeyedWineRecord(s: String): (String, WineRecord) = {
-    val rec = parser(s).right.get
+    val rec = WineDataIngressUtil.parse(s.split(";")).right.get
     (rec.dataType, rec)
   }
 
