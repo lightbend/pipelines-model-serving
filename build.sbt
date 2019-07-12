@@ -108,7 +108,8 @@ lazy val main = (project in file("./main"))
     version := thisVersion,
     libraryDependencies ++= Seq(slf4j, alpakkaKafka)
   )
-  .dependsOn(util, model, datamodel, dataIngestors, modelServingFlow, modelServingEgress)
+  .dependsOn(util, dataModel, dataIngestors, modelLibrary, modelServingFlow, modelServingEgress,
+    wineModelServingPipeline, recommenderModelServingPipeline, airlineFlightsModelServingPipeline)
 
 lazy val commonSettings = Seq(
   scalaVersion := "2.12.8",

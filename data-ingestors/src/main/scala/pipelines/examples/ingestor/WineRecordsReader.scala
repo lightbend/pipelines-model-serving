@@ -1,20 +1,20 @@
 package pipelines.examples.ingestor
 
 import pipelines.examples.data._
-import pipelines.ingress.RecordsReader
+import pipelines.ingress.RecordsFilesReader
 
 /**
  * To construct a WineRecords reader.
  */
-object WineRecordsReader {
+object WineRecordsFilesReader {
 
   /** Make a reader for WineRecords. */
-  def makeReader(resourcePaths: Seq[String]): RecordsReader[WineRecord] =
-    RecordsReader.fromClasspath(resourcePaths)(csvParserWithSeparator(";"))
+  def makeReader(resourcePaths: Seq[String]): RecordsFilesReader[WineRecord] =
+    RecordsFilesReader.fromClasspath(resourcePaths)(csvParserWithSeparator(";"))
 
   /**
    * Used to construct the parser required by an instance of
-   * RecordsReader for WineRecord instances.
+   * RecordsFilesReader for WineRecord instances.
    */
   def csvParserWithSeparator(separator: String = ","): String ⇒ Either[String, WineRecord] =
     (line: String) ⇒ {
@@ -48,7 +48,7 @@ object WineRecordsReader {
   def main(args: Array[String]): Unit = {
     val count = if (args.length > 0) args(0).toInt else 100000
 
-    val reader = WineRecordsReader.makeReader(WineDataIngressUtil.wineQualityRecordsResources)
+    val reader = WineRecordsFilesReader.makeReader(WineDataIngressUtil.wineQualityRecordsResources)
     (1 to count).foreach { n ⇒
       val record = reader.next()
       println("%7d: %s".format(n, record))

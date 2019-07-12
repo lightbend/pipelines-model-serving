@@ -25,11 +25,8 @@ final case object RecommenderModelDataIngress extends AkkaStreamlet {
   final override val shape = StreamletShape.withOutlets(out)
 
   override def createLogic = new RunnableGraphStreamletLogic() {
-
-    def runnableGraph = RecommenderModelDataIngressUtil.makeSource(
-      RecommenderModelDataIngressUtil.recommenderServerLocations,
-      RecommenderModelDataIngressUtil.modelFrequencySeconds)
-      .to(atMostOnceSink(out))
+    def runnableGraph =
+      RecommenderModelDataIngressUtil.makeSource().to(atMostOnceSink(out))
   }
 }
 
@@ -67,7 +64,9 @@ object RecommenderModelDataIngressUtil {
     ConfigUtil.default.getOrElse[Int]("recommender.model-frequency-seconds")(120).seconds
 
   /** Helper method extracted from RecommenderModelDataIngress for easier unit testing. */
-  def makeSource(serverLocations: Vector[String], frequency: FiniteDuration): Source[ModelDescriptor, NotUsed] = {
+  def makeSource(
+      serverLocations: Vector[String] = recommenderServerLocations,
+      frequency: FiniteDuration = modelFrequencySeconds): Source[ModelDescriptor, NotUsed] = {
     val modelFinder = new ModelDescriptorFinder(0, serverLocations)
     Source.repeat(modelFinder)
       .map(finder ⇒ finder.getModelDescriptor())

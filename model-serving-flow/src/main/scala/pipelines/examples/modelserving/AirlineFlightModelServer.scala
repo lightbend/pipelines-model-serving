@@ -2,9 +2,8 @@ package pipelines.examples.modelserving
 
 import pipelines.akkastream.{ AkkaStreamlet, StreamletLogic }
 import pipelines.examples.data._
-import pipelines.examples.data.DataCodecs._
-
-import pipelines.streamlets.{ FanIn, _ }
+import pipelines.streamlets.avro.{ AvroInlet, AvroOutlet }
+import pipelines.streamlets.StreamletShape
 
 import hex.genmodel.MojoModel
 import hex.genmodel.easy.EasyPredictModelWrapper
@@ -12,34 +11,21 @@ import hex.genmodel.easy.RowData
 
 import java.io.{ File, FileOutputStream }
 
-class AirlineFlightModelServerStreamlet extends AkkaStreamlet {
+final case object AirlineFlightModelServerStreamlet extends AkkaStreamlet {
 
-  override implicit val shape = new AirlineFlightFanInOut[AirlineFlightRecord, AirlineFlightResult]
+  val in = AvroInlet[AirlineFlightRecord]("in")
+  val out = AvroOutlet[AirlineFlightResult](
+    "out",
+    r ⇒ s"${r.year}-${r.month}-${r.dayOfMonth}-${r.depTime}-${r.uniqueCarrier}-${r.flightNum}")
+
+  final override val shape = StreamletShape.withInlets(in).withOutlets(out)
 
   override final def createLogic = new StreamletLogic {
-    // (implicit shape: AirlineFlightFanInOut[AirlineFlightRecord, AirlineFlightResult], context: StreamletContext) extends
     val server = new AirlineFlightModelServer()
-
-    val in = atLeastOnceSource[AirlineFlightRecord](shape.inlet0)
-    val out = atLeastOnceSink[AirlineFlightResult](shape.outlet0)
-
-    override def init(): Unit = {
-      in.map(record ⇒ server.score(record)).runWith(out)
+    def run() = {
+      atLeastOnceSource(in).map(record ⇒ server.score(record)).to(atLeastOnceSink(out))
     }
   }
-}
-
-object AirlineFlightFanInOut {
-  val InletName = new IndexedPrefix("in", 2)
-  val outletName = new IndexedPrefix("out", 1)
-}
-
-final class AirlineFlightFanInOut[In0: KeyedSchema, Out0: KeyedSchema] extends StreamletShape {
-  val inlet0 = KeyedInletPort[In0](FanIn.inletName(0))
-  val outlet0 = KeyedOutletPort[Out0](FanOut.outletName(0))
-
-  final override def inlets = Vector(inlet0)
-  final override def outlets = Vector(outlet0)
 }
 
 class AirlineFlightModelServer() {

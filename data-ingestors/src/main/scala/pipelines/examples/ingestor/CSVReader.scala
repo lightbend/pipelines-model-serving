@@ -1,75 +1,31 @@
 package pipelines.examples.ingestor
 
-import java.util.zip.{ GZIPInputStream, ZipInputStream }
-import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream
-import scala.io.Source
+import pipelines.ingress.RecordsFilesReader
 
 /**
- * Provides an infinite stream of CVS records, repeatedly reading them from
- * the specified resources.
- * This class handles the case where one or more of the resource files are
- * actually zipped (extension ".zip"), gzipped ("gz" or "gzip"), or bzipped ("bz2" or "bzip2").
+ * Construct a RecordsFilesReader that provides an infinite stream of CVS records,
+ * repeatedly reading them from the specified resources.
  * WARNING: This simple implementation does not handle nested, quoted, or escaped separators (e.g., ',')!
  * @param resourceNames file names within the class path resources.
  * @param separator to split the CSV string on.
- * @param dropFirstLines mostly used to skip over column headers, if you know they are there. Otherwise, they will fail to parse.
- * @param parse parses the `Array[String]` after splitting into records. If a line fails to parse, it prints a warning, then moves to the next line. Hence, only valid records are returned.
+ * @param dropFirstN mostly used to skip over column headers, if you know they are there. Otherwise, they will fail to parse.
+ * @param parse function that coverts the `Array[String]` after splitting into records. If a line fails to parse, return a `Left[String]`.
  */
-final case class CSVReader[R](
-    resourceNames: Seq[String],
-    separator: String = ",",
-    dropFirstLines: Int = 0)(
-    parse: CSVReader.Parser[R]) {
-
-  assert(resourceNames.size > 0)
-
-  private var currentResourceName = ""
-  private var currentResourceIndex = 0
-  private var iterator: Iterator[String] = init(currentResourceIndex)
-  private var lineNumber = 0
-
-  private def init(whichSource: Int): Iterator[String] = try {
-    currentResourceName = resourceNames(whichSource)
-    println(s"CSVReader: Initializing from resource $currentResourceName")
-    getLines(currentResourceName).drop(dropFirstLines)
-  } catch {
-    case cause: NullPointerException ⇒
-      throw new IllegalArgumentException(s"Resource $currentResourceName not found on the CLASSPATH", cause)
-  }
-
-  // TODO: IF there are NO valid records, effectively loops forever!
-  def next(): R = {
-    if (!iterator.hasNext) {
-      currentResourceIndex = (currentResourceIndex + 1) % resourceNames.size
-      iterator = init(currentResourceIndex) // start over
-      lineNumber = 0
-    }
-    val line = iterator.next()
-    lineNumber += 1
-    val tokens = line.split(separator)
-    parse(tokens) match {
-      case Left(error) ⇒
-        Console.err.println(s"""ERROR: ($currentResourceName:$lineNumber) Failed to parse line "$line" with separator "$separator": error = $error""")
-        next()
-      case Right(record) ⇒ record
-    }
-  }
-
-  def getLines(name: String): Iterator[String] = {
-    val classloader = Thread.currentThread().getContextClassLoader()
-    val ris = classloader.getResourceAsStream(name)
-    val extensionRE = raw"""^.*\.([^.]+)$$""".r
-    val is = name match {
-      case extensionRE("gz") | extensionRE("gzip")   ⇒ new GZIPInputStream(ris)
-      case extensionRE("zip")                        ⇒ new ZipInputStream(ris)
-      case extensionRE("bz2") | extensionRE("bzip2") ⇒ new BZip2CompressorInputStream(ris)
-      case _                                         ⇒ ris
-    }
-    Source.fromInputStream(is).getLines
-  }
-}
-
 object CSVReader {
-  type Parser[R] = Array[String] ⇒ Either[String, R]
+  def fromFileSystem[R](
+      resourcePaths: Seq[String],
+      separator: String = ",",
+      dropFirstN: Int = 0)(
+      parse: Array[String] ⇒ Either[String, R]): RecordsFilesReader[R] =
+    RecordsFilesReader.fromFileSystem[R](
+      resourcePaths: Seq[String], dropFirstN)(s ⇒ parse(s.split(separator)))
+
+  def fromClasspath[R](
+      resourcePaths: Seq[String],
+      separator: String = ",",
+      dropFirstN: Int = 0)(
+      parse: Array[String] ⇒ Either[String, R]): RecordsFilesReader[R] =
+    RecordsFilesReader.fromClasspath[R](
+      resourcePaths: Seq[String], dropFirstN)(s ⇒ parse(s.split(separator)))
 }
 

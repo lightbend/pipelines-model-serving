@@ -11,10 +11,10 @@ import com.typesafe.config.ConfigFactory
 
 class WineDataIngressTest extends FunSpec with BeforeAndAfterAll with OutputInterceptor {
 
-  val initializingMsgFmt = "RecordsReader: Initializing from resource %s"
+  val initializingMsgFmt = "RecordsFilesReader: Initializing from resource %s"
   val testGoodRecordsResources = Array("10_winequality_red.csv")
   val testBadRecordsResources = Array("error_winequality_red.csv")
-  val parser = WineRecordsReader.csvParserWithSeparator(";")
+  val parser = WineRecordsFilesReader.csvParserWithSeparator(";")
 
   private implicit val system = ActorSystem("WineDataIngress")
   private implicit val mat = ActorMaterializer()

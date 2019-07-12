@@ -3,43 +3,58 @@ package pipelines.examples.ingestor
 import akka.NotUsed
 import akka.stream.scaladsl.Source
 import pipelines.akkastream.scaladsl._
-import pipelines.examples.data.DataCodecs._
+import pipelines.akkastream.AkkaStreamlet
+import pipelines.streamlets.avro.AvroOutlet
+import pipelines.streamlets.StreamletShape
 import pipelines.examples.data._
-
+import pipelines.ingress.RecordsFilesReader
+import pipelines.util.ConfigUtil
+import pipelines.util.ConfigUtil.implicits._
+import pipelines.ingress.RecordsFilesReader
 import scala.concurrent.duration._
-import scala.collection.JavaConverters._
 
 /**
  * Load Airline flight data at a rate specified in the application configuration.
  */
-class AirlineFlightRecordsIngress extends SourceIngress[AirlineFlightRecord] {
+final case object AirlineFlightRecordsIngress extends AkkaStreamlet {
 
-  protected lazy val dataFrequencyMilliseconds =
-    this.context.config.getInt("airline-flights.data-frequency-milliseconds")
+  val out = AvroOutlet[AirlineFlightRecord](
+    "out",
+    r ⇒ s"${r.year}-${r.month}-${r.dayOfMonth}-${r.depTime}-${r.uniqueCarrier}-${r.flightNum}")
 
-  override def createLogic = new SourceIngressLogic() {
+  final override val shape = StreamletShape(out)
 
-    val recordsReader =
-      CSVReader[AirlineFlightRecord](
-        resourceNames = AirlineFlightRecordsIngress.RecordsResources,
-        separator = ",",
-        dropFirstLines = 1)(AirlineFlightRecordsIngress.parse)
-
-    def source: Source[AirlineFlightRecord, NotUsed] = {
-      Source.repeat(NotUsed)
-        .map(_ ⇒ recordsReader.next())
-        .throttle(1, dataFrequencyMilliseconds.milliseconds)
-    }
+  override final def createLogic = new RunnableGraphStreamletLogic {
+    def runnableGraph =
+      AirlineFlightRecordsIngressUtil.makeSource().to(atMostOnceSink(out))
   }
 }
 
-object AirlineFlightRecordsIngress {
+object AirlineFlightRecordsIngressUtil {
 
-  protected lazy val config = com.typesafe.config.ConfigFactory.load()
-  lazy val RecordsResources: Seq[String] =
-    config.getStringList("airline-flights.data-sources").asScala
+  lazy val dataFrequencyMilliseconds: FiniteDuration =
+    ConfigUtil.default
+      .getOrElse[Int]("airline-flights.data-frequency-milliseconds")(1).milliseconds
 
-  def parse(tokens: Array[String]): Either[String, AirlineFlightRecord] = {
+  lazy val airlineFlightRecordsResources: Seq[String] =
+    ConfigUtil.default.getOrFail[Seq[String]]("airline-flights.data-sources")
+
+  def makeSource(
+      recordsResources: Seq[String] = airlineFlightRecordsResources,
+      frequency: FiniteDuration = dataFrequencyMilliseconds): Source[AirlineFlightRecord, NotUsed] = {
+    val reader = makeRecordsFilesReader(recordsResources)
+    Source.repeat(NotUsed)
+      .map(_ ⇒ reader.next()._2) // Only keep the record part of the tuple
+      .throttle(1, frequency)
+  }
+
+  def makeRecordsFilesReader(resources: Seq[String] = airlineFlightRecordsResources): RecordsFilesReader[AirlineFlightRecord] =
+    CSVReader.fromClasspath[AirlineFlightRecord](
+      resourcePaths = resources,
+      separator = ",",
+      dropFirstN = 1)(parse)
+
+  val parse: Array[String] ⇒ Either[String, AirlineFlightRecord] = tokens ⇒ {
     if (tokens.length < 29) {
       Left("ERROR: record does not have 29 fields.")
     } else try {
@@ -88,10 +103,11 @@ object AirlineFlightRecordsIngress {
     val count = if (args.length > 0) args(0).toInt else 100000
 
     val reader =
-      CSVReader[AirlineFlightRecord](
-        resourceNames = AirlineFlightRecordsIngress.RecordsResources,
+      CSVReader.fromClasspath[AirlineFlightRecord](
+        resourcePaths = airlineFlightRecordsResources,
         separator = ",",
-        dropFirstLines = 1)(AirlineFlightRecordsIngress.parse)
+        dropFirstN = 1)(parse)
+
     (1 to count).foreach { n ⇒
       val record = reader.next()
       println("%7d: %s".format(n, record))
