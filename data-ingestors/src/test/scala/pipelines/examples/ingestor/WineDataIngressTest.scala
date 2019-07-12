@@ -49,23 +49,4 @@ class WineDataIngressTest extends FunSpec with BeforeAndAfterAll with OutputInte
       }
     }
   }
-
-  // This doesn't work: The full application.conf is apparently being loaded anyway,
-  // so it finds the "good" file.
-  // it("Raises an exception if the resource doesn't exist") {
-  //   import scala.collection.JavaConverters._
-  //   intercept[IllegalArgumentException] {
-  //     val config1 = ConfigFactory.parseMap(
-  //       Map(
-  //         "wine-quality.data-sources" -> (Seq("fail").asJava),
-  //         "wine-quality.data-frequency-milliseconds" -> 1
-  //       ).asJava)
-  //     val config = config1 //.withFallback(ConfigFactory.load())
-  //     val testkit = AkkaStreamletTestKit(system, mat, config)
-  //     val ingress = new WineDataIngress
-  //     val out = testkit.outletAsTap(ingress.shape.outlet)
-  //     testkit.run(ingress, Nil, out, () ⇒ {})
-  //   }
-  // }
-
 }

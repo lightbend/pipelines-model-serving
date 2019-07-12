@@ -1,6 +1,4 @@
-package pipelines.examples.ingestor
-
-import pipelines.ingress.RecordsFilesReader
+package pipelines.ingress
 
 /**
  * Construct a RecordsFilesReader that provides an infinite stream of CVS records,
@@ -13,18 +11,18 @@ import pipelines.ingress.RecordsFilesReader
  */
 object CSVReader {
   def fromFileSystem[R](
-      resourcePaths: Seq[String],
-      separator: String = ",",
-      dropFirstN: Int = 0)(
-      parse: Array[String] ⇒ Either[String, R]): RecordsFilesReader[R] =
+    resourcePaths: Seq[String],
+    separator: String = ",",
+    dropFirstN: Int = 0)(
+    parse: Array[String] ⇒ Either[String, R]): RecordsFilesReader[R] =
     RecordsFilesReader.fromFileSystem[R](
       resourcePaths: Seq[String], dropFirstN)(s ⇒ parse(s.split(separator)))
 
   def fromClasspath[R](
-      resourcePaths: Seq[String],
-      separator: String = ",",
-      dropFirstN: Int = 0)(
-      parse: Array[String] ⇒ Either[String, R]): RecordsFilesReader[R] =
+    resourcePaths: Seq[String],
+    separator: String = ",",
+    dropFirstN: Int = 0)(
+    parse: Array[String] ⇒ Either[String, R]): RecordsFilesReader[R] =
     RecordsFilesReader.fromClasspath[R](
       resourcePaths: Seq[String], dropFirstN)(s ⇒ parse(s.split(separator)))
 }

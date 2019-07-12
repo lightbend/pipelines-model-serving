@@ -7,10 +7,9 @@ import pipelines.akkastream.AkkaStreamlet
 import pipelines.streamlets.avro.AvroOutlet
 import pipelines.streamlets.StreamletShape
 import pipelines.examples.data._
-import pipelines.ingress.RecordsFilesReader
+import pipelines.ingress.{ CSVReader, RecordsFilesReader }
 import pipelines.util.ConfigUtil
 import pipelines.util.ConfigUtil.implicits._
-import pipelines.ingress.RecordsFilesReader
 import scala.concurrent.duration._
 
 /**

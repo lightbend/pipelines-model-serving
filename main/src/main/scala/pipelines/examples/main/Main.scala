@@ -1,8 +1,9 @@
 package pipelines.examples.main
 
 import pipelines.examples.modelserving.AirlineFlightModelServer
-import pipelines.examples.ingestor.{ AirlineFlightRecordsIngressUtil, CSVReader }
+import pipelines.examples.ingestor.AirlineFlightRecordsIngressUtil
 import pipelines.examples.data._
+import pipelines.ingress.CSVReader
 
 object Main {
   val defaultN = 1000
