@@ -100,17 +100,6 @@ lazy val modelServingEgress = (project in file("./model-serving-egress"))
   )
   .dependsOn(util, dataModel, modelLibrary)
 
-// For testing outside Pipelines, when we need to wire a few components together
-// that don't have explicit dependencies above.
-lazy val main = (project in file("./main"))
-  .settings(
-    name := "main",
-    version := thisVersion,
-    libraryDependencies ++= Seq(slf4j, alpakkaKafka)
-  )
-  .dependsOn(util, dataModel, dataIngestors, modelLibrary, modelServingFlow, modelServingEgress,
-    wineModelServingPipeline, recommenderModelServingPipeline, airlineFlightsModelServingPipeline)
-
 lazy val commonSettings = Seq(
   scalaVersion := "2.12.8",
   scalacOptions ++= Seq(

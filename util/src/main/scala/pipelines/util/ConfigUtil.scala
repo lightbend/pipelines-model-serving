@@ -23,7 +23,7 @@ final case class ConfigUtil(config: Config) {
    * @return the value or throw an exception
    */
   def getOrFail[T](key: String, extraMessage: String = "")(implicit getter: (Config, String) => T): T =
-    if (config.hasPath(key)) getter(config, key) else throw ConfigUtil.UnknownKey(key, extraMessage)
+    if (config.hasPath(key)) getter(config, key) else throw ConfigUtil.UnknownKey(key, config, extraMessage)
 
   /**
    * Get the value of the correct type from the specified Typesafe Config object.
@@ -38,10 +38,20 @@ final case class ConfigUtil(config: Config) {
 /** TODO: Add more implicit "getters" to cover the rest of the Typesafe Config API. */
 object ConfigUtil {
 
-  final case class UnknownKey(key: String, message: String = "")
-    extends IllegalArgumentException(s"Could not find configuration key $key. $message")
+  /**
+   * Hook for displaying the full configuration when a key isn't found,
+   * for debugging purposes. Because this can be huge, it's off by default.
+   */
+  var showFullConfig = false
 
-  lazy val defaultConfig: Config = com.typesafe.config.ConfigFactory.load()
+  final case class UnknownKey(key: String, config: Config, message: String = "")
+    extends IllegalArgumentException(
+      s"Could not find configuration key $key. $message ${fullConfig(config)}")
+
+  private def fullConfig(config: Config): String =
+    if (showFullConfig) s"(full config = $config)" else ""
+
+  lazy val defaultConfig: Config = com.typesafe.config.ConfigFactory.defaultApplication()
   lazy val default: ConfigUtil = new ConfigUtil(defaultConfig)
 
   object implicits {

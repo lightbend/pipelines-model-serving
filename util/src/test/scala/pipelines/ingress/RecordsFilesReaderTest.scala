@@ -1,7 +1,7 @@
 package pipelines.ingress
 
 import org.scalatest.FunSpec
-import pipelines.util.test.OutputInterceptor
+import pipelines.test.OutputInterceptor
 
 class RecordsFilesReaderTest extends FunSpec with OutputInterceptor {
 

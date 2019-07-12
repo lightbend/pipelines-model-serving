@@ -2,7 +2,7 @@ package pipelines.examples.ingestor
 
 import org.scalatest.{ FunSpec, BeforeAndAfter }
 import pipelines.examples.data._
-import pipelines.util.test.OutputInterceptor
+import pipelines.test.OutputInterceptor
 
 class WineModelsReaderTest extends FunSpec with BeforeAndAfter with OutputInterceptor {
 

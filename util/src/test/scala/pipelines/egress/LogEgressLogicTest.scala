@@ -9,7 +9,7 @@ import pipelines.streamlets.StreamletShape
 import pipelines.streamlets.avro.AvroInlet
 import pipelines.akkastream.AkkaStreamlet
 import pipelines.akkastream.testkit._
-import pipelines.util.test.{ OutputInterceptor, TestData }
+import pipelines.test.{ OutputInterceptor, TestData }
 import com.typesafe.config.ConfigFactory
 import scala.reflect.ClassTag
 

@@ -134,6 +134,12 @@ object RecordsFilesReader {
     extends IllegalArgumentException(
       s"All records found in the resources ${resourcePaths.mkString("[", ", ", "]")} failed to parse!!")
 
+  /**
+   * Program to test the logic.
+   * To test the CSVReader wrapper logic, use pipelines.examples.airlineflights.main.Main
+   * in project airlineFlightsModelServingPipeline. It also tests loading files from the
+   * CLASSPATH.
+   */
   def main(args: Array[String]): Unit = {
     def help(): Nothing = {
       println("""
@@ -144,6 +150,10 @@ object RecordsFilesReader {
       |  -f | --files       treat the specified resources as file paths (default)
       |  -c | --classpath   expect the specified resources to be found on the CLASSPATH
       |  resource1 [...]    one or more paths to resources
+      |
+      | To test the CSVReader wrapper logic, use pipelines.examples.airlineflights.main.Main
+      | in project airlineFlightsModelServingPipeline. It also tests loading files from the
+      | CLASSPATH.
       """.stripMargin)
       sys.exit(0)
     }
