@@ -23,7 +23,7 @@ lazy val wineModelServingPipeline = (project in file("./wine-model-serving-pipel
     pipelinesDockerRegistry := dockerRegistry,
     libraryDependencies ++= Seq(slf4j, alpakkaKafka)
   )
-  .dependsOn(util, dataModel, modelLibrary, dataIngestors, modelServingFlow, modelServingEgress)
+  .dependsOn(util, data, dataModel, modelLibrary, dataIngestors, modelServingFlow, modelServingEgress)
 
 lazy val recommenderModelServingPipeline = (project in file("./recommender-model-serving-pipeline"))
   .enablePlugins(PipelinesApplicationPlugin)
@@ -34,7 +34,7 @@ lazy val recommenderModelServingPipeline = (project in file("./recommender-model
     pipelinesDockerRegistry := dockerRegistry,
     libraryDependencies ++= Seq(slf4j, alpakkaKafka)
   )
-  .dependsOn(util, dataModel, modelLibrary, dataIngestors, modelServingFlow, modelServingEgress)
+  .dependsOn(util, data, dataModel, modelLibrary, dataIngestors, modelServingFlow, modelServingEgress)
 
 lazy val airlineFlightsModelServingPipeline = (project in file("./airline-flights-model-serving-pipeline"))
   .enablePlugins(PipelinesApplicationPlugin)
@@ -45,7 +45,7 @@ lazy val airlineFlightsModelServingPipeline = (project in file("./airline-flight
     pipelinesDockerRegistry := dockerRegistry,
     libraryDependencies ++= Seq(slf4j, alpakkaKafka)
   )
-  .dependsOn(util, dataModel, modelLibrary, dataIngestors, modelServingFlow, modelServingEgress)
+  .dependsOn(util, data, dataModel, modelLibrary, dataIngestors, modelServingFlow, modelServingEgress)
 
 lazy val util = (project in file("./util"))
   .enablePlugins(PipelinesLibraryPlugin)
@@ -54,6 +54,12 @@ lazy val util = (project in file("./util"))
     name := "util",
     libraryDependencies ++= Seq(alpakkaKafka, slf4j, bijection, json2avro, influx, scalaTest),
     (sourceGenerators in Compile) += (avroScalaGenerateSpecific in Compile).taskValue,
+  )
+
+// Only contains data sets.
+lazy val data = (project in file("./data"))
+  .settings(
+    name := "data"
   )
 
 lazy val dataModel = (project in file("./data-model"))
@@ -71,7 +77,7 @@ lazy val modelLibrary = (project in file("./model-library"))
     libraryDependencies ++= Seq(tensorflow, tensorflowProto,pmml,pmmlextensions, bijection,json2avro, gson, scalajHTTP),
     (sourceGenerators in Compile) += (avroScalaGenerateSpecific in Compile).taskValue,
   )
-  .dependsOn(util, dataModel)
+  .dependsOn(util, data, dataModel)
 
 lazy val dataIngestors = (project in file("./data-ingestors"))
   .enablePlugins(PipelinesAkkaStreamsLibraryPlugin)
@@ -80,7 +86,7 @@ lazy val dataIngestors = (project in file("./data-ingestors"))
     commonSettings,
     libraryDependencies ++= Seq(akkaSprayJson, compress, alpakkaFile, alpakkaKafka, scalaTest),
   )
-  .dependsOn(util, dataModel, modelLibrary)
+  .dependsOn(util, data, dataModel, modelLibrary)
 
 lazy val modelServingFlow = (project in file("./model-serving-flow"))
   .enablePlugins(PipelinesAkkaStreamsLibraryPlugin)
@@ -89,7 +95,7 @@ lazy val modelServingFlow = (project in file("./model-serving-flow"))
     commonSettings,
     libraryDependencies ++= Seq(akkaSprayJson, alpakkaFile, alpakkaKafka, h2o, scalaTest)
   )
-  .dependsOn(util, dataModel, modelLibrary)
+  .dependsOn(util, data, dataModel, modelLibrary)
 
 lazy val modelServingEgress = (project in file("./model-serving-egress"))
   .enablePlugins(PipelinesAkkaStreamsLibraryPlugin)
@@ -98,7 +104,7 @@ lazy val modelServingEgress = (project in file("./model-serving-egress"))
     commonSettings,
     libraryDependencies ++= Seq(slf4j, akkaSprayJson, alpakkaFile, alpakkaKafka, influx, scalaTest)
   )
-  .dependsOn(util, dataModel, modelLibrary)
+  .dependsOn(util, data, dataModel, modelLibrary)
 
 lazy val commonSettings = Seq(
   scalaVersion := "2.12.8",
