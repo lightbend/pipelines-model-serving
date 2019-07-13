@@ -8,8 +8,11 @@ import java.net.URL
  * CLASSPATH.
  */
 object ByteArrayReader {
-  def fromFileSystem(path: String): Either[String, Array[Byte]] =
+  def fromFileSystem(path: String): Either[String, Array[Byte]] = try {
     readBytes(path, "file system", new FileInputStream(path))
+  } catch {
+    case scala.util.control.NonFatal(th) => Left(th.getMessage)
+  }
 
   // HACK: If the resource doesn't exist and doesn't start with '/', try adding it!
   // If it doesn't exist but _has_ the leading '/', try removing it!

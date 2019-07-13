@@ -4,6 +4,7 @@ import org.scalatest.{ FunSpec, BeforeAndAfterAll }
 import akka.testkit._
 import akka.actor._
 import akka.stream._
+import scala.io.Source
 import pipelines.akkastream.testkit._
 import pipelines.examples.data.WineRecord
 import pipelines.test.OutputInterceptor
@@ -29,7 +30,9 @@ class WineDataIngressTest extends FunSpec with BeforeAndAfterAll with OutputInte
 
   def expected(sources: Seq[String]): Vector[(String, WineRecord)] =
     sources.foldLeft(Vector.empty[String]) { (vect, source) ⇒
-      vect ++ scala.io.Source.fromResource(source).getLines.toVector
+      val is = Source.fromResource(source)
+      vect ++ is.getLines.toVector
+      is.close()
       vect
     }.map(toKeyedWineRecord)
 

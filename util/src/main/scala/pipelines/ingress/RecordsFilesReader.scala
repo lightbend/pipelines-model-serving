@@ -1,44 +1,63 @@
 package pipelines.ingress
 
-import java.io.{ InputStream, FileInputStream }
+import scala.io.{ BufferedSource, Source }
+import java.io.{ FileInputStream, InputStream }
 import java.util.zip.{ GZIPInputStream, ZipInputStream }
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream
 
 /**
- * Provides an infinite stream of records. It will repeat loading records from
- * the specified resources until the application quits.
- * This class handles the case where one or more of the files are actually zipped
- * (extension ".zip"), gzipped ("gz" or "gzip"), or bzipped ("bz2" or "bzip2").
- * Note, use the RecordsFilesReader companion object helper methods to construct a reader.
+ * Provides an infinite stream of text-based records from one or more files in
+ * a file system or on the CLASSPATH. It is assumed that the files contain one
+ * record per line. This class loops through the list of resources, one at a time,
+ * until all the records have been returned. Then it repeats this process "forever".
+ * Note the records must be the same format (at least from the point of view of
+ * the parse method you supply).
+ * This class also handles the case where one or more of the files are actually
+ * zipped (extension ".zip"), gzipped ("gz" or "gzip"), or bzipped ("bz2" or
+ * "bzip2"). In fact, you can mix and match.
+ * Mostly, this class is designed for testing purposes, as it's unlikely a
+ * real-world application would read its input repeatedly and especially from
+ * the CLASSPATH.
  * @param resourcePaths the paths to resource files in the CLASSPATH.
  * @param extraMissingResourceErrMsg an error message used when a resource doesn't exist.
- * @param getLines function that takes a resource name, opens it as appropriate, and returns an iterator over the lines.
+ * @param getSource function that takes a resource name, opens it as appropriate, and returns a BufferedSource over the lines.
  * @param parse function that parses each line into a record, return an error as a `Left(String)`.
  */
-final case class RecordsFilesReader[R](
-  resourcePaths: Seq[String],
-  extraMissingResourceErrMsg: String,
-  getLines: String => Iterator[String],
+final class RecordsFilesReader[R] protected[ingress] (
+  val resourcePaths: Seq[String],
+  val origin: String,
+  dropFirstN: Int,
+  getSource: String => BufferedSource,
   parse: String => Either[String, R]) {
 
   if (resourcePaths.size == 0) throw RecordsFilesReader.NoResourcesSpecified
 
-  private def init(whichSource: Int): Iterator[(String, Int)] = {
-    currentResourceName = resourcePaths(whichSource)
+  private var currentTotalCount: Long = 0L
+  private var currentResourceIndex: Int = 0
+  private var currentSource: BufferedSource = init(currentResourceIndex)
+  private var iterator: Iterator[(String, Int)] = toIterator(currentSource)
+
+  private def init(whichSource: Int): BufferedSource = {
+    val currentResourceName = resourcePaths(whichSource)
     try {
       // TODO: replace with proper info logging.
       println(s"RecordsFilesReader: Initializing from resource $currentResourceName")
-      getLines(currentResourceName).zipWithIndex
+      getSource(currentResourceName)
     } catch {
       case scala.util.control.NonFatal(cause) ⇒
-        throw RecordsFilesReader.FailedToLoadResource(currentResourceName, extraMissingResourceErrMsg, cause)
+        throw RecordsFilesReader.FailedToLoadResource(currentResourceName, origin, cause)
     }
   }
 
-  private var currentTotalCount: Long = 0L
-  private var currentResourceIndex: Int = 0
-  private var currentResourceName: String = ""
-  private var iterator: Iterator[(String, Int)] = init(currentResourceIndex)
+  private def toIterator(source: BufferedSource): Iterator[(String, Int)] =
+    source.getLines.drop(dropFirstN).zipWithIndex
+
+  private def nextSource(): Unit = {
+    currentResourceIndex = (currentResourceIndex + 1) % resourcePaths.size
+    currentSource.close()
+    currentSource = init(currentResourceIndex) // start over
+    iterator = toIterator(currentSource)
+  }
 
   private def failIfAllBad(): Unit =
     if (currentResourceIndex + 1 >= resourcePaths.size && currentTotalCount == 0)
@@ -52,14 +71,14 @@ final case class RecordsFilesReader[R](
   def next(): (Long, R) = {
     if (!iterator.hasNext) {
       failIfAllBad()
-      currentResourceIndex = (currentResourceIndex + 1) % resourcePaths.size
-      iterator = init(currentResourceIndex) // start over
+      nextSource()
     }
     val (line, lineNumber) = iterator.next()
     parse(line) match {
       case Left(error) ⇒
         // TODO: replace with proper info logging.
-        Console.err.println(s"ERROR ($currentResourceName:$lineNumber) Invalid record string: $error")
+        Console.err.println(RecordsFilesReader.parseErrorMessageFormat.format(
+          resourcePaths(currentResourceIndex), lineNumber, error, line))
         next()
       case Right(record) ⇒
         currentTotalCount += 1
@@ -69,6 +88,8 @@ final case class RecordsFilesReader[R](
 }
 
 object RecordsFilesReader {
+
+  val parseErrorMessageFormat = "ERROR (%s:%d) Invalid record string, %s. line = %s"
 
   /**
    * Load resources from a file system.
@@ -82,8 +103,9 @@ object RecordsFilesReader {
     parse: String => Either[String, R]) =
     new RecordsFilesReader[R](
       resourcePaths,
-      extraErrMsgFile,
-      name => getLines(name, fromFile(name)).drop(dropFirstN),
+      "file system",
+      dropFirstN,
+      name => getSource(name, fromFile(name)),
       parse)
 
   /**
@@ -98,18 +120,22 @@ object RecordsFilesReader {
     parse: String => Either[String, R]) =
     new RecordsFilesReader[R](
       resourcePaths,
-      extraErrMsgClasspath,
-      name => getLines(name, fromResource(name)).drop(dropFirstN),
+      "CLASSPATH",
+      dropFirstN,
+      name => getSource(name, fromResource(name)),
       parse)
 
   def fromFile(name: String): InputStream = new FileInputStream(name)
 
   def fromResource(name: String): InputStream = {
     val classloader = Thread.currentThread().getContextClassLoader()
-    classloader.getResourceAsStream(name)
+    classloader.getResourceAsStream(name) match {
+      case null => throw FailedToLoadResource(name, "CLASSPATH")
+      case is => is
+    }
   }
 
-  def getLines(name: String, is: InputStream): Iterator[String] = {
+  def getSource(name: String, is: InputStream): BufferedSource = {
     val extensionRE = raw"""^.*\.([^.]+)$$""".r
     val is2 = name match {
       case extensionRE("gz") | extensionRE("gzip") ⇒ new GZIPInputStream(is)
@@ -117,18 +143,19 @@ object RecordsFilesReader {
       case extensionRE("bz2") | extensionRE("bzip2") ⇒ new BZip2CompressorInputStream(is)
       case _ ⇒ is
     }
-    scala.io.Source.fromInputStream(is2).getLines
+    scala.io.Source.fromInputStream(is2)
   }
 
   final case object NoResourcesSpecified
     extends IllegalArgumentException(
       "No resources were specified from which to read records.")
 
-  val extraErrMsgFile = "Does the path exist?"
-  val extraErrMsgClasspath = "Does it exist on the CLASSPATH?"
-  final case class FailedToLoadResource(resourcePath: String, extraMsg: String, cause: Throwable = null)
+  val extraErrMsgs = Map(
+    "file system" -> "Does the path exist?",
+    "CLASSPATH" -> "Does it exist on the CLASSPATH?")
+  final case class FailedToLoadResource(resourcePath: String, origin: String, cause: Throwable = null)
     extends IllegalArgumentException(
-      s"Failed to load resource $resourcePath. $extraMsg", cause)
+      s"Failed to load resource $resourcePath. ${extraErrMsgs(origin)}", cause)
 
   final case class AllRecordsAreBad(resourcePaths: Seq[String])
     extends IllegalArgumentException(

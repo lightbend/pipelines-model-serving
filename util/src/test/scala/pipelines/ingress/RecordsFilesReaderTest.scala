@@ -5,8 +5,6 @@ import pipelines.test.OutputInterceptor
 
 class RecordsFilesReaderTest extends FunSpec with OutputInterceptor {
 
-  val initializingMsgFmt = "RecordsFilesReader: Initializing from resource %s"
-  val badRecordMsgFmt = "ERROR (%sbad-records.csv:%d) Invalid record string: %s"
   val testGoodRecordsResources = Array("good-records1.csv", "good-records2.csv")
   val testBadRecordsResources = Array("bad-records.csv")
   val testGoodRecordsFiles = testGoodRecordsResources.map(s => "util/src/test/resources/" + s)
@@ -66,6 +64,8 @@ class RecordsFilesReaderTest extends FunSpec with OutputInterceptor {
       }
     }
 
+    val initializingMsgFmt = "RecordsFilesReader: Initializing from resource %s"
+
     def rereadTest(resourcePaths: Array[String], makeReader: => RecordsFilesReader[(Int, String)]): Unit = {
       val outMsgs1 = resourcePaths.map(s => initializingMsgFmt.format(s))
       val outMsgs = outMsgs1 ++ outMsgs1
@@ -89,12 +89,14 @@ class RecordsFilesReaderTest extends FunSpec with OutputInterceptor {
     def badRecordsTest(pathPrefix: String, resourcePaths: Array[String], makeReader: => RecordsFilesReader[(Int, String)]): Unit = {
       val outMsgs = resourcePaths.map(s ⇒ initializingMsgFmt.format(s))
       // A bit fragile hard-coding all these strings, but they exactly match the "bad" input file.
+      val fmt = RecordsFilesReader.parseErrorMessageFormat
+      val file = s"${pathPrefix}bad-records.csv"
       val errMsgs = Array(
-        badRecordMsgFmt.format(pathPrefix, 0, "1,"),
-        badRecordMsgFmt.format(pathPrefix, 1, "two"),
-        badRecordMsgFmt.format(pathPrefix, 2, "3three"),
-        badRecordMsgFmt.format(pathPrefix, 3, "java.lang.NumberFormatException: For input string: \"four\""),
-        badRecordMsgFmt.format(pathPrefix, 4, "java.lang.NumberFormatException: For input string: \"\""))
+        fmt.format(file, 0, "1,", "1,"),
+        fmt.format(file, 1, "two", "two"),
+        fmt.format(file, 2, "3three", "3three"),
+        fmt.format(file, 3, "java.lang.NumberFormatException: For input string: \"four\"", "four,4"),
+        fmt.format(file, 4, "java.lang.NumberFormatException: For input string: \"\"", ",five"))
 
       expectOutput(outMsgs, errMsgs) {
         intercept[RecordsFilesReader.AllRecordsAreBad] {
