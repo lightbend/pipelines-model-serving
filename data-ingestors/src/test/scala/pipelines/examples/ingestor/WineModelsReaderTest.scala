@@ -7,8 +7,8 @@ import pipelines.test.OutputInterceptor
 class WineModelsReaderTest extends FunSpec with BeforeAndAfter with OutputInterceptor {
 
   val initializingMsgFmt = "WineModelsReader: Initializing from resource %s"
-  val testGoodModelsResources = Array("wine/data/100_winequality_red.csv")
-  val testBadModelsResources = Array("wine/data/error_winequality_red.csv")
+  val testGoodModelsResources = Array("/wine/data/100_winequality_red.csv")
+  val testBadModelsResources = Array("/wine/data/error_winequality_red.csv")
 
   describe("WineModelsReader") {
     it("Loads one or more model file resources from the classpath") {

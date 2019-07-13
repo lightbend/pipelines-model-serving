@@ -30,6 +30,7 @@ class WineDataIngressTest extends FunSpec with BeforeAndAfterAll with OutputInte
   def expected(sources: Seq[String]): Vector[(String, WineRecord)] =
     sources.foldLeft(Vector.empty[String]) { (vect, source) ⇒
       vect ++ scala.io.Source.fromResource(source).getLines.toVector
+      vect
     }.map(toKeyedWineRecord)
 
   describe("WineDataIngress") {

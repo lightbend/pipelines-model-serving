@@ -1,7 +1,7 @@
 package pipelines.examples.ingestor
 
 import pipelines.examples.data._
-import java.io.BufferedInputStream
+import pipelines.ingress.ByteArrayReader
 
 /**
  * Provides an infinite stream of wine records, repeatedly reading them from
@@ -50,15 +50,12 @@ final case class WineModelsReader(resourceNames: Map[ModelType, Seq[String]]) {
       next()
   }
 
-  protected def readBytes(source: String): Array[Byte] = try {
-    val bis = new BufferedInputStream(getClass.getResourceAsStream(source))
-    val barray = Stream.continually(bis.read).takeWhile(-1 !=).map(_.toByte).toArray
-    bis.close()
-    barray
-  } catch {
-    case e: java.io.IOException ⇒
-      throw new IllegalArgumentException("Bad input source: " + source, e)
-  }
+  protected def readBytes(source: String): Array[Byte] =
+    ByteArrayReader.fromClasspath(source) match {
+      case Left(error) ⇒
+        throw new IllegalArgumentException(error) // TODO: return Either from readBytes!
+      case Right(array) ⇒ array
+    }
 
   protected def finished(modelType: ModelType, currentIndex: Int): Boolean =
     resourceNames.get(modelType) match {
