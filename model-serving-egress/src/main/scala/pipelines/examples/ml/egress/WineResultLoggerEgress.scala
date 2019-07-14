@@ -12,7 +12,7 @@ final case object WineResultLoggerEgress extends AkkaStreamlet {
 
   override def createLogic = LogEgressLogic.makeFromConfig[WineResult](
     in = in,
-    logLevelConfigKey = "wine-quality.log-level",
+    logLevelConfigKey = "wine-quality.log-egress-level",
     prefix = "Wine Quality:")
 }
 

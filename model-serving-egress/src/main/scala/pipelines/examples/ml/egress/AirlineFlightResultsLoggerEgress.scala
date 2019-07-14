@@ -12,6 +12,6 @@ final case object AirlineFlightResultsLoggerEgress extends AkkaStreamlet {
 
   override def createLogic = LogEgressLogic.makeFromConfig[AirlineFlightResult](
     in = in,
-    logLevelConfigKey = "airline-flights.log-level",
+    logLevelConfigKey = "airline-flights.log-egress-level",
     prefix = "Airline Flight Delay Prediction: ")
 }

@@ -9,10 +9,11 @@ import pipelines.akkastream.scaladsl.{ RunnableGraphStreamletLogic }
 import pipelines.streamlets.avro.AvroOutlet
 import pipelines.streamlets.StreamletShape
 import pipelines.examples.data.WineRecord
-import pipelines.ingress.{ CSVReader, RecordsFilesReader }
+import pipelines.ingress.RecordsReader
 import pipelines.util.ConfigUtil
 import pipelines.util.ConfigUtil.implicits._
 import scala.concurrent.duration._
+import org.slf4j.{ Logger, LoggerFactory }
 
 /**
  * Reads wine records from a CSV file (which actually uses ";" as the separator),
@@ -32,17 +33,19 @@ final case object WineDataIngress extends AkkaStreamlet {
 
 object WineDataIngressUtil {
 
+  val rootConfigKey = "wine-quality"
+
   lazy val dataFrequencyMilliseconds: FiniteDuration =
     ConfigUtil.default
-      .getOrElse[Int]("wine-quality.data-frequency-milliseconds")(1).milliseconds
+      .getOrElse[Int](rootConfigKey + ".data-frequency-milliseconds")(1).milliseconds
 
-  lazy val wineQualityRecordsResources: Seq[String] =
-    ConfigUtil.default.getOrFail[Seq[String]]("wine-quality.data-sources")
+  lazy val recordsResources: Seq[String] =
+    ConfigUtil.default.getOrFail[Seq[String]](rootConfigKey + ".data-sources.from-classpath.paths")
 
   def makeSource(
-      recordsResources: Seq[String] = wineQualityRecordsResources,
+      recordsResources: Seq[String] = recordsResources,
       frequency: FiniteDuration = dataFrequencyMilliseconds): Source[WineRecord, NotUsed] = {
-    val reader = makeRecordsFilesReader(recordsResources)
+    val reader = makeRecordsReader(recordsResources)
     Source.repeat(reader)
       .map(reader ⇒ reader.next()._2) // Only keep the record part of the tuple
       .throttle(1, frequency)
@@ -50,13 +53,13 @@ object WineDataIngressUtil {
 
   val defaultSeparator = ";"
 
-  def makeRecordsFilesReader(resources: Seq[String] = wineQualityRecordsResources): RecordsFilesReader[WineRecord] =
-    CSVReader.fromClasspath[WineRecord](
+  def makeRecordsReader(resources: Seq[String] = recordsResources): RecordsReader[WineRecord] =
+    RecordsReader.fromClasspath[WineRecord](
       resourcePaths = resources,
-      separator = defaultSeparator,
       dropFirstN = 0)(parse)
 
-  val parse: Array[String] ⇒ Either[String, WineRecord] = tokens ⇒ {
+  val parse: String ⇒ Either[String, WineRecord] = line ⇒ {
+    val tokens = line.split(defaultSeparator)
     if (tokens.length < 11) {
       Left(s"Record does not have 11 fields, ${tokens.mkString(defaultSeparator)}")
     } else try {
@@ -81,14 +84,16 @@ object WineDataIngressUtil {
     }
   }
 
+  val logger: Logger = LoggerFactory.getLogger(RecordsReader.getClass)
+
   /** For testing purposes. */
   def main(args: Array[String]): Unit = {
-    println(s"frequency (seconds): ${dataFrequencyMilliseconds}")
-    println(s"records sources:     ${wineQualityRecordsResources}")
+    logger.info(s"frequency (seconds): ${dataFrequencyMilliseconds}")
+    logger.info(s"records sources:     ${recordsResources}")
     implicit val system = ActorSystem("RecommenderDataIngress-Main")
     implicit val mat = ActorMaterializer()
-    val source = makeSource(wineQualityRecordsResources, dataFrequencyMilliseconds)
-    source.runWith(Sink.foreach(println))
+    val source = makeSource(recordsResources, dataFrequencyMilliseconds)
+    source.runWith(Sink.foreach(line ⇒ logger.info(line.toString)))
   }
 }
 

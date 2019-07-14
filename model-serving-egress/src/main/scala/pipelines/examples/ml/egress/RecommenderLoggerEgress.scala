@@ -12,6 +12,6 @@ final case object RecommenderLoggerEgress extends AkkaStreamlet {
 
   override def createLogic = LogEgressLogic.makeFromConfig[RecommendationResult](
     in = in,
-    logLevelConfigKey = "recommender.log-level",
+    logLevelConfigKey = "recommender.log-egress-level",
     prefix = "Recommender:")
 }

@@ -3,7 +3,7 @@ package pipelines.examples.airlineflights.main
 import pipelines.examples.modelserving.AirlineFlightModelServer
 import pipelines.examples.ingestor.AirlineFlightRecordsIngressUtil
 import pipelines.examples.data._
-import pipelines.ingress.CSVReader
+import pipelines.ingress.RecordsReader
 
 /**
  * For testing the logic outside of Pipelines.
@@ -36,10 +36,10 @@ object Main {
     val count = parseArgs(args, defaultN)
     println(s"Main: Running airlines test application. Printing a maximum of $count lines")
     val server = new AirlineFlightModelServer()
-    val reader = CSVReader.fromClasspath[AirlineFlightRecord](
+    val reader = RecordsReader.fromClasspath[AirlineFlightRecord](
       resourcePaths = AirlineFlightRecordsIngressUtil.airlineFlightRecordsResources,
-      separator = ",",
-      dropFirstN = 1)(AirlineFlightRecordsIngressUtil.parse)
+      dropFirstN = 1)(
+      AirlineFlightRecordsIngressUtil.parse)
     (1 to count).foreach { n ⇒
       val (_, record) = reader.next()
       val result = server.score(record)

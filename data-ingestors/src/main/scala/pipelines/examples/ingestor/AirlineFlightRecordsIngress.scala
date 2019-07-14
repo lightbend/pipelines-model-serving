@@ -7,7 +7,7 @@ import pipelines.akkastream.AkkaStreamlet
 import pipelines.streamlets.avro.AvroOutlet
 import pipelines.streamlets.StreamletShape
 import pipelines.examples.data._
-import pipelines.ingress.{ CSVReader, RecordsFilesReader }
+import pipelines.ingress.RecordsReader
 import pipelines.util.ConfigUtil
 import pipelines.util.ConfigUtil.implicits._
 import scala.concurrent.duration._
@@ -41,19 +41,19 @@ object AirlineFlightRecordsIngressUtil {
   def makeSource(
       recordsResources: Seq[String] = airlineFlightRecordsResources,
       frequency: FiniteDuration = dataFrequencyMilliseconds): Source[AirlineFlightRecord, NotUsed] = {
-    val reader = makeRecordsFilesReader(recordsResources)
+    val reader = makeRecordsReader(recordsResources)
     Source.repeat(NotUsed)
       .map(_ ⇒ reader.next()._2) // Only keep the record part of the tuple
       .throttle(1, frequency)
   }
 
-  def makeRecordsFilesReader(resources: Seq[String] = airlineFlightRecordsResources): RecordsFilesReader[AirlineFlightRecord] =
-    CSVReader.fromClasspath[AirlineFlightRecord](
+  def makeRecordsReader(resources: Seq[String] = airlineFlightRecordsResources): RecordsReader[AirlineFlightRecord] =
+    RecordsReader.fromClasspath[AirlineFlightRecord](
       resourcePaths = resources,
-      separator = ",",
       dropFirstN = 1)(parse)
 
-  val parse: Array[String] ⇒ Either[String, AirlineFlightRecord] = tokens ⇒ {
+  val parse: String ⇒ Either[String, AirlineFlightRecord] = line ⇒ {
+    val tokens = line.split(",")
     if (tokens.length < 29) {
       Left("ERROR: record does not have 29 fields.")
     } else try {
@@ -102,9 +102,8 @@ object AirlineFlightRecordsIngressUtil {
     val count = if (args.length > 0) args(0).toInt else 100000
 
     val reader =
-      CSVReader.fromClasspath[AirlineFlightRecord](
+      RecordsReader.fromClasspath[AirlineFlightRecord](
         resourcePaths = airlineFlightRecordsResources,
-        separator = ",",
         dropFirstN = 1)(parse)
 
     (1 to count).foreach { n ⇒
