@@ -10,10 +10,10 @@ import pipelines.streamlets.avro.AvroOutlet
 import pipelines.streamlets.StreamletShape
 import pipelines.examples.data.WineRecord
 import pipelines.ingress.RecordsReader
-import pipelines.util.ConfigUtil
-import pipelines.util.ConfigUtil.implicits._
+import pipelines.config.ConfigUtil
+import pipelines.config.ConfigUtil.implicits._
 import scala.concurrent.duration._
-import org.slf4j.{ Logger, LoggerFactory }
+import pipelines.logging.{ Logger, LoggingUtil }
 
 /**
  * Reads wine records from a CSV file (which actually uses ";" as the separator),
@@ -84,7 +84,7 @@ object WineDataIngressUtil {
     }
   }
 
-  val logger: Logger = LoggerFactory.getLogger(RecordsReader.getClass)
+  val logger: Logger = LoggingUtil.getLogger(RecordsReader.getClass)
 
   /** For testing purposes. */
   def main(args: Array[String]): Unit = {

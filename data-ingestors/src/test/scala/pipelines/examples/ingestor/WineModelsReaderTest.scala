@@ -12,7 +12,7 @@ class WineModelsReaderTest extends FunSpec with BeforeAndAfter with OutputInterc
 
   describe("WineModelsReader") {
     it("Loads one or more model file resources from the classpath") {
-      expectOutput() {
+      ignoreOutput {
         assert(WineModelsReader(WineModelDataIngressUtil.wineModelsResources).next() != null)
       }
     }
@@ -45,7 +45,7 @@ class WineModelsReaderTest extends FunSpec with BeforeAndAfter with OutputInterc
 
       it("Continuously rereads the resource until terminated") {
         // val outMsgs = Array.fill(2)(initializingMsgFmt.format(testGoodModelsResources(0)))
-        expectOutput() {
+        ignoreOutput {
           val reader = WineModelsReader(WineModelDataIngressUtil.wineModelsResources)
           val totalPMML = WineModelDataIngressUtil.wineModelsResources(ModelType.PMML).size * 2
           val totalTensorFlow = WineModelDataIngressUtil.wineModelsResources(ModelType.TENSORFLOW).size * 2

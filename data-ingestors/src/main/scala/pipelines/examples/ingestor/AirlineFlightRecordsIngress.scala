@@ -8,8 +8,8 @@ import pipelines.streamlets.avro.AvroOutlet
 import pipelines.streamlets.StreamletShape
 import pipelines.examples.data._
 import pipelines.ingress.RecordsReader
-import pipelines.util.ConfigUtil
-import pipelines.util.ConfigUtil.implicits._
+import pipelines.config.ConfigUtil
+import pipelines.config.ConfigUtil.implicits._
 import scala.concurrent.duration._
 
 /**

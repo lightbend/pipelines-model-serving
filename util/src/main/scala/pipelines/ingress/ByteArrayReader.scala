@@ -2,12 +2,18 @@ package pipelines.ingress
 
 import java.io.{ BufferedInputStream, FileInputStream, InputStream }
 import java.net.URL
+import pipelines.logging.{ Logger, LoggingUtil }
 
 /**
  * Return a byte array read from a file source, either in a file system or the
  * CLASSPATH.
+ * TODO: Add fromURL (see [[RecordsReader]]).
+ * TODO: Combine with [[RecordsReader]] to enable the latter to better support binary?
  */
 object ByteArrayReader {
+
+  val logger: Logger = LoggingUtil.getLogger(ByteArrayReader.getClass)
+
   def fromFileSystem(path: String): Either[String, Array[Byte]] = try {
     readBytes(path, "file system", new FileInputStream(path))
   } catch {
@@ -23,13 +29,11 @@ object ByteArrayReader {
       else if (path.startsWith("/")) {
         val path2 = path.substring(1)
         if (clazz.getResource(path2) != null) {
-          // TODO: use real logging.
-          Console.err.println(s"WARNING: It was necessary to remove the leading '/' from the beginning of the CLASSPATH path $path")
+          logger.warn(s"It was necessary to remove the leading '/' from the beginning of the CLASSPATH path $path")
           Right(path2)
         } else Left(s"CLASSPATH resource $path and $path2 do not exist!")
       } else if (clazz.getResource("/" + path) != null) {
-        // TODO: use real logging.
-        Console.err.println(s"WARNING: It was necessary to add a '/' to the beginning of the CLASSPATH path $path")
+        logger.warn(s"It was necessary to add a '/' to the beginning of the CLASSPATH path $path")
         Right("/" + path)
       } else Left(s"CLASSPATH resource $path and /$path do not exist!")
     }

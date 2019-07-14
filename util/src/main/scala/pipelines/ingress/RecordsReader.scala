@@ -1,14 +1,14 @@
 package pipelines.ingress
 
 import scala.io.{ BufferedSource, Source }
-import java.io.{ File, FilenameFilter, FileInputStream, FileWriter, InputStream }
+import java.io.{ File, FilenameFilter, FileInputStream, FileOutputStream, InputStream }
 import java.util.zip.{ GZIPInputStream, ZipInputStream }
 import java.net.URL
 import scala.collection.JavaConverters._
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream
-import pipelines.util.ConfigUtil
-import pipelines.util.ConfigUtil.implicits._
-import org.slf4j.{ Logger, LoggerFactory }
+import pipelines.config.ConfigUtil
+import pipelines.config.ConfigUtil.implicits._
+import pipelines.logging.{ MutableLogger, LoggingUtil }
 
 /**
  * Provides an infinite stream of text-based records from one or more files in
@@ -85,7 +85,7 @@ final class RecordsReaderImpl[R, S] protected[ingress] (
   private def init(whichSource: Int): BufferedSource = {
     val currentResource = resourcePaths(whichSource)
     try {
-      RecordsReader.logger.info(s"RecordsReader: Initializing from resource $currentResource")
+      RecordsReader.logger.info(s"Initializing from resource $currentResource")
       getSource(currentResource)
     } catch {
       case scala.util.control.NonFatal(cause) ⇒
@@ -138,9 +138,9 @@ object RecordsReader {
   }
   import SourceKind._
 
-  val parseErrorMessageFormat = "ERROR (%s:%d) Invalid record string, %s. line = %s"
+  val parseErrorMessageFormat = "(%s:%d) Invalid record string, %s. line = %s"
 
-  val logger: Logger = LoggerFactory.getLogger(RecordsReader.getClass)
+  val logger: MutableLogger = LoggingUtil.getLogger(RecordsReader.getClass)
 
   /**
    * Load resources from a file system.
@@ -314,22 +314,31 @@ object RecordsReader {
   protected def download(urls: Seq[URL]): (Vector[String], Vector[File]) =
     urls.foldLeft(Vector.empty[String] -> Vector.empty[File]) {
       case ((errors, files), url) =>
-        val fileNameParts = url.getPath.split("/").last.split("\\.")
-        val (prefix, suffix) = fileNameParts.splitAt(fileNameParts.length - 1)
+        val fileNameParts = url.toString.split("/").last.split("\\.")
+        val (prefix1, suffix1) = fileNameParts.splitAt(fileNameParts.length - 1)
+        val prefix = if (prefix1.size > 0) prefix1 else Array("file") // hmm
+        val suffix = if (suffix1.size > 0) suffix1 else Array("data") // hmm
         download(url, prefix.mkString("."), suffix.head) match {
           case Left(error) => (errors :+ error, files)
           case Right(file) => (errors, files :+ file)
         }
     }
 
+  // Copied some of this logic from ByteArrayReader. TODO: Merge??
   protected def download(
     url: URL, prefix: String, suffix: String): Either[String, File] = try {
     val suffix2 = if (suffix.length > 0) "." + suffix else suffix
     val target = File.createTempFile(prefix, suffix2)
-    logger.info("Downloading $url to local file $target.")
-    val os = new FileWriter(target)
-    Source.fromURL(url).getLines.foreach { line =>
-      os.write(line, 0, line.size)
+    logger.info(s"Downloading $url to local file $target")
+
+    val len = 1024 * 1024 // arbitrary size
+    val buffer = Array.fill[Byte](len)(0)
+    val is = url.openStream()
+    val os = new FileOutputStream(target)
+    var count = is.read(buffer)
+    while (count > 0) {
+      os.write(buffer, 0, count)
+      count = is.read(buffer)
     }
     os.flush()
     os.close()

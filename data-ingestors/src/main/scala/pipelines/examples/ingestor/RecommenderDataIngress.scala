@@ -12,8 +12,8 @@ import pipelines.examples.data._
 import scala.collection.mutable.ListBuffer
 import scala.util.Random
 import scala.concurrent.duration._
-import pipelines.util.ConfigUtil
-import pipelines.util.ConfigUtil.implicits._
+import pipelines.config.ConfigUtil
+import pipelines.config.ConfigUtil.implicits._
 
 /**
  * Ingress of data for recommendations. In this case, every second we

@@ -9,8 +9,8 @@ import pipelines.streamlets.StreamletShape
 import pipelines.akkastream.AkkaStreamlet
 import pipelines.akkastream.scaladsl.{ RunnableGraphStreamletLogic }
 import pipelines.examples.data._
-import pipelines.util.ConfigUtil
-import pipelines.util.ConfigUtil.implicits._
+import pipelines.config.ConfigUtil
+import pipelines.config.ConfigUtil.implicits._
 import scala.concurrent.duration._
 import scala.collection.JavaConverters._
 
