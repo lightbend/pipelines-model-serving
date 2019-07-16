@@ -202,6 +202,7 @@ object RecordsReader {
    * Download files from URLs to a local "temp file" location, then read the contents
    * from there.
    * Messages are logged indicating the temporary file name for the corresponding URL.
+   * TODO: provide a caching mechanism, so the same files aren't downloaded repeatedly.
    * @param resourceURLs the URLs to use to retrieve the resources.
    * @param dropFirstN drop the first records, primarily to support CSV headers.
    * @param failIfMissing fail if any of the specified files can't be downloaded.

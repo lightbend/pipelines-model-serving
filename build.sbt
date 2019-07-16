@@ -40,7 +40,7 @@ lazy val airlineFlightsModelServingPipeline = (project in file("./airline-flight
   .enablePlugins(PipelinesApplicationPlugin)
   .enablePlugins(PipelinesAkkaStreamsLibraryPlugin)
   .settings(
-    name := "airline-flights-model-serving-pipeline",
+    name := "airline-flights-model-serving-pipeline-deanw",
     version := thisVersion,
     // libraryDependencies ++= Seq(),
     pipelinesDockerRegistry := dockerRegistry

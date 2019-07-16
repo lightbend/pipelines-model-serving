@@ -33,7 +33,6 @@ Kubeflow is used for the recommender example.
 
 Instructions - TBD
 
-
 ### Air Traffic H20 Example
 
 The `RecordsReader` class under the `util` project is able to load files from the `CLASSPATH`, a file system (POSIX, not HDFS), and from URLs. There is a truncated data file from 1990, about 1MB in size, in the `data` subproject, but the default configuration in `airline-flights-model-serving-pipeline/src/main/resources/reference.conf/` has entries to pull down many large files from the original URL, storing them locally in the running image for the ingress object. By default, all but one are commented out. You may wish to add a few more, but _if this pod runs out of memory, remove some of them from the list!_
@@ -102,6 +101,8 @@ kubectl pipelines deploy docker-registry-default.gsa2.lightbend.com/lightbend/${
 ```
 
 ## Notes
+
+There are a number of `main` routines available for "mini-testing". If you just type `run` in one of the top-level projects mentioned above, you'll invoke a Pipelines runner under development, which may not be what you want. Instead, use the `sbt show determineMainClasses` to find the full paths and then use `sbt runMain foo.bar.Baz` to run the specific example you want.
 
 The wine data is inspired by this data source:
 https://www.kaggle.com/uciml/red-wine-quality-cortez-et-al-2009

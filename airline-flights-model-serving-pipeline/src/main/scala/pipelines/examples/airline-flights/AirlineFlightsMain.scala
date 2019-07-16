@@ -15,8 +15,8 @@ import pipelines.ingress.RecordsReader
  * scala> Main.main(Array("100"))
  * ```
  */
-object Main {
-  val defaultN = 1000
+object AirlineFlightsMain {
+  val defaultN = 100
 
   def main(args: Array[String]): Unit = {
     def parseArgs(args2: Seq[String], count: Int): Int = args2 match {
@@ -36,8 +36,8 @@ object Main {
     val count = parseArgs(args, defaultN)
     println(s"Main: Running airlines test application. Printing a maximum of $count lines")
     val server = new AirlineFlightModelServer()
-    val reader = RecordsReader.fromClasspath[AirlineFlightRecord](
-      resourcePaths = AirlineFlightRecordsIngressUtil.airlineFlightRecordsResources,
+    val reader = RecordsReader.fromConfiguration[AirlineFlightRecord](
+      configurationKeyRoot = AirlineFlightRecordsIngressUtil.rootConfigKey,
       dropFirstN = 1)(
       AirlineFlightRecordsIngressUtil.parse)
     (1 to count).foreach { n ⇒
@@ -50,7 +50,8 @@ object Main {
 
   def help(): Unit = {
     println(s"""
-      |usage: scala ...Main [-h|--help] [N]
+      |Tests airline flights data scoring.
+      |usage: scala ...AirlineFlightsMain [-h|--help] [N]
       |where:
       |  -h | --help   prints this message and quits
       |  N             the number of records to parse and print (default: $defaultN)

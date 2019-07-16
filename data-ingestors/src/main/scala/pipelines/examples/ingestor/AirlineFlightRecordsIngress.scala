@@ -31,25 +31,24 @@ final case object AirlineFlightRecordsIngress extends AkkaStreamlet {
 
 object AirlineFlightRecordsIngressUtil {
 
+  val rootConfigKey = "airline-flights"
+
   lazy val dataFrequencyMilliseconds: FiniteDuration =
     ConfigUtil.default
-      .getOrElse[Int]("airline-flights.data-frequency-milliseconds")(1).milliseconds
-
-  lazy val airlineFlightRecordsResources: Seq[String] =
-    ConfigUtil.default.getOrFail[Seq[String]]("airline-flights.data-sources")
+      .getOrElse[Int](rootConfigKey + ".data-frequency-milliseconds")(1).milliseconds
 
   def makeSource(
-      recordsResources: Seq[String] = airlineFlightRecordsResources,
+      configRoot: String = rootConfigKey,
       frequency: FiniteDuration = dataFrequencyMilliseconds): Source[AirlineFlightRecord, NotUsed] = {
-    val reader = makeRecordsReader(recordsResources)
+    val reader = makeRecordsReader(configRoot)
     Source.repeat(NotUsed)
       .map(_ ⇒ reader.next()._2) // Only keep the record part of the tuple
       .throttle(1, frequency)
   }
 
-  def makeRecordsReader(resources: Seq[String] = airlineFlightRecordsResources): RecordsReader[AirlineFlightRecord] =
-    RecordsReader.fromClasspath[AirlineFlightRecord](
-      resourcePaths = resources,
+  def makeRecordsReader(configRoot: String = rootConfigKey): RecordsReader[AirlineFlightRecord] =
+    RecordsReader.fromConfiguration[AirlineFlightRecord](
+      configurationKeyRoot = configRoot,
       dropFirstN = 1)(parse)
 
   val parse: String ⇒ Either[String, AirlineFlightRecord] = line ⇒ {
@@ -102,8 +101,8 @@ object AirlineFlightRecordsIngressUtil {
     val count = if (args.length > 0) args(0).toInt else 100000
 
     val reader =
-      RecordsReader.fromClasspath[AirlineFlightRecord](
-        resourcePaths = airlineFlightRecordsResources,
+      RecordsReader.fromConfiguration[AirlineFlightRecord](
+        configurationKeyRoot = rootConfigKey,
         dropFirstN = 1)(parse)
 
     (1 to count).foreach { n ⇒
