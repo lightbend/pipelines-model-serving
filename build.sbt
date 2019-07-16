@@ -16,31 +16,31 @@ lazy val dockerRegistry =
 
 val user = sys.props.getOrElse("user.name", "unknown-user")
 
-lazy val wineModelServingPipeline = (project in file("./wine-model-serving-pipeline"))
+lazy val wineModelServingPipeline = (project in file("./wine-quality-ml"))
   .enablePlugins(PipelinesApplicationPlugin)
   .enablePlugins(PipelinesAkkaStreamsLibraryPlugin)
   .settings(
-    name := s"wine-model-serving-pipeline-$user",
+    name := s"wine-quality-ml-$user",
     version := thisVersion,
     pipelinesDockerRegistry := dockerRegistry
   )
   .dependsOn(util, data, dataModel, modelLibrary, dataIngestors, modelServingFlow, modelServingEgress)
 
-lazy val recommenderModelServingPipeline = (project in file("./recommender-model-serving-pipeline"))
+lazy val recommenderModelServingPipeline = (project in file("./recommender-ml"))
   .enablePlugins(PipelinesApplicationPlugin)
   .enablePlugins(PipelinesAkkaStreamsLibraryPlugin)
   .settings(
-    name := s"recommender-model-serving-pipeline-$user",
+    name := s"recommender-ml-$user",
     version := thisVersion,
     pipelinesDockerRegistry := dockerRegistry
   )
   .dependsOn(util, data, dataModel, modelLibrary, dataIngestors, modelServingFlow, modelServingEgress)
 
-lazy val airlineFlightsModelServingPipeline = (project in file("./airline-flights-model-serving-pipeline"))
+lazy val airlineFlightsModelServingPipeline = (project in file("./airline-flights-ml"))
   .enablePlugins(PipelinesApplicationPlugin)
   .enablePlugins(PipelinesAkkaStreamsLibraryPlugin)
   .settings(
-    name := s"airline-flights-model-serving-pipeline-$user",
+    name := s"airline-flights-ml-$user",
     version := thisVersion,
     pipelinesDockerRegistry := dockerRegistry
   )
