@@ -8,7 +8,7 @@ import scala.collection.JavaConverters._
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream
 import pipelines.config.ConfigUtil
 import pipelines.config.ConfigUtil.implicits._
-import pipelines.logging.{ MutableLogger, LoggingUtil }
+import pipelines.logging.{ LoggingUtil, MutableLogger }
 
 /**
  * Provides an infinite stream of text-based records from one or more files in
@@ -85,11 +85,11 @@ final class RecordsReaderImpl[R, S] protected[ingress] (
   private def init(whichSource: Int): BufferedSource = {
     val currentResource = resourcePaths(whichSource)
     try {
-      RecordsReader.logger.info(s"Initializing from resource $currentResource")
+      RecordsReader.logger.info(s"Initializing from resource $currentResource (index: $currentResourceIndex)")
       getSource(currentResource)
     } catch {
       case scala.util.control.NonFatal(cause) ⇒
-        throw RecordsReader.FailedToLoadResources(Seq(currentResource.toString), origin, cause)
+        throw RecordsReader.FailedToLoadResources(Seq(currentResource), origin, cause)
     }
   }
 
@@ -140,7 +140,9 @@ object RecordsReader {
 
   val parseErrorMessageFormat = "(%s:%d) Invalid record string, %s. line = %s"
 
-  val logger: MutableLogger = LoggingUtil.getLogger(RecordsReader.getClass)
+  lazy val logger: MutableLogger = LoggingUtil.getLogger(RecordsReader.getClass)
+
+  lazy val config: ConfigUtil = ConfigUtil.default
 
   /**
    * Load resources from a file system.
@@ -152,17 +154,17 @@ object RecordsReader {
   def fromFileSystem[R](
     resourcePaths: Seq[File],
     dropFirstN: Int = 0,
-    failIfMissing: Boolean = false)(
+    failIfMissing: Boolean = true)(
     parse: String => Either[String, R]): RecordsReader[R] = {
-    checkFiles(resourcePaths) match {
-      case Nil => // okay
-      case seq =>
-        if (failIfMissing) throw FailedToLoadResources(seq.map(_.toString), FileSystem)
-        else logger.warn(s"Some files are missing: ${resourcePaths.mkString(", ")}")
+
+    logger.info(s"Reading resources from the file system: ${seqToString(resourcePaths)}")
+    val goodPaths = loadResources(resourcePaths, failIfMissing, FileSystem) { (path: File) =>
+      if (path.exists()) Right(path)
+      else Left(path.getCanonicalPath)
     }
 
     new RecordsReaderImpl[R, File](
-      resourcePaths,
+      goodPaths,
       FileSystem,
       dropFirstN,
       path => getSource(path.getCanonicalPath, fromFile(path)),
@@ -179,18 +181,17 @@ object RecordsReader {
   def fromClasspath[R](
     resourcePaths: Seq[String],
     dropFirstN: Int = 0,
-    failIfMissing: Boolean = false)(
+    failIfMissing: Boolean = true)(
     parse: String => Either[String, R]): RecordsReader[R] = {
-    checkResources(resourcePaths) match {
-      case Nil => // okay
-      case seq =>
-        if (failIfMissing) throw FailedToLoadResources(seq, CLASSPATH)
-        else logger.warn(
-          s"Some files are missing on the CLASSPATH: ${resourcePaths.mkString(", ")}")
+
+    logger.info(s"Reading resources from the CLASSPATH: ${seqToString(resourcePaths)}")
+    val goodPaths = loadResources(resourcePaths, failIfMissing, CLASSPATH) { (path: String) =>
+      val classloader = Thread.currentThread().getContextClassLoader()
+      if (classloader.getResource(path) == null) Left(path) else Right(path)
     }
 
     new RecordsReaderImpl[R, String](
-      resourcePaths,
+      goodPaths,
       CLASSPATH,
       dropFirstN,
       name => getSource(name, fromResource(name)),
@@ -209,17 +210,15 @@ object RecordsReader {
   def fromURLs[R](
     resourceURLs: Seq[URL],
     dropFirstN: Int = 0,
-    failIfMissing: Boolean = false)(
+    failIfMissing: Boolean = true)(
     parse: String => Either[String, R]): RecordsReader[R] = {
-    val (errors, paths) = download(resourceURLs)
-    if (errors.size > 0) {
-      if (failIfMissing) throw FailedToLoadResources(errors, URLs)
-      else logger.warn(s"Some downloads failed: ${errors.mkString(",")}")
-    }
+
+    logger.info(s"Reading resources from URLs: ${seqToString(resourceURLs)}")
+    val goodPaths = loadResources(resourceURLs, failIfMissing, URLs)(downloadURL)
 
     // We now instantiate a File-based reader:
     new RecordsReaderImpl[R, File](
-      paths,
+      goodPaths,
       URLs,
       dropFirstN,
       path => getSource(path.getCanonicalPath(), fromFile(path)),
@@ -240,8 +239,10 @@ object RecordsReader {
   def fromConfiguration[R](
     configurationKeyRoot: String,
     dropFirstN: Int = 0,
-    failIfMissing: Boolean = false)(
-    parse: String => Either[String, R]): RecordsReader[R] =
+    failIfMissing: Boolean = true)(
+    parse: String => Either[String, R]): RecordsReader[R] = {
+
+    logger.info(s"Determining where to find resources from the configuration at key: $configurationKeyRoot")
     determineSource(configurationKeyRoot) match {
       case FileSystem =>
         val paths = determineFilesFromConfiguration(configurationKeyRoot)
@@ -253,9 +254,42 @@ object RecordsReader {
         val urls = determineURLsFromConfiguration(configurationKeyRoot)
         fromURLs(urls, dropFirstN, failIfMissing)(parse)
     }
+  }
 
   protected def whichSource(configKeyRoot: String) =
     configKeyRoot + ".data-sources.which-source"
+
+  protected def loadResources[IN, OUT](
+    resources: Seq[IN],
+    failIfMissing: Boolean,
+    kind: SourceKind.Value)(
+    find: IN => Either[String, OUT]): Seq[OUT] = {
+
+    if (resources.size == 0) {
+      logger.error(s"No resources were specified in call to method from$kind!")
+      if (failIfMissing) throw FailedToLoadResources(resources, kind)
+      Nil
+    } else loadResources2(resources)(find) match {
+      case (Nil, good) => good
+      case (bad, good) =>
+        logger.error(s"Some resources were not found: ${seqToString(bad)} in the list ${seqToString(resources)}")
+        if (failIfMissing) throw FailedToLoadResources(bad, kind)
+        good
+    }
+  }
+
+  protected def loadResources2[IN, OUT](
+    resources: Seq[IN])(
+    find: IN => Either[String, OUT]): (Seq[String], Seq[OUT]) = {
+
+    resources.foldLeft((Vector.empty[String], Vector.empty[OUT])) {
+      case ((bad, good), resource) =>
+        find(resource) match {
+          case Left(error) => (bad :+ error, good)
+          case Right(out) => (bad, good :+ out)
+        }
+    }
+  }
 
   /**
    * Looking at the loaded configuration, determine how resources should be loaded.
@@ -263,14 +297,14 @@ object RecordsReader {
    */
   def determineSource(configKeyRoot: String): SourceKind = {
     val source = whichSource(configKeyRoot)
-    ConfigUtil.default.get[String](source) match {
+    config.get[String](source) match {
       case Some(flag) =>
         val f = flag.toLowerCase
         if (f.startsWith("file")) SourceKind.FileSystem
         else if (f.startsWith("url")) SourceKind.URLs
         else if (f.startsWith("class")) SourceKind.CLASSPATH
-        else throw InvalidConfiguration(Seq(source), s"The value $flag is not a valid kind of record source.")
-      case _ => throw InvalidConfiguration(Seq(source))
+        else throw InvalidConfiguration(config, Seq(source), s"The value $flag is not a valid kind of record source.")
+      case _ => throw InvalidConfiguration(config, Seq(source))
     }
   }
 
@@ -286,46 +320,19 @@ object RecordsReader {
   }
 
   /**
-   * Verify that the files exist in the file system.
-   * @return Nil if all exist, otherwise return the ones not found.
+   * Determine if a URL exists and also download the file to a local location.
+   * @return Right(local_path) if successful, Left(error) if not.
    */
-  protected def checkFiles(paths: Seq[File]): Seq[File] = {
-    paths.foldLeft(Vector.empty[File]) {
-      case (vect, path) =>
-        if (path.exists()) vect else vect :+ path
-    }
+  protected val downloadURL: URL => Either[String, File] = url => {
+    val fileNameParts = url.toString.split("/").last.split("\\.")
+    val (prefix1, suffix1) = fileNameParts.splitAt(fileNameParts.length - 1)
+    val prefix = if (prefix1.size > 0) prefix1 else Array("file") // hack
+    val suffix = if (suffix1.size > 0) suffix1 else Array("data") // hack
+    downloadURL2(url, prefix.mkString("."), suffix.head)
   }
-
-  /**
-   * Verify that the resources exist on the classpath.
-   * @return Nil if all exist, otherwise return the ones not found.
-   */
-  protected def checkResources(paths: Seq[String]): Seq[String] = {
-    val classloader = Thread.currentThread().getContextClassLoader()
-    paths.foldLeft(Vector.empty[String]) {
-      case (vect, path) =>
-        classloader.getResource(path) match {
-          case null => vect :+ path
-          case _ => vect
-        }
-    }
-  }
-
-  protected def download(urls: Seq[URL]): (Vector[String], Vector[File]) =
-    urls.foldLeft(Vector.empty[String] -> Vector.empty[File]) {
-      case ((errors, files), url) =>
-        val fileNameParts = url.toString.split("/").last.split("\\.")
-        val (prefix1, suffix1) = fileNameParts.splitAt(fileNameParts.length - 1)
-        val prefix = if (prefix1.size > 0) prefix1 else Array("file") // hmm
-        val suffix = if (suffix1.size > 0) suffix1 else Array("data") // hmm
-        download(url, prefix.mkString("."), suffix.head) match {
-          case Left(error) => (errors :+ error, files)
-          case Right(file) => (errors, files :+ file)
-        }
-    }
 
   // Copied some of this logic from ByteArrayReader. TODO: Merge??
-  protected def download(
+  protected def downloadURL2(
     url: URL, prefix: String, suffix: String): Either[String, File] = try {
     val suffix2 = if (suffix.length > 0) "." + suffix else suffix
     val target = File.createTempFile(prefix, suffix2)
@@ -344,7 +351,7 @@ object RecordsReader {
     os.close()
     Right(target)
   } catch {
-    case scala.util.control.NonFatal(th) => Left(s"Failed to download URL $url and write to local file: $th")
+    case scala.util.control.NonFatal(th) => Left(s"$url (failure cause: $th)")
   }
 
   protected def determineFilesFromConfiguration(configKeyRoot: String): Seq[File] = {
@@ -371,7 +378,7 @@ object RecordsReader {
     val fsp = configKeyRoot + ".data-sources.from-file-system.paths"
     val fsfp = configKeyRoot + ".data-sources.from-file-system.folder-paths"
     val fnre = configKeyRoot + ".data-sources.from-file-system.file-name-regex"
-    ConfigUtil.default.get[Seq[String]](fsp) match {
+    config.get[Seq[String]](fsp) match {
       case Some(list) if list.size > 0 => list.map(p => new File(p))
       case _ =>
         val regexString = ConfigUtil.default.getOrElse[String](fnre)("")
@@ -381,16 +388,16 @@ object RecordsReader {
             dirs.foldLeft(Vector.empty[File]) {
               case (v, d) => v ++ addFiles(d, regexString, filter)
             }
-          case _ => throw InvalidConfiguration(Seq(fsfp))
+          case _ => throw InvalidConfiguration(config, Seq(fsfp))
         }
     }
   }
 
   protected def determineClasspathResourcesFromConfiguration(configKeyRoot: String): Seq[String] = {
     val cpp = configKeyRoot + ".data-sources.from-classpath.paths"
-    ConfigUtil.default.get[Seq[String]](cpp) match {
+    config.get[Seq[String]](cpp) match {
       case Some(list) if list.size > 0 => list
-      case _ => throw InvalidConfiguration(Seq(cpp))
+      case _ => throw InvalidConfiguration(config, Seq(cpp))
     }
   }
 
@@ -405,12 +412,12 @@ object RecordsReader {
 
     val bu = configKeyRoot + ".data-sources.from-urls.base-urls"
     val f = configKeyRoot + ".data-sources.from-urls.files"
-    val bu2 = ConfigUtil.default.get[Seq[String]](bu)
-    val f2 = ConfigUtil.default.get[Seq[String]](f)
+    val bu2 = config.get[Seq[String]](bu)
+    val f2 = config.get[Seq[String]](f)
     (bu2, f2) match {
       case (Some(urls), Some(files)) if urls.size > 0 =>
         if (files.size > 0) combine(urls, files) else urls.map(url => new URL(url))
-      case _ => throw InvalidConfiguration(Seq(bu, f))
+      case _ => throw InvalidConfiguration(config, Seq(bu, f))
     }
   }
 
@@ -427,24 +434,31 @@ object RecordsReader {
 
   final case object NoResourcesSpecified
     extends IllegalArgumentException(
-      "No resources were specified from which to read records.")
+      "The specified resource list for records was empty.")
 
   /** If the keys were found with unexpected values, put the values in the message string. */
-  final case class InvalidConfiguration(keys: Seq[String], message: String = "")
+  final case class InvalidConfiguration(config: ConfigUtil, keys: Seq[String], message: String = "")
     extends IllegalArgumentException(
-      s"The configuration loaded from application.conf, etc. was missing one or more expected keys or unexpected values were returned: ${keys.mkString(", ")}. $message")
+      s"The configuration loaded from application.conf, etc. was missing one or more expected keys or unexpected values were returned: ${seqToString(keys)}. $message config = ${config.toStringWithFormatting()}")
 
   protected val extraErrMsgs = Map(
     FileSystem -> "Do the paths exist?",
     CLASSPATH -> "Do they exist on the CLASSPATH?",
     URLs -> "Do the URLs exist?")
-  final case class FailedToLoadResources(resourcePaths: Seq[String], origin: SourceKind.Value, cause: Throwable = null)
+  final case class FailedToLoadResources[T](resources: Seq[T], origin: SourceKind.Value, cause: Throwable = null)
     extends IllegalArgumentException(
-      s"Failed to load resources ${resourcePaths.mkString(", ")}. ${extraErrMsgs(origin)}", cause)
+      s"Failed to load resources: ${failedMsg(resources, origin: SourceKind.Value)}", cause)
 
-  final case class AllRecordsAreBad(resourcePaths: Seq[String])
+  private def failedMsg[T](resources: Seq[T], origin: SourceKind.Value) =
+    if (resources.size == 0) s"list is empty! Check the specification in 'application.conf'."
+    else s"${seqToString(resources)}. ${extraErrMsgs(origin)}"
+
+  final case class AllRecordsAreBad[T](resources: Seq[T])
     extends IllegalArgumentException(
-      s"All records found in the resources ${resourcePaths.mkString("[", ", ", "]")} failed to parse!!")
+      s"All records found in the resources ${seqToString(resources)} failed to parse!!")
+
+  protected def seqToString[T](seq: Seq[T]): String = seq.mkString("[", ", ", "]")
+
 }
 
 /**

@@ -39,13 +39,10 @@ object WineDataIngressUtil {
     ConfigUtil.default
       .getOrElse[Int](rootConfigKey + ".data-frequency-milliseconds")(1).milliseconds
 
-  lazy val recordsResources: Seq[String] =
-    ConfigUtil.default.getOrFail[Seq[String]](rootConfigKey + ".data-sources.from-classpath.paths")
-
   def makeSource(
-      recordsResources: Seq[String] = recordsResources,
+      configRoot: String = rootConfigKey,
       frequency: FiniteDuration = dataFrequencyMilliseconds): Source[WineRecord, NotUsed] = {
-    val reader = makeRecordsReader(recordsResources)
+    val reader = makeRecordsReader(configRoot)
     Source.repeat(reader)
       .map(reader ⇒ reader.next()._2) // Only keep the record part of the tuple
       .throttle(1, frequency)
@@ -53,9 +50,9 @@ object WineDataIngressUtil {
 
   val defaultSeparator = ";"
 
-  def makeRecordsReader(resources: Seq[String] = recordsResources): RecordsReader[WineRecord] =
-    RecordsReader.fromClasspath[WineRecord](
-      resourcePaths = resources,
+  def makeRecordsReader(configRoot: String = rootConfigKey): RecordsReader[WineRecord] =
+    RecordsReader.fromConfiguration[WineRecord](
+      configurationKeyRoot = configRoot,
       dropFirstN = 0)(parse)
 
   val parse: String ⇒ Either[String, WineRecord] = line ⇒ {
@@ -85,15 +82,5 @@ object WineDataIngressUtil {
   }
 
   val logger: Logger = LoggingUtil.getLogger(RecordsReader.getClass)
-
-  /** For testing purposes. */
-  def main(args: Array[String]): Unit = {
-    logger.info(s"frequency (seconds): ${dataFrequencyMilliseconds}")
-    logger.info(s"records sources:     ${recordsResources}")
-    implicit val system = ActorSystem("RecommenderDataIngress-Main")
-    implicit val mat = ActorMaterializer()
-    val source = makeSource(recordsResources, dataFrequencyMilliseconds)
-    source.runWith(Sink.foreach(line ⇒ logger.info(line.toString)))
-  }
 }
 

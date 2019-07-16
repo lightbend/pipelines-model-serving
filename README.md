@@ -36,7 +36,7 @@ Instructions - TBD
 
 ### Air Traffic H20 Example
 
-The `RecordsReader` class under the `util` project is able to load files from the `CLASSPATH`, a file system (POSIX, not HDFS), and from URLs. There is a truncated data file from 1990, about 1MB in size, in the `data` subproject, but the default configuration in `airline-flights-model-serving-pipeline/src/main/resources/application.conf/.../application.conf` pulls down several large files from the original URL, storing them locally in the running image for the ingress object. _If this pod runs out of memory, remove some of the `*.csv.bz2` files from the list!_
+The `RecordsReader` class under the `util` project is able to load files from the `CLASSPATH`, a file system (POSIX, not HDFS), and from URLs. There is a truncated data file from 1990, about 1MB in size, in the `data` subproject, but the default configuration in `airline-flights-model-serving-pipeline/src/main/resources/reference.conf/` has entries to pull down many large files from the original URL, storing them locally in the running image for the ingress object. By default, all but one are commented out. You may wish to add a few more, but _if this pod runs out of memory, remove some of them from the list!_
 
 > WARNING: If you decide to load files from the `CLASSPATH` instead, keep in mind that these files are bundled into the application Docker image, so avoid downloading too many of them or the size will be huge!
 

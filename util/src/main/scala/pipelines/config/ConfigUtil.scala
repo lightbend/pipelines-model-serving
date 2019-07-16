@@ -23,7 +23,10 @@ final case class ConfigUtil(config: Config) {
    * @return the value or throw an exception
    */
   def getOrFail[T](key: String, extraMessage: String = "")(implicit getter: (Config, String) => T): T =
-    if (config.hasPath(key)) getter(config, key) else throw ConfigUtil.UnknownKey(key, config, extraMessage)
+    if (config.hasPath(key)) getter(config, key)
+    else {
+      throw ConfigUtil.UnknownKey(key, config, extraMessage)
+    }
 
   /**
    * Get the value of the correct type from the specified Typesafe Config object.
@@ -33,6 +36,35 @@ final case class ConfigUtil(config: Config) {
    */
   def get[T](key: String)(implicit getter: (Config, String) => T): Option[T] =
     if (config.hasPath(key)) Some(getter(config, key)) else None
+
+  def toSeq: Seq[(String, Any)] =
+    config.entrySet.asScala.toVector.map(entry => (entry.getKey, entry.getValue))
+
+  /** Default format is compact. */
+  override def toString: String = toStringWithFormatting("", "", " ", "->", "")
+  /** Flexible formatting */
+  def toStringWithFormatting(
+    left: String = "{\n",
+    entryIndent: String = "  ",
+    entryDelim: String = ",\n",
+    keyValueDelim: String = " -> ",
+    right: String = "\n}") = {
+
+    val s = new StringBuilder
+    s.append(left)
+    val seq = this.toSeq
+    val len = seq.size
+    seq.zipWithIndex.foreach {
+      case ((key, value), index) =>
+        s.append(entryIndent)
+        s.append(key)
+        s.append(keyValueDelim)
+        s.append(value)
+        if (index < len - 1) s.append(entryDelim)
+    }
+    s.append(right)
+    s.toString
+  }
 }
 
 /** TODO: Add more implicit "getters" to cover the rest of the Typesafe Config API. */
@@ -51,7 +83,7 @@ object ConfigUtil {
   private def fullConfig(config: Config): String =
     if (showFullConfig) s"(full config = $config)" else ""
 
-  lazy val defaultConfig: Config = com.typesafe.config.ConfigFactory.defaultApplication()
+  lazy val defaultConfig: Config = com.typesafe.config.ConfigFactory.load()
   lazy val default: ConfigUtil = new ConfigUtil(defaultConfig)
 
   object implicits {
