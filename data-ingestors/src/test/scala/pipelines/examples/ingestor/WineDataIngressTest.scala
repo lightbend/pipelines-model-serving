@@ -39,17 +39,26 @@ class WineDataIngressTest extends FunSpec with BeforeAndAfterAll with OutputInte
         if (useFiles) Source.fromFile(source)
         else Source.fromResource(source)
       val lines = is.getLines.toVector
-      vect ++ lines
+      val vect2 = vect ++ lines
       is.close()
-      vect
+      vect2
     }.map(toKeyedWineRecord)
     assert(exp.size > 0, bugMsg(sources2))
     exp
   }
 
   def bugMsg(sources: Seq[String]): String = {
+    val s = new StringBuilder
+    (filePrefix +: sources).foreach { str ⇒
+      s.append(str).append(": ")
+      val f = new java.io.File(str)
+      s.append("exists? ").append(f.exists)
+      s.append(" is directory? ").append(f.isDirectory)
+      if (f.isDirectory) s.append(". list: ").append(f.listFiles.mkString("[", ", ", "]"))
+      s.append("\n")
+    }
     val sourcesStr = sources.mkString("[", ", ", "]")
-    s"TEST BUG: (PWD: ${sys.env("PWD")}) Failed to load expected data from $sourcesStr"
+    s"TEST BUG: (PWD: ${sys.env("PWD")}) Failed to load expected data from $sourcesStr\n$s"
   }
 
   describe("WineDataIngress") {
