@@ -13,6 +13,8 @@ import com.typesafe.config.ConfigFactory
 class WineDataIngressTest extends FunSpec with BeforeAndAfterAll with OutputInterceptor {
 
   val initializingMsgFmt = "RecordsReader: Initializing from resource %s"
+  // val filePrefix = "data-ingestors/src/test/resources/"
+  val filePrefix = "data-ingestors/target/scala-2.12/test-classes/"
   val testGoodRecordsResources = Array("wine/data/10_winequality_red.csv")
   val testBadRecordsResources = Array("wine/data/error_winequality_red.csv")
   val emptyOutput: Array[String] = Array()
@@ -28,13 +30,27 @@ class WineDataIngressTest extends FunSpec with BeforeAndAfterAll with OutputInte
     (rec.dataType, rec)
   }
 
-  def expected(sources: Seq[String]): Vector[(String, WineRecord)] =
-    sources.foldLeft(Vector.empty[String]) { (vect, source) ⇒
-      val is = Source.fromResource(source)
-      vect ++ is.getLines.toVector
+  def expected(sources: Seq[String]): Vector[(String, WineRecord)] = {
+
+    val useFiles = true // hack
+    val sources2 = if (useFiles) sources.map(s ⇒ filePrefix + s) else sources
+    val exp = sources2.foldLeft(Vector.empty[String]) { (vect, source) ⇒
+      val is =
+        if (useFiles) Source.fromFile(source)
+        else Source.fromResource(source)
+      val lines = is.getLines.toVector
+      vect ++ lines
       is.close()
       vect
     }.map(toKeyedWineRecord)
+    assert(exp.size > 0, bugMsg(sources2))
+    exp
+  }
+
+  def bugMsg(sources: Seq[String]): String = {
+    val sourcesStr = sources.mkString("[", ", ", "]")
+    s"TEST BUG: (PWD: ${sys.env("PWD")}) Failed to load expected data from $sourcesStr"
+  }
 
   describe("WineDataIngress") {
     it("Loads one or more CSV file resources from the classpath") {
@@ -43,7 +59,8 @@ class WineDataIngressTest extends FunSpec with BeforeAndAfterAll with OutputInte
       // for "Completed" fails. Obviously, I'd love for someone to figure out why this
       // happens...
       ignoreOutput {
-        val testkit = AkkaStreamletTestKit(system, mat, ConfigFactory.load())
+        val config = ConfigFactory.load()
+        val testkit = AkkaStreamletTestKit(system, mat, config)
         val ingress = WineDataIngress // Relies on the .../test/resources/application.conf to point to the correct files
         val out = testkit.outletAsTap(ingress.out)
 
