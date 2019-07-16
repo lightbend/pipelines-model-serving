@@ -20,7 +20,6 @@ lazy val wineModelServingPipeline = (project in file("./wine-model-serving-pipel
   .settings(
     name := "wine-model-serving-pipeline",
     version := thisVersion,
-    // libraryDependencies ++= Seq(),
     pipelinesDockerRegistry := dockerRegistry
   )
   .dependsOn(util, data, dataModel, modelLibrary, dataIngestors, modelServingFlow, modelServingEgress)
@@ -31,7 +30,6 @@ lazy val recommenderModelServingPipeline = (project in file("./recommender-model
   .settings(
     name := "recommender-model-serving-pipeline",
     version := thisVersion,
-    // libraryDependencies ++= Seq(),
     pipelinesDockerRegistry := dockerRegistry
   )
   .dependsOn(util, data, dataModel, modelLibrary, dataIngestors, modelServingFlow, modelServingEgress)
@@ -42,7 +40,6 @@ lazy val airlineFlightsModelServingPipeline = (project in file("./airline-flight
   .settings(
     name := "airline-flights-model-serving-pipeline-deanw",
     version := thisVersion,
-    // libraryDependencies ++= Seq(),
     pipelinesDockerRegistry := dockerRegistry
   )
   .dependsOn(util, data, dataModel, modelLibrary, dataIngestors, modelServingFlow, modelServingEgress)
