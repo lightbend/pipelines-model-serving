@@ -14,11 +14,13 @@ lazy val dockerRegistry =
   sys.env.get("OPENSHIFT_CLUSTER_DOMAIN").map(
     server => s"docker-registry-default.$server")
 
+val user = sys.props.getOrElse("user.name", "unknown-user")
+
 lazy val wineModelServingPipeline = (project in file("./wine-model-serving-pipeline"))
   .enablePlugins(PipelinesApplicationPlugin)
   .enablePlugins(PipelinesAkkaStreamsLibraryPlugin)
   .settings(
-    name := "wine-model-serving-pipeline",
+    name := s"wine-model-serving-pipeline-$user",
     version := thisVersion,
     pipelinesDockerRegistry := dockerRegistry
   )
@@ -28,7 +30,7 @@ lazy val recommenderModelServingPipeline = (project in file("./recommender-model
   .enablePlugins(PipelinesApplicationPlugin)
   .enablePlugins(PipelinesAkkaStreamsLibraryPlugin)
   .settings(
-    name := "recommender-model-serving-pipeline",
+    name := s"recommender-model-serving-pipeline-$user",
     version := thisVersion,
     pipelinesDockerRegistry := dockerRegistry
   )
@@ -38,7 +40,7 @@ lazy val airlineFlightsModelServingPipeline = (project in file("./airline-flight
   .enablePlugins(PipelinesApplicationPlugin)
   .enablePlugins(PipelinesAkkaStreamsLibraryPlugin)
   .settings(
-    name := "airline-flights-model-serving-pipeline-deanw",
+    name := s"airline-flights-model-serving-pipeline-$user",
     version := thisVersion,
     pipelinesDockerRegistry := dockerRegistry
   )
