@@ -3,8 +3,8 @@ package pipelines.test
 import java.io.{ ByteArrayOutputStream, PrintStream }
 
 /**
- * Mixin trait to capture stdout and stderr, by intercepting [[System.err]] and
- * [[System.out]], then assert the contents are what's expected (or ignore them).
+ * Mixin trait to capture stdout and stderr, by intercepting Java's System.err and
+ * System.out, then assert the contents are what's expected (or ignore them).
  * WARNING: Does not successfully capture output in all cases, including Java
  * logging libraries that are initialized first, even when configured to write to
  * the console, and possibly some multi-threaded apps. Hence, this class has
@@ -128,6 +128,7 @@ trait OutputInterceptor {
     val saveOut = System.out // JDK
     val saveErr = System.err // JDK
 
+    // Capture _both_ stdout and stderr hooks at the Java and Scala levels.
     try {
       Console.withOut(outCapture) {
         System.setOut(outPrint)
