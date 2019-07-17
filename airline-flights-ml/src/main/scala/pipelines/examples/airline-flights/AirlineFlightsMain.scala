@@ -6,41 +6,42 @@ import pipelines.examples.data._
 import pipelines.ingress.RecordsReader
 
 /**
- * For testing the logic outside of Pipelines.
- * WARNING: For some reason, the application.conf file is NOT on the CLASSPATH when
- * you use `sbt runMain ...` Instead, use this to test it (where N=100 is used):
- * ```
- * > sbt console
- * scala> import pipelines.examples.airlineflights.main.Main
- * scala> Main.main(Array("100"))
- * ```
+ * For testing the logic outside of Pipelines. Try -h or --help for information
  */
 object AirlineFlightsMain {
   val defaultN = 100
 
+  case class Options(count: Int)
+
   def main(args: Array[String]): Unit = {
-    def parseArgs(args2: Seq[String], count: Int): Int = args2 match {
-      case Nil => count
+    def parseArgs(args2: Seq[String], options: Options): Options = args2 match {
+      case Nil => options
       case ("-h" | "--help") +: tail =>
         help()
         sys.exit(0)
-      case x +: tail => toInt(x) match {
-        case Some(n) => parseArgs(tail, n)
+      case ("-n" | "--count") +: x +: tail => toInt(x) match {
+        case Some(n) => parseArgs(tail, options.copy(count = n))
         case _ =>
           println(s"ERROR: Invalid argument $x. (args = ${args.mkString(" ")}")
           help()
           sys.exit(1)
       }
+      case x +: tail =>
+        println(s"ERROR: Invalid argument $x. (args = ${args.mkString(" ")}")
+        help()
+        sys.exit(1)
     }
 
-    val count = parseArgs(args, defaultN)
-    println(s"Main: Running airlines test application. Printing a maximum of $count lines")
+    val options = parseArgs(args, Options(defaultN))
+    println("AirlineFlightsMain: Running airlines test application.")
+    println(s"Printing a maximum of ${options.count} flight records")
+
     val server = new AirlineFlightModelServer()
     val reader = RecordsReader.fromConfiguration[AirlineFlightRecord](
       configurationKeyRoot = AirlineFlightRecordsIngressUtil.rootConfigKey,
       dropFirstN = 1)(
       AirlineFlightRecordsIngressUtil.parse)
-    (1 to count).foreach { n ⇒
+    (1 to options.count).foreach { n ⇒
       val (_, record) = reader.next()
       val result = server.score(record)
       println("%7d: %s".format(n, result))
@@ -50,11 +51,11 @@ object AirlineFlightsMain {
 
   def help(): Unit = {
     println(s"""
-      |Tests airline flights data scoring.
-      |usage: scala ...AirlineFlightsMain [-h|--help] [N]
+      |Tests airline flights data app.
+      |usage: scala ...AirlineFlightsMain [-h|--help] [-n|--count N]
       |where:
-      |  -h | --help   prints this message and quits
-      |  N             the number of records to parse and print (default: $defaultN)
+      |  -h | --help       print this message and quits
+      |  -n | --count N    print this number of flight records (default: $defaultN)
       |""".stripMargin)
   }
 
