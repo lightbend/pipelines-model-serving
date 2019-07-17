@@ -1,6 +1,7 @@
 package pipelines.examples.modelserving
 
-import pipelines.akkastream.{ AkkaStreamlet, StreamletLogic }
+import pipelines.akkastream.AkkaStreamlet
+import pipelines.akkastream.scaladsl.RunnableGraphStreamletLogic
 import pipelines.examples.data._
 import pipelines.streamlets.avro.{ AvroInlet, AvroOutlet }
 import pipelines.streamlets.StreamletShape
@@ -14,15 +15,13 @@ import java.io.{ File, FileOutputStream }
 final case object AirlineFlightModelServerStreamlet extends AkkaStreamlet {
 
   val in = AvroInlet[AirlineFlightRecord]("in")
-  val out = AvroOutlet[AirlineFlightResult](
-    "out",
-    r ⇒ s"${r.year}-${r.month}-${r.dayOfMonth}-${r.depTime}-${r.uniqueCarrier}-${r.flightNum}")
+  val out = AvroOutlet[AirlineFlightResult]("out", r ⇒ r.uniqueCarrier)
 
   final override val shape = StreamletShape.withInlets(in).withOutlets(out)
 
-  override final def createLogic = new StreamletLogic {
+  override final def createLogic = new RunnableGraphStreamletLogic() {
     val server = new AirlineFlightModelServer()
-    def run() = {
+    def runnableGraph() = {
       atLeastOnceSource(in).map(record ⇒ server.score(record)).to(atLeastOnceSink(out))
     }
   }
