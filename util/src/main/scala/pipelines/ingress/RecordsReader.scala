@@ -333,26 +333,39 @@ object RecordsReader {
   }
 
   // Copied some of this logic from ByteArrayReader. TODO: Merge??
+  // Don't download if it appears we already have it!
   protected def downloadURL2(
     url: URL, prefix: String, suffix: String): Either[String, File] = try {
-    val suffix2 = if (suffix.length > 0) "." + suffix else suffix
-    val target = File.createTempFile(prefix, suffix2)
-    logger.info(s"Downloading $url to local file $target")
+    val target = makeLocalFile(url.toString, prefix, suffix)
+    if (target.exists) {
+      logger.info(s"Already downloaded $url to local file $target")
+      Right(target)
+    } else {
+      logger.info(s"Downloading $url to local file $target")
 
-    val len = 1024 * 1024 // arbitrary size
-    val buffer = Array.fill[Byte](len)(0)
-    val is = url.openStream()
-    val os = new FileOutputStream(target)
-    var count = is.read(buffer)
-    while (count > 0) {
-      os.write(buffer, 0, count)
-      count = is.read(buffer)
+      val len = 1024 * 1024 // arbitrary size
+      val buffer = Array.fill[Byte](len)(0)
+      val is = url.openStream()
+      val os = new FileOutputStream(target)
+      var count = is.read(buffer)
+      while (count > 0) {
+        os.write(buffer, 0, count)
+        count = is.read(buffer)
+      }
+      os.flush()
+      os.close()
+      Right(target)
     }
-    os.flush()
-    os.close()
-    Right(target)
   } catch {
     case scala.util.control.NonFatal(th) => Left(s"$url (failure cause: $th)")
+  }
+
+  protected def makeLocalFile(seed: String, prefix: String, suffix: String): File = {
+    val suffix2 = if (suffix.length > 0) "." + suffix else suffix
+    val hash = scala.util.hashing.Hashing.default.hash(seed)
+    val hashStr = if (hash < 0) s"_${math.abs(hash)}" else hash.toString // just in case "-" causes problems...
+    val tmpdir = new File(System.getProperty("java.io.tmpdir"))
+    new File(tmpdir, s"${prefix}_${hashStr}${suffix2}")
   }
 
   protected def determineFilesFromConfiguration(configKeyRoot: String): Seq[File] = {
