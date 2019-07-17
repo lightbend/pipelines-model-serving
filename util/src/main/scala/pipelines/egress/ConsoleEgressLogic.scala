@@ -14,13 +14,5 @@ final case class ConsoleEgressLogic[IN](
   implicit
   context: StreamletContext) extends FlowEgressLogic[IN](in) {
 
-  def write(record: IN): Unit = print(prefix + record.toString)
-}
-
-object ConsoleEgressLogic {
-
-  def make[IN](in: CodecInlet[IN], prefix: String = "")(
-    implicit
-    context: StreamletContext) =
-    new ConsoleEgressLogic[IN](in, prefix)
+  def write(record: IN): Unit = println(prefix + record.toString)
 }

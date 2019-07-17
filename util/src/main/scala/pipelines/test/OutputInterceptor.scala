@@ -138,6 +138,8 @@ trait OutputInterceptor {
         }
       }
     } finally {
+      // Not sure this is really needed, but there appear to be cases where stdout
+      // is not longer shown in a console after the test suite runs.
       System.setOut(saveOut)
       System.setErr(saveErr)
     }
