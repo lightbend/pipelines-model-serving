@@ -27,7 +27,7 @@ object InfluxDBUtil {
     def addFields(point: Point.Builder, record: R): Unit
   }
 
-  def getInfluxDB(hostname: String, port: String) = {
+  def getInfluxDB(hostname: String, port: Int) = {
 
     val url = "http://" + hostname + ":" + port
 

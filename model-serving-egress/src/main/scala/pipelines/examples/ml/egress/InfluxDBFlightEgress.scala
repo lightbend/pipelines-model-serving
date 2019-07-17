@@ -14,6 +14,7 @@ final case object InfluxDBAirlineFlightResultEgress extends AkkaStreamlet {
 
   override def createLogic = new InfluxDBEgressLogic[AirlineFlightResult](
     in = in,
+    configKeyRoot = "airline-flights",
     measurement = "airline_flight_result",
     writer = AirlineFlightResultInfluxDBWriter)
 }
@@ -26,6 +27,7 @@ final case object InfluxDBAirlineFlightRecordEgress extends AkkaStreamlet {
 
   override def createLogic = new InfluxDBEgressLogic[AirlineFlightRecord](
     in = in,
+    configKeyRoot = "airline-flights",
     measurement = "airline_flight_record",
     writer = AirlineFlightRecordInfluxDBWriter)
 }

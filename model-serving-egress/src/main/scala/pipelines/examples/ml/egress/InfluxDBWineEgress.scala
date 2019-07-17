@@ -14,6 +14,7 @@ final case object InfluxDBWineResultEgress extends AkkaStreamlet {
 
   override def createLogic = new InfluxDBEgressLogic[WineResult](
     in = in,
+    configKeyRoot = "wine-quality",
     measurement = "wine_result",
     writer = WineResultInfluxDBWriter)
 }
@@ -26,6 +27,7 @@ final case object InfluxDBWineRecordEgress extends AkkaStreamlet {
 
   override def createLogic = new InfluxDBEgressLogic[WineRecord](
     in = in,
+    configKeyRoot = "wine-quality",
     measurement = "wine_record",
     writer = WineRecordInfluxDBWriter)
 }
