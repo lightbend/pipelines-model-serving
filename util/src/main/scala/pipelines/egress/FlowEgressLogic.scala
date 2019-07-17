@@ -4,15 +4,14 @@ import pipelines.streamlets._
 import pipelines.akkastream._
 import pipelines.akkastream.scaladsl._
 import org.apache.avro.specific.SpecificRecordBase
-import akka.actor.ActorSystem
-import scala.reflect.ClassTag
+import akka.stream.scaladsl.Sink
 
 /**
  * An abstraction for the logic in an "Egress" that has a single inlet and then
  * "disposes" of the data in some way that's transparent to Pipelines, e.g.,
- * log it, write it to a database, or write it to the console.
- * Note that Akka Streams at-least once semantics are used, so subclasses that
- * implement the `flowWithContext` method may wish to implement deduplication.
+ * logs it or writes it to the console.
+ * Note that Akka Streams at-most once semantics are used, so don't use this where
+ * at-least once is needed, e.g., writing data to a database.
  */
 abstract class FlowEgressLogic[IN](
   val inlet: CodecInlet[IN])(
@@ -24,10 +23,8 @@ abstract class FlowEgressLogic[IN](
    * Note that Akka Streams at-least once semantics are used, so implementations
    * may need to perform deduplication.
    */
-  def flowWithContext(system: ActorSystem): FlowWithPipelinesContext[IN, IN]
+  def write(record: IN): Unit
 
   def runnableGraph =
-    atLeastOnceSource(inlet)
-      .via(flowWithContext(system).asFlow)
-      .to(atLeastOnceSink)
+    atMostOnceSource(inlet).to(Sink.foreach(write))
 }

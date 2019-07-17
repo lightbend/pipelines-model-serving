@@ -14,9 +14,9 @@ import pipelines.logging.StdoutStderrLogger
 import com.typesafe.config.ConfigFactory
 import scala.reflect.ClassTag
 
-class LogEgressLogicTest extends FunSpec with BeforeAndAfterAll with OutputInterceptor {
+class ConsoleEgressLogicTest extends FunSpec with BeforeAndAfterAll with OutputInterceptor {
 
-  private implicit val system = ActorSystem("LogEgressLogic")
+  private implicit val system = ActorSystem("ConsoleEgressLogic")
   private implicit val mat = ActorMaterializer()
 
   override def afterAll: Unit = {
@@ -27,14 +27,9 @@ class LogEgressLogicTest extends FunSpec with BeforeAndAfterAll with OutputInter
     val inlet = AvroInlet[TestData]("in")
     final override val shape = StreamletShape.withInlets(inlet)
 
-    override def createLogic = {
-      val logic = LogEgressLogic.make[TestData](
-        in = inlet,
-        logLevel = akka.event.Logging.WarningLevel,
-        prefix = "TestPrefix")
-      logic.logger.setLogger(StdoutStderrLogger)
-      logic
-    }
+    override def createLogic = ConsoleEgressLogic[TestData](
+      in = inlet,
+      prefix = "TestPrefix")
   }
 
   describe("LogEgress") {

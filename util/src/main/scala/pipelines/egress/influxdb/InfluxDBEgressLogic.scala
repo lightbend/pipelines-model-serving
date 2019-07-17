@@ -20,7 +20,12 @@ final case class InfluxDBEgressLogic[IN](
   configKeys: InfluxDBEgressLogic.ConfigKeys = InfluxDBEgressLogic.ConfigKeys())(
   implicit
   context: StreamletContext)
-  extends FlowEgressLogic[IN](in) {
+  extends RunnableGraphStreamletLogic {
+
+  def runnableGraph =
+    atLeastOnceSource(in)
+      .via(flowWithContext(system).asFlow)
+      .to(atLeastOnceSink)
 
   def flowWithContext(system: ActorSystem) = {
     val influxDB = InfluxDBUtil.getInfluxDB(

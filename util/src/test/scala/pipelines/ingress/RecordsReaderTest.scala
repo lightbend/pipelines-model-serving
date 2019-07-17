@@ -8,7 +8,9 @@ import java.net.URL
 
 class RecordsReaderTest extends FunSpec with OutputInterceptor {
 
-  RecordsReader.logger.setLogger(StdoutStderrLogger)
+  val clazz = this.getClass()
+  val className = clazz.getName()
+  RecordsReader.logger.setLogger(StdoutStderrLogger(clazz))
 
   val testGoodRecordsResources = Array("good-records1.csv", "good-records2.csv")
   val testBadRecordsResources = Array("bad-records.csv")
@@ -110,8 +112,8 @@ class RecordsReaderTest extends FunSpec with OutputInterceptor {
       }
     }
 
-    val initializingMsgFmt1 = "INFO:  Reading resources from the %s: %s"
-    val initializingMsgFmt2 = "INFO:  Initializing from resource %s (index: %d)"
+    val initializingMsgFmt1 = s"[INFO] ($className): Reading resources from the %s: %s"
+    val initializingMsgFmt2 = s"[INFO] ($className): Initializing from resource %s (index: %d)"
     val kindMsgs = Map(
       RecordsReader.SourceKind.FileSystem -> "file system",
       RecordsReader.SourceKind.CLASSPATH  -> "CLASSPATH",
@@ -146,7 +148,7 @@ class RecordsReaderTest extends FunSpec with OutputInterceptor {
       makeReader: => RecordsReader[(Int, String)]): Unit = {
       val outMsgs = formatInitOutput(resourcePaths, kind, 1)
       // A bit fragile hard-coding all these strings, but they exactly match the "bad" input file.
-      val fmt = "WARN:  " + RecordsReader.parseErrorMessageFormat
+      val fmt = s"[WARN] ($className): ${RecordsReader.parseErrorMessageFormat}"
       val file = s"${pathPrefix}bad-records.csv"
       val errMsgs = Array(
         fmt.format(file, 0, "1,", "1,"),

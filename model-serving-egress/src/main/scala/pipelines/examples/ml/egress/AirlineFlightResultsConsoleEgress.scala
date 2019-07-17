@@ -3,15 +3,14 @@ package pipelines.examples.ml.egress
 import pipelines.streamlets.StreamletShape
 import pipelines.streamlets.avro.AvroInlet
 import pipelines.akkastream.AkkaStreamlet
-import pipelines.egress.LogEgressLogic
+import pipelines.egress.ConsoleEgressLogic
 import pipelines.examples.data._
 
-final case object AirlineFlightResultsLoggerEgress extends AkkaStreamlet {
+final case object AirlineFlightResultsConsoleEgress extends AkkaStreamlet {
   val in = AvroInlet[AirlineFlightResult]("in")
   final override val shape = StreamletShape.withInlets(in)
 
-  override def createLogic = LogEgressLogic.makeFromConfig[AirlineFlightResult](
+  override def createLogic = ConsoleEgressLogic[AirlineFlightResult](
     in = in,
-    logLevelConfigKey = "airline-flights.log-egress-level",
     prefix = "Airline Flight Delay Prediction: ")
 }
