@@ -10,7 +10,7 @@ final case object RecommenderConsoleEgress extends AkkaStreamlet {
   val in = AvroInlet[RecommendationResult]("in")
   final override val shape = StreamletShape.withInlets(in)
 
-  override def createLogic = ConsoleEgressLogic.make[RecommendationResult](
+  override def createLogic = ConsoleEgressLogic[RecommendationResult](
     in = in,
     prefix = "Recommender: ")
 }
