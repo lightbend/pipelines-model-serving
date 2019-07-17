@@ -19,7 +19,7 @@
       "name": "modeltype",
       "type" : {"type": "enum",
                 "name": "ModelType",
-                "symbols" : ["TENSORFLOW", "TENSORFLOWSAVED", "TENSORFLOWSERVING", "PMML"]}
+                "symbols" : ["TENSORFLOW", "TENSORFLOWSAVED", "TENSORFLOWSERVING", "PMML", "H2O"]}
     },
     {
       "name": "modeldata",

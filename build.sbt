@@ -73,7 +73,7 @@ lazy val modelLibrary = (project in file("./model-library"))
   .enablePlugins(PipelinesAkkaStreamsLibraryPlugin)
   .settings(
     name := "model-library",
-    libraryDependencies ++= Seq(tensorflow, tensorflowProto,pmml,pmmlextensions, bijection,json2avro, gson, scalajHTTP),
+    libraryDependencies ++= Seq(tensorflow, tensorflowProto,pmml,pmmlextensions, h2o, bijection,json2avro, gson, scalajHTTP),
     (sourceGenerators in Compile) += (avroScalaGenerateSpecific in Compile).taskValue,
   )
   .dependsOn(util, data, dataModel)
