@@ -22,7 +22,7 @@ object Dependencies {
   // val slf4jSimple     = "org.slf4j"                       % "slf4j-simple"              % slf4jVersion
   val slf4jLog4J      = "org.slf4j"                       % "slf4j-log4j12"             % slf4jVersion
   // val scalaLogging    = "com.typesafe.scala-logging"     %% "scala-logging"             % scalaLoggingVersion
-  // val logback         = "ch.qos.logback"                  % "logback-classic"           % logbackClassicVersion
+  val logback         = "ch.qos.logback"                  % "logback-classic"           % logbackClassicVersion
 
   val scalaTest       = "org.scalatest"                  %% "scalatest"                 % scaltestVersion    % "test"
   // Only used in tests:
