@@ -8,24 +8,73 @@ This project contains two example pipelines:
 
 ## Setup
 
-### InfluxDB Setup - for Wine Quality Example
+### InfluxDB Setup - for Wine Quality and Airline Flights Examples
 
-Wine scoring results are written to InfluxDB, as an example of a downstream consumer. If you don't want to setup Influx,
-change `wineblueprint.conf` to remove the `influx-raw-egress.in` and `influx-result-egress.in` from the `connections`
-section of the blueprint.
+Wine input records and scoring results are written to InfluxDB, as an example of a downstream consumer. Similarly for the Airline flights app.
 
-First Install the Influx DB CLI
-> brew install influxdb
+If you don't want to setup InfluxDB, change `blueprint.conf` to remove the `influx-raw-egress.in` and `influx-result-egress.in` from the `connections` section of the blueprint.
 
-Make sure you are connected to the kubernetes cluster and run the command below to install InfluxDB
-> helm install stable/influxdb --name influxdb --namespace influxdb
+First Install the Influx DB CLI. On a Macintosh using HomeBrew:
 
-Port forward to access InfluxDB locally
-> kubectl port-forward --namespace influxdb $(kubectl get pods --namespace influxdb -l app=influxdb -o jsonpath='{ .items[0].metadata.name }') 8086:8086
+```shell
+brew install influxdb
+```
 
-Connect to influxDB and create Database
-> influx -execute 'create database wine_ml' -host localhost -port 8086
+Make sure you are connected to your Kubernetes cluster and run the following command to install InfluxDB:
 
+```shell
+helm install stable/influxdb --name influxdb --namespace influxdb
+```
+
+Port forward to access InfluxDB locally:
+
+```shell
+kubectl port-forward --namespace influxdb $(kubectl get pods --namespace influxdb -l app=influxdb -o jsonpath='{ .items[0].metadata.name }') 8086:8086
+```
+
+Connect to influxDB, using the `influx` client command you just installed on your workstation, and create one or both of the following databases, depending on which of the two apps you intend to run:
+
+```shell
+influx -execute 'create database airline_ml' -host localhost -port 8086
+influx -execute 'create database wine_ml' -host localhost -port 8086
+```
+
+You can use different database names, but make the corresponding configuration change in the following steps.
+
+Run this command to see the host name:
+
+```shell
+kubectl describe pods -n influxdb -l app=influxdb | grep Node:
+```
+
+In a cloud environment, like AWS, you might see output like this:
+
+```
+Node:   ip-1-2-3-4.us-east-2.compute.internal/1.2.3.4
+```
+
+You'll use _either_ `ip-1-2-3-4.us-east-2.compute.internal` or `1.2.3.4` for the `host` setting next.
+
+Now, for the Wine app, edit the configuration file `wine-quality-ml/src/main/resources/reference.conf`. Edit the `host` and `database` field to match your environment:
+
+```
+influxdb : {
+  host : "",
+  port : 8086,
+  database : "wine_ml"
+}
+```
+
+Do the same for `airline-flights-ml/src/main/resources/reference.conf`:
+
+
+```
+influxdb : {
+  host : "",
+  port : 8086,
+  database : "airline_ml"
+}
+```
 
 ### Setup Kubeflow - Recommender Example
 
