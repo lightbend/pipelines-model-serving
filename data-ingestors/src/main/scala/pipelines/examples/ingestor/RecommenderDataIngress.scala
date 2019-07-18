@@ -12,8 +12,8 @@ import pipelines.examples.data._
 import scala.collection.mutable.ListBuffer
 import scala.util.Random
 import scala.concurrent.duration._
-import pipelines.util.ConfigUtil
-import pipelines.util.ConfigUtil.implicits._
+import pipelines.config.ConfigUtil
+import pipelines.config.ConfigUtil.implicits._
 
 /**
  * Ingress of data for recommendations. In this case, every second we
@@ -27,18 +27,17 @@ final case object RecommenderDataIngress extends AkkaStreamlet {
 
   override final def createLogic = new RunnableGraphStreamletLogic {
     def runnableGraph =
-      RecommenderDataIngressUtil.makeSource(
-        RecommenderDataIngressUtil.dataFrequencySeconds)
-        .to(atMostOnceSink(out))
+      RecommenderDataIngressUtil.makeSource().to(atMostOnceSink(out))
   }
 }
 
 object RecommenderDataIngressUtil {
 
-  lazy val dataFrequencySeconds: FiniteDuration =
-    ConfigUtil.default.getOrElse[Int]("recommender.data-frequency-seconds")(1).seconds
+  lazy val dataFrequencyMilliseconds: FiniteDuration =
+    ConfigUtil.default.getOrElse[Int]("recommender.data-frequency-milliseconds")(1).milliseconds
 
-  def makeSource(frequency: FiniteDuration): Source[RecommenderRecord, NotUsed] = {
+  def makeSource(
+      frequency: FiniteDuration = dataFrequencyMilliseconds): Source[RecommenderRecord, NotUsed] = {
     Source.repeat(RecommenderRecordMaker)
       .map(maker ⇒ maker.make())
       .throttle(1, frequency)
@@ -58,10 +57,10 @@ object RecommenderDataIngressUtil {
 
   /** For testing purposes. */
   def main(args: Array[String]): Unit = {
-    println(s"frequency (seconds): ${dataFrequencySeconds}")
+    println(s"frequency (seconds): ${dataFrequencyMilliseconds}")
     implicit val system = ActorSystem("RecommenderDataIngress-Main")
     implicit val mat = ActorMaterializer()
-    val source = makeSource(dataFrequencySeconds)
+    val source = makeSource(dataFrequencyMilliseconds)
     source.runWith(Sink.foreach(println))
   }
 }

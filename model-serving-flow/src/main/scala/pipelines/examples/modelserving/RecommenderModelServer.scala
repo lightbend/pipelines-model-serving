@@ -7,8 +7,8 @@ import akka.stream.scaladsl.Sink
 import akka.util.Timeout
 import com.lightbend.modelserving.model.actor.{ ModelServingActor, ModelServingManager }
 import com.lightbend.modelserving.model.{ ModelToServe, ServingActorResolver, ServingResult }
-import pipelines.akkastream.{ AkkaStreamlet, StreamletLogic }
-import pipelines.akkastream.scaladsl.FlowWithPipelinesContext
+import pipelines.akkastream.AkkaStreamlet
+import pipelines.akkastream.scaladsl.{ FlowWithPipelinesContext, RunnableGraphStreamletLogic }
 import pipelines.examples.modelserving.recommendermodel.{ RecommendationDataRecord, RecommendationFactoryResolver }
 import pipelines.examples.data.{ ModelDescriptor, ModelType, ProductPrediction, RecommenderRecord, RecommendationResult }
 import pipelines.streamlets.StreamletShape
@@ -22,7 +22,7 @@ final case object RecommenderModelServer extends AkkaStreamlet {
   val out = AvroOutlet[RecommendationResult]("out", _.name)
   final override val shape = StreamletShape.withInlets(in0, in1).withOutlets(out)
 
-  override final def createLogic = new StreamletLogic {
+  override final def createLogic = new RunnableGraphStreamletLogic() {
 
     ModelToServe.setResolver[RecommenderRecord, Seq[ProductPrediction]](RecommendationFactoryResolver)
 
@@ -35,7 +35,7 @@ final case object RecommenderModelServer extends AkkaStreamlet {
 
     implicit val askTimeout: Timeout = Timeout(30.seconds)
 
-    def run() = {
+    def runnableGraph() = {
       atLeastOnceSource(in1).via(modelFlow).runWith(Sink.ignore)
       atLeastOnceSource(in0).via(dataFlow).to(atLeastOnceSink(out))
     }

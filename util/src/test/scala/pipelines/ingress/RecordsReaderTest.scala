@@ -1,16 +1,23 @@
 package pipelines.ingress
 
 import org.scalatest.FunSpec
-import pipelines.util.test.OutputInterceptor
+import pipelines.test.OutputInterceptor
+import pipelines.logging.StdoutStderrLogger
+import java.io.File
+import java.net.URL
 
 class RecordsReaderTest extends FunSpec with OutputInterceptor {
 
-  val initializingMsgFmt = "RecordsReader: Initializing from resource %s"
-  val badRecordMsgFmt = "Invalid record string: %s"
+  val clazz = this.getClass()
+  val className = clazz.getName()
+  RecordsReader.logger.setLogger(StdoutStderrLogger(clazz))
+
   val testGoodRecordsResources = Array("good-records1.csv", "good-records2.csv")
   val testBadRecordsResources = Array("bad-records.csv")
-  val testGoodRecordsFiles = testGoodRecordsResources.map(s => "util/src/test/resources/" + s)
-  val testBadRecordsFiles = testBadRecordsResources.map(s => "util/src/test/resources/" + s)
+  val testGoodRecordsFiles = testGoodRecordsResources.map(s => new File("util/src/test/resources/" + s))
+  val testBadRecordsFiles = testBadRecordsResources.map(s => new File("util/src/test/resources/" + s))
+  val testGoodRecordsURLs = Array(new URL("http://stat-computing.org/dataexpo/2009/1987.csv.bz2"))
+  val testBadRecordsURLs = Array(new URL("http://example.foo"))
   def identityR = (r: String) => Right(r)
   def intStringTupleCSVParse = (r: String) => r.split(",") match {
     case Array(i, s) => try {
@@ -25,7 +32,8 @@ class RecordsReaderTest extends FunSpec with OutputInterceptor {
     describe("fromFileSystem()") {
       it("throws an exception if no resources are specified") {
         intercept[RecordsReader$NoResourcesSpecified$] {
-          RecordsReader.fromFileSystem(Nil)(identityR)
+          // A different exception is thrown earlier if failIfMissing takes its default value of true
+          RecordsReader.fromFileSystem(Nil, failIfMissing = false)(identityR)
         }
       }
 
@@ -37,8 +45,8 @@ class RecordsReaderTest extends FunSpec with OutputInterceptor {
 
       it("Raises an exception if the resource doesn't exist") {
         ignoreOutput {
-          intercept[RecordsReader.FailedToLoadResource] {
-            RecordsReader.fromFileSystem(Seq("foobar"))(identityR)
+          intercept[RecordsReader.FailedToLoadResources[_]] {
+            RecordsReader.fromFileSystem(Seq(new File("foobar")))(identityR)
           }
         }
       }
@@ -47,7 +55,8 @@ class RecordsReaderTest extends FunSpec with OutputInterceptor {
     describe("fromClasspath()") {
       it("throws an exception if no resources are specified") {
         intercept[RecordsReader$NoResourcesSpecified$] {
-          RecordsReader.fromClasspath(Nil)(identityR)
+          // A different exception is thrown earlier if failIfMissing takes its default value of true
+          RecordsReader.fromClasspath(Nil, failIfMissing = false)(identityR)
         }
       }
 
@@ -59,17 +68,63 @@ class RecordsReaderTest extends FunSpec with OutputInterceptor {
 
       it("Raises an exception if the resource doesn't exist") {
         ignoreOutput {
-          intercept[RecordsReader.FailedToLoadResource] {
+          intercept[RecordsReader.FailedToLoadResources[_]] {
             RecordsReader.fromClasspath(Seq("foobar"))(identityR)
           }
         }
       }
     }
 
-    def rereadTest(resourcePaths: Array[String], makeReader: => RecordsReader[(Int, String)]): Unit = {
-      val outMsgs1 = resourcePaths.map(s => initializingMsgFmt.format(s))
-      val outMsgs = outMsgs1 ++ outMsgs1
-      expectOutput(outMsgs) {
+    describe("fromURLs()") {
+      it("throws an exception if no resources are specified") {
+        intercept[RecordsReader$NoResourcesSpecified$] {
+          // A different exception is thrown earlier if failIfMissing takes its default value of true
+          RecordsReader.fromURLs(Nil, failIfMissing = false)(identityR)
+        }
+      }
+
+      it("Loads one or more file resources from the URL") {
+        ignoreOutput {
+          assert(RecordsReader.fromURLs(testGoodRecordsURLs)(identityR).next() != null)
+        }
+      }
+
+      it("Raises an exception if the resource doesn't exist") {
+        ignoreOutput {
+          intercept[RecordsReader$FailedToLoadResources] {
+            RecordsReader.fromURLs(testBadRecordsURLs)(identityR)
+          }
+        }
+      }
+    }
+
+    describe("fromConfiguration()") {
+      it("throws an exception if an invalid configuration is specified") {
+        intercept[RecordsReader$InvalidConfiguration] {
+          RecordsReader.fromConfiguration("bad")(identityR)
+        }
+      }
+
+      it("Loads one or more file resources based on the configuration") {
+        ignoreOutput {
+          assert(RecordsReader.fromConfiguration("records-reader-test")(identityR).next() != null)
+        }
+      }
+    }
+
+    val initializingMsgFmt1 = s"[INFO] ($className): Reading resources from the %s: %s"
+    val initializingMsgFmt2 = s"[INFO] ($className): Initializing from resource %s (index: %d)"
+    val kindMsgs = Map(
+      RecordsReader.SourceKind.FileSystem -> "file system",
+      RecordsReader.SourceKind.CLASSPATH  -> "CLASSPATH",
+      RecordsReader.SourceKind.URLs       -> "URLs",
+    )
+    def rereadTest[T](
+      kind: RecordsReader.SourceKind.Value,
+      resourcePaths: Array[T],
+      makeReader: => RecordsReader[(Int, String)]): Unit = {
+      val outMsgs = formatInitOutput(resourcePaths, kind, 2)
+      expectTrimmedOutput(outMsgs.toSeq) {
         val reader = makeReader
         val actual = (0 until 12).foldLeft(Vector.empty[(Long, (Int, String))]) {
           (v, _) ⇒ v :+ reader.next()
@@ -86,34 +141,58 @@ class RecordsReaderTest extends FunSpec with OutputInterceptor {
       }
     }
 
-    def badRecordsTest(resourcePaths: Array[String], makeReader: => RecordsReader[(Int, String)]): Unit = {
-      val outMsgs = resourcePaths.map(s ⇒ initializingMsgFmt.format(s))
+    def badRecordsTest[T](
+      kind: RecordsReader.SourceKind.Value,
+      pathPrefix: String,
+      resourcePaths: Array[T],
+      makeReader: => RecordsReader[(Int, String)]): Unit = {
+      val outMsgs = formatInitOutput(resourcePaths, kind, 1)
       // A bit fragile hard-coding all these strings, but they exactly match the "bad" input file.
+      val fmt = s"[WARN] ($className): ${RecordsReader.parseErrorMessageFormat}"
+      val file = s"${pathPrefix}bad-records.csv"
       val errMsgs = Array(
-        badRecordMsgFmt.format("1,"),
-        badRecordMsgFmt.format("two"),
-        badRecordMsgFmt.format("3three"),
-        badRecordMsgFmt.format("java.lang.NumberFormatException: For input string: \"four\""),
-        badRecordMsgFmt.format("java.lang.NumberFormatException: For input string: \"\""))
+        fmt.format(file, 0, "1,", "1,"),
+        fmt.format(file, 1, "two", "two"),
+        fmt.format(file, 2, "3three", "3three"),
+        fmt.format(file, 3, "java.lang.NumberFormatException: For input string: \"four\"", "four,4"),
+        fmt.format(file, 4, "java.lang.NumberFormatException: For input string: \"\"", ",five"))
 
-      expectOutput(outMsgs, errMsgs) {
-        intercept[RecordsReader.AllRecordsAreBad] {
+      expectTrimmedOutput(outMsgs, errMsgs) {
+        intercept[RecordsReader.AllRecordsAreBad[_]] {
           val reader = makeReader
           (0 until 5).foreach(_ ⇒ reader.next())
         }
       }
     }
 
+    def formatInitOutput[T](
+      resourcePaths: Array[T],
+      kind: RecordsReader.SourceKind.Value,
+      repeat: Int = 1): Seq[String] = {
+
+      val outMsgs =
+        resourcePaths.zipWithIndex.map {
+          case (rp, index) => initializingMsgFmt2.format(rp.toString, index)
+        }
+      val prefix =
+        Seq(initializingMsgFmt1.format(
+          kindMsgs(kind), resourcePaths.mkString("[", ", ", "]")))
+      (1 to repeat).foldLeft(prefix)((s, _) => s ++ outMsgs)
+    }
+
     describe("File system reader") {
       describe("next") {
         it("Continuously rereads the files until terminated") {
           rereadTest(
+            RecordsReader.SourceKind.FileSystem,
             testGoodRecordsFiles,
             RecordsReader.fromFileSystem[(Int, String)](testGoodRecordsFiles)(intStringTupleCSVParse))
         }
 
         it("Prints errors for bad records") {
           badRecordsTest(
+            RecordsReader.SourceKind.FileSystem,
+            "util/src/test/resources/",
             testBadRecordsFiles,
             RecordsReader.fromFileSystem[(Int, String)](testBadRecordsFiles)(intStringTupleCSVParse))
         }
@@ -124,12 +203,15 @@ class RecordsReaderTest extends FunSpec with OutputInterceptor {
       describe("next") {
         it("Continuously rereads the resource until terminated") {
           rereadTest(
+            RecordsReader.SourceKind.CLASSPATH,
             testGoodRecordsResources,
             RecordsReader.fromClasspath(testGoodRecordsResources)(intStringTupleCSVParse))
         }
 
         it("Prints errors for bad records") {
           badRecordsTest(
+            RecordsReader.SourceKind.CLASSPATH,
+            "",
             testBadRecordsResources,
             RecordsReader.fromClasspath(testBadRecordsResources)(intStringTupleCSVParse))
         }

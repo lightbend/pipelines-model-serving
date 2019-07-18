@@ -9,8 +9,8 @@ import pipelines.streamlets.StreamletShape
 import pipelines.akkastream.AkkaStreamlet
 import pipelines.akkastream.scaladsl.{ RunnableGraphStreamletLogic }
 import pipelines.examples.data._
-import pipelines.util.ConfigUtil
-import pipelines.util.ConfigUtil.implicits._
+import pipelines.config.ConfigUtil
+import pipelines.config.ConfigUtil.implicits._
 import scala.concurrent.duration._
 import scala.collection.JavaConverters._
 
@@ -25,10 +25,8 @@ final case object WineModelDataIngress extends AkkaStreamlet {
   final override val shape = StreamletShape(out)
 
   override def createLogic = new RunnableGraphStreamletLogic() {
-    def runnableGraph = WineModelDataIngressUtil.makeSource(
-      WineModelDataIngressUtil.wineModelsResources,
-      WineModelDataIngressUtil.modelFrequencySeconds)
-      .to(atMostOnceSink(out))
+    def runnableGraph =
+      WineModelDataIngressUtil.makeSource().to(atMostOnceSink(out))
   }
 }
 
@@ -52,7 +50,9 @@ object WineModelDataIngressUtil {
             map + (modelType -> list)
         }
 
-  def makeSource(modelsResources: Map[ModelType, Seq[String]], frequency: FiniteDuration): Source[ModelDescriptor, NotUsed] = {
+  def makeSource(
+      modelsResources: Map[ModelType, Seq[String]] = wineModelsResources,
+      frequency: FiniteDuration = modelFrequencySeconds): Source[ModelDescriptor, NotUsed] = {
     val recordsReader = WineModelsReader(modelsResources)
     Source.repeat(recordsReader)
       .map(reader ⇒ reader.next())

@@ -1,0 +1,123 @@
+{
+    "namespace": "pipelines.examples.data",
+    "type": "record",
+    "name": "AirlineFlightRecord",
+    "fields":[
+      {
+        "name": "year",
+        "type": "int"
+      },
+      {
+        "name": "month",
+        "type": "int"
+      },
+      {
+        "name": "dayOfMonth",
+        "type": "int"
+      },
+      {
+        "name": "dayOfWeek",
+        "type": "int"
+      },
+      {
+        "name": "depTime",
+        "type": "int"
+      },
+      {
+        "name": "crsDepTime",
+        "type": "int"
+      },
+      {
+        "name": "arrTime",
+        "type": "int"
+      },
+      {
+        "name": "crsArrTime",
+        "type": "int"
+      },
+      {
+        "name": "uniqueCarrier",
+        "type": "string"
+      },
+      {
+        "name": "flightNum",
+        "type": "int"
+      },
+      {
+        "name": "tailNum",
+        "type": "int"
+      },
+      {
+        "name": "actualElapsedTime",
+        "type": "int"
+      },
+      {
+        "name": "crsElapsedTime",
+        "type": "int"
+      },
+      {
+        "name": "airTime",
+        "type": "int"
+      },
+      {
+        "name": "arrDelay",
+        "type": "int"
+      },
+      {
+        "name": "depDelay",
+        "type": "int"
+      },
+      {
+        "name": "origin",
+        "type": "string"
+      },
+      {
+        "name": "destination",
+        "type": "string"
+      },
+      {
+        "name": "distance",
+        "type": "int"
+      },
+      {
+        "name": "taxiIn",
+        "type": "int"
+      },
+      {
+        "name": "taxiOut",
+        "type": "int"
+      },
+      {
+        "name": "canceled",
+        "type": "int"
+      },
+      {
+        "name": "cancellationCode",
+        "type": "int"
+      },
+      {
+        "name": "diverted",
+        "type": "int"
+      },
+      {
+        "name": "carrierDelay",
+        "type": "int"
+      },
+      {
+        "name": "weatherDelay",
+        "type": "int"
+      },
+      {
+        "name": "nASDelay",
+        "type": "int"
+      },
+      {
+        "name": "securityDelay",
+        "type": "int"
+      },
+      {
+        "name": "lateAircraftDelay",
+        "type": "int"
+      }
+    ]
+}

@@ -1,18 +1,17 @@
 package pipelines.examples.ingestor
 
 import akka.NotUsed
-import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.{ Source, Sink }
+import akka.stream.scaladsl.Source
 import pipelines.akkastream.AkkaStreamlet
 import pipelines.akkastream.scaladsl.{ RunnableGraphStreamletLogic }
 import pipelines.streamlets.avro.AvroOutlet
 import pipelines.streamlets.StreamletShape
 import pipelines.examples.data.WineRecord
 import pipelines.ingress.RecordsReader
-import pipelines.util.ConfigUtil
-import pipelines.util.ConfigUtil.implicits._
+import pipelines.config.ConfigUtil
+import pipelines.config.ConfigUtil.implicits._
 import scala.concurrent.duration._
+import pipelines.logging.{ Logger, LoggingUtil }
 
 /**
  * Reads wine records from a CSV file (which actually uses ";" as the separator),
@@ -25,41 +24,61 @@ final case object WineDataIngress extends AkkaStreamlet {
   final override val shape = StreamletShape(out)
 
   override final def createLogic = new RunnableGraphStreamletLogic {
-    def runnableGraph = WineDataIngressUtil.makeSource(
-      WineDataIngressUtil.wineQualityRecordsResources,
-      WineDataIngressUtil.dataFrequencySeconds)
-      .to(atMostOnceSink(out))
+    def runnableGraph =
+      WineDataIngressUtil.makeSource().to(atMostOnceSink(out))
   }
 }
 
 object WineDataIngressUtil {
 
-  lazy val dataFrequencySeconds: FiniteDuration =
+  val rootConfigKey = "wine-quality"
+
+  lazy val dataFrequencyMilliseconds: FiniteDuration =
     ConfigUtil.default
-      .getOrElse[Int]("wine-quality.data-frequency-seconds")(1).seconds
+      .getOrElse[Int](rootConfigKey + ".data-frequency-milliseconds")(1).milliseconds
 
-  lazy val wineQualityRecordsResources: Seq[String] =
-    ConfigUtil.default.getOrFail[Seq[String]]("wine-quality.data-sources")
-
-  def makeSource(recordsResources: Seq[String], frequency: FiniteDuration): Source[WineRecord, NotUsed] = {
-    val reader = makeRecordsReader(recordsResources)
+  def makeSource(
+      configRoot: String = rootConfigKey,
+      frequency: FiniteDuration = dataFrequencyMilliseconds): Source[WineRecord, NotUsed] = {
+    val reader = makeRecordsReader(configRoot)
     Source.repeat(reader)
       .map(reader ⇒ reader.next()._2) // Only keep the record part of the tuple
       .throttle(1, frequency)
   }
 
-  def makeRecordsReader(sources: Seq[String] = wineQualityRecordsResources): RecordsReader[WineRecord] =
-    RecordsReader.fromClasspath(sources)(
-      WineRecordsReader.csvParserWithSeparator(";"))
+  val defaultSeparator = ";"
 
-  /** For testing purposes. */
-  def main(args: Array[String]): Unit = {
-    println(s"frequency (seconds): ${dataFrequencySeconds}")
-    println(s"records sources:     ${wineQualityRecordsResources}")
-    implicit val system = ActorSystem("RecommenderDataIngress-Main")
-    implicit val mat = ActorMaterializer()
-    val source = makeSource(wineQualityRecordsResources, dataFrequencySeconds)
-    source.runWith(Sink.foreach(println))
+  def makeRecordsReader(configRoot: String = rootConfigKey): RecordsReader[WineRecord] =
+    RecordsReader.fromConfiguration[WineRecord](
+      configurationKeyRoot = configRoot,
+      dropFirstN = 0)(parse)
+
+  val parse: String ⇒ Either[String, WineRecord] = line ⇒ {
+    val tokens = line.split(defaultSeparator)
+    if (tokens.length < 11) {
+      Left(s"Record does not have 11 fields, ${tokens.mkString(defaultSeparator)}")
+    } else try {
+      val dtokens = tokens.map(_.trim.toDouble)
+      Right(WineRecord(
+        fixed_acidity = dtokens(0),
+        volatile_acidity = dtokens(1),
+        citric_acid = dtokens(2),
+        residual_sugar = dtokens(3),
+        chlorides = dtokens(4),
+        free_sulfur_dioxide = dtokens(5),
+        total_sulfur_dioxide = dtokens(6),
+        density = dtokens(7),
+        pH = dtokens(8),
+        sulphates = dtokens(9),
+        alcohol = dtokens(10),
+        dataType = "wine"))
+    } catch {
+      case scala.util.control.NonFatal(nf) ⇒
+        Left(
+          s"Failed to parse string ${tokens.mkString(defaultSeparator)}. cause: $nf")
+    }
   }
+
+  val logger: Logger = LoggingUtil.getLogger(RecordsReader.getClass)
 }
 
