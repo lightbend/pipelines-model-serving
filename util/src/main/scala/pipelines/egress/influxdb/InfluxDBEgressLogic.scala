@@ -32,15 +32,15 @@ final case class InfluxDBEgressLogic[IN](
       .to(atLeastOnceSink)
 
   def flowWithContext(system: ActorSystem) = {
-    val host = get(configKeyRoot + configKeys.influxHost)
-    val port = get(configKeyRoot + configKeys.influxPort)
-    val db   = get(configKeyRoot + configKeys.influxDatabase)
+    val host = get(context, configKeyRoot + configKeys.influxHost)
+    val port = get(context, configKeyRoot + configKeys.influxPort)
+    val db = get(context, configKeyRoot + configKeys.influxDatabase)
 
     val portInt =
       try { port.toInt }
       catch {
         case scala.util.control.NonFatal(th) =>
-          throw InvalidConfigValue(key, configKeyRoot + configKeys.influxPort, th)
+          throw InfluxDBEgressLogic.InvalidConfigValue(configKeyRoot + configKeys.influxPort, port, th)
       }
 
     val influxDB = InfluxDBUtil.getInfluxDB(host, portInt)
