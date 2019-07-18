@@ -13,7 +13,7 @@ object Dependencies {
   val pmml            = "org.jpmml"                       % "pmml-evaluator"            % PMMLVersion
   val pmmlextensions  = "org.jpmml"                       % "pmml-evaluator-extension"  % PMMLVersion
   val h2o             = "ai.h2o"                          % "h2o-genmodel"              % h2oVersion
-  val influx          = "org.influxdb"                    % "influxdb-java"             % influxVerion
+  val influx          = "org.influxdb"                    % "influxdb-java"             % influxVersion
   val gson            = "com.google.code.gson"            % "gson"                      % gsonVersion
   val compress        = "org.apache.commons"              % "commons-compress"          %apacheCommonsCompress
   val scalajHTTP      = "org.scalaj"                     %% "scalaj-http"               % scalajHTTPVersion
