@@ -14,7 +14,7 @@ import org.apache.avro.specific.SpecificRecordBase
  * @param measurement The name of the measurement being written.
  * @param writer The object that knows how to write records of type IN.
  * @param configKeyRoot The application root context, under which the host, port, etc. are determined from the configuration.
- * @param configKeys The configuration keys used to retrieve the database host, port, and table name from the configuration.
+ * @param configKeys The configuration keys used to retrieve the database host, port, and table name from the configuration, relative to the configKeyRoot.
  */
 final case class InfluxDBEgressLogic[IN](
   in: CodecInlet[IN],
