@@ -89,7 +89,8 @@ object AirlineFlightRecordsIngressUtil {
         weatherDelay = dtokens(25).toInt,
         nASDelay = dtokens(26).toInt,
         securityDelay = dtokens(27).toInt,
-        lateAircraftDelay = dtokens(28).toInt))
+        lateAircraftDelay = dtokens(28).toInt,
+        dataType = "airline"))
     } catch {
       case scala.util.control.NonFatal(nf) ⇒
         Left(

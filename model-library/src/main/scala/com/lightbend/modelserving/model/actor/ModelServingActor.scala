@@ -1,18 +1,28 @@
 package com.lightbend.modelserving.model.actor
 
 import akka.Done
-import akka.actor.{ Actor, Props }
+import akka.actor.{Actor, Props}
 import com.lightbend.modelserving.model._
+import com.lightbend.modelserving.model.persistence.FilePersistence
 
 /**
  * Actor that handles messages to update a model and to score records using the current model.
  * @param dataType indicating either the record type or model parameters. Used as a file name.
  */
-class ModelServingActor[RECORD, RESULT] extends Actor {
+class ModelServingActor[RECORD, RESULT](dataType: String) extends Actor {
 
   println("Creating model serving actor for wine")
   private var currentModel: Option[Model[RECORD, RESULT]] = None
   var currentState: Option[ModelToServeStats] = None
+
+  override def preStart {
+    FilePersistence.restoreState(dataType) match {
+      case Some(value) => // manage to restore
+        currentModel = value._1.asInstanceOf[Option[Model[RECORD, RESULT]]]
+        currentState = Some(ModelToServeStats(value._2, value._3, value._1.getType.ordinal(), System.currentTimeMillis()))
+      case _ =>
+    }
+  }
 
   override def receive: PartialFunction[Any, Unit] = {
     case model: ModelToServe =>
@@ -26,6 +36,8 @@ class ModelServingActor[RECORD, RESULT] extends Actor {
           // Update model and state
           currentModel = Some(m)
           currentState = Some(ModelToServeStats(model))
+          // persist new model
+          FilePersistence.saveState(dataType, m, model.name, model.description)
         case _ => // Failed converting
           println(s"Failed to convert model: ${model.model}")
       }
@@ -55,7 +67,7 @@ class ModelServingActor[RECORD, RESULT] extends Actor {
 }
 
 object ModelServingActor {
-  def props[RECORD, RESULT](): Props = Props(new ModelServingActor[RECORD, RESULT])
+  def props[RECORD, RESULT](dataType : String): Props = Props(new ModelServingActor[RECORD, RESULT](dataType))
 }
 
 /** Used as an Actor message. */

@@ -27,7 +27,7 @@ final case object WineModelServer extends AkkaStreamlet {
     ModelToServe.setResolver[WineRecord, Double](WineFactoryResolver)
 
     val actors = Map("wine" ->
-      context.system.actorOf(ModelServingActor.props[WineRecord, Double]))
+      context.system.actorOf(ModelServingActor.props[WineRecord, Double]("wine")))
 
     val modelserver = context.system.actorOf(
       ModelServingManager.props(new ServingActorResolver(actors)))
@@ -61,7 +61,7 @@ object WineModelServerMain {
     implicit val system: ActorSystem = ActorSystem("ModelServing")
     implicit val askTimeout: Timeout = Timeout(30.seconds)
 
-    val actors = Map("wine" -> system.actorOf(ModelServingActor.props[WineRecord, Double]))
+    val actors = Map("wine" -> system.actorOf(ModelServingActor.props[WineRecord, Double]("wine")))
 
     val modelserver = system.actorOf(ModelServingManager.props(new ServingActorResolver(actors)))
     val record = WineRecord(.0, .0, .0, .0, .0, .0, .0, .0, .0, .0, .0, "wine")

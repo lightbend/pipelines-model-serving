@@ -1,10 +1,11 @@
 package com.lightbend.modelserving.model.h2o
 
-import java.io.{ ObjectInputStream, ObjectOutputStream, Serializable }
+import java.io.{ByteArrayInputStream, ByteArrayOutputStream, ObjectInputStream, ObjectOutputStream, Serializable}
+import java.util.zip.ZipInputStream
 
 import com.lightbend.modelserving.model.Model
 import hex.ModelCategory
-import hex.genmodel.{ InMemoryMojoReaderBackend, MojoModel }
+import hex.genmodel.{InMemoryMojoReaderBackend, MojoModel}
 import hex.genmodel.easy.EasyPredictModelWrapper
 import pipelines.examples.data.ModelType
 
@@ -17,16 +18,22 @@ abstract class H2OModel[RECORD, RESULT](inputStream: Array[Byte]) extends Model[
   setup()
 
   private def setup(): Unit = {
-    val backend = new InMemoryMojoReaderBackend(mapAsJavaMap(Map("data" -> bytes)))
+    val filesMap = scala.collection.mutable.Map[String, Array[Byte]]()
+    val zis = new ZipInputStream(new ByteArrayInputStream(inputStream))
+    Stream.continually(zis.getNextEntry).takeWhile(_ != null).foreach { file =>
+      val buffer = new Array[Byte](1024)
+      val content = new ByteArrayOutputStream()
+      Stream.continually(zis.read(buffer)).takeWhile(_ != -1).foreach(content.write(buffer, 0, _))
+      filesMap += (file.getName -> content.toByteArray)
+    }
+
+    val backend = new InMemoryMojoReaderBackend(mapAsJavaMap(filesMap))
     model = new EasyPredictModelWrapper(MojoModel.load(backend))
     verifyModelType(model.getModelCategory) match {
       case true =>
       case false => throw new Exception("H2O unknown model type")
     }
   }
-
-  /** Score a record with the model */
-  override def score(input: RECORD): RESULT = ???
 
   /** Abstraction for cleaning up resources */
   override def cleanup(): Unit = {}

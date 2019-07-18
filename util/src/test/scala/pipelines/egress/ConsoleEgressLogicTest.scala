@@ -12,7 +12,6 @@ import pipelines.akkastream.testkit._
 import pipelines.test.{ OutputInterceptor, TestData }
 import pipelines.logging.StdoutStderrLogger
 import com.typesafe.config.ConfigFactory
-import scala.reflect.ClassTag
 
 class ConsoleEgressLogicTest extends FunSpec with BeforeAndAfterAll with OutputInterceptor {
 

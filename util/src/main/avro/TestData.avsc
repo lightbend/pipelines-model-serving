@@ -1,7 +1,7 @@
 {
     "namespace": "pipelines.test",
     "type": "record",
-    "name": "TestData",
+    "name": "EgressTestData",
     "fields":[
          {
             "name": "id", "type": "int"

@@ -92,7 +92,7 @@ lazy val modelServingFlow = (project in file("./model-serving-flow"))
   .settings(
     name := "model-serving-flow",
     commonSettings,
-    libraryDependencies ++= Seq(akkaSprayJson, alpakkaFile, alpakkaKafka, h2o, scalaTest)
+    libraryDependencies ++= Seq(akkaSprayJson, alpakkaFile, alpakkaKafka, scalaTest)
   )
   .dependsOn(util, data, dataModel, modelLibrary)
 
