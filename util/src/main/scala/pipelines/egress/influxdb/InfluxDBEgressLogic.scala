@@ -32,15 +32,15 @@ final case class InfluxDBEgressLogic[IN](
       .to(atLeastOnceSink)
 
   def flowWithContext(system: ActorSystem) = {
-    val host = get(context, configKeyRoot + configKeys.influxHost)
-    val port = get(context, configKeyRoot + configKeys.influxPort)
-    val db = get(context, configKeyRoot + configKeys.influxDatabase)
+    val host = get(context, configKeyRoot + "." + configKeys.influxHost)
+    val port = get(context, configKeyRoot + "." + configKeys.influxPort)
+    val db = get(context, configKeyRoot + "." + configKeys.influxDatabase)
 
     val portInt =
       try { port.toInt }
       catch {
         case scala.util.control.NonFatal(th) =>
-          throw InfluxDBEgressLogic.InvalidConfigValue(configKeyRoot + configKeys.influxPort, port, th)
+          throw InfluxDBEgressLogic.InvalidConfigValue(configKeyRoot + "." + configKeys.influxPort, port, th)
       }
 
     val influxDB = InfluxDBUtil.getInfluxDB(host, portInt)
@@ -52,10 +52,13 @@ final case class InfluxDBEgressLogic[IN](
     }
   }
 
-  protected def get(context: StreamletContext, key: String): String = {
+  protected def get(context: StreamletContext, key: String): String = try {
     val value = context.config.getString(key)
-    if (value == null || value == "") throw InfluxDBEgressLogic.ConfigKeyNotFound(key)
+    if (value == null || value == "") throw InfluxDBEgressLogic.ConfigKeyNotFound(key, null)
     else value
+  } catch {
+    case scala.util.control.NonFatal(th) =>
+      throw InfluxDBEgressLogic.ConfigKeyNotFound(key, th)
   }
 }
 
@@ -66,8 +69,8 @@ object InfluxDBEgressLogic {
     val influxPort: String = "influxdb.port",
     val influxDatabase: String = "influxdb.database")
 
-  final case class ConfigKeyNotFound(key: String) extends RuntimeException(
-    s"The InfluxDB key $key was not found. Please check your configuration, e.g., application.conf")
+  final case class ConfigKeyNotFound(key: String, cause: Throwable) extends RuntimeException(
+    s"The InfluxDB key $key was not found. Please check your configuration, e.g., application.conf", cause)
 
   final case class InvalidConfigValue(key: String, value: String, cause: Throwable) extends RuntimeException(
     s"The InfluxDB value $value found for key $key was not valid. Please check your configuration, e.g., application.conf", cause)
