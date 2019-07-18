@@ -10,9 +10,11 @@ This project contains two example pipelines:
 
 ### InfluxDB Setup - for Wine Quality and Airline Flights Examples
 
+> NOTE: At this time, the _egress_ streamlets that write to InfluxDB are not used in the corresponding blueprints for the wine and airline apps. If you want to use Influx, edit those blueprint files, uncommenting the lines that use these egresses and commenting the corresponding lines that don't.
+
 Wine input records and scoring results are written to InfluxDB, as an example of a downstream consumer. Similarly for the Airline flights app.
 
-If you don't want to setup InfluxDB, change `blueprint.conf` to remove the `influx-raw-egress.in` and `influx-result-egress.in` from the `connections` section of the blueprint.
+You can enable or disable the corresponding egress streamlets by editing the corresponding `blueprint.conf` to add or remove the `influx-raw-egress.in` and `influx-result-egress.in` from the `connections` section of the blueprint.
 
 First Install the Influx DB CLI. On a Macintosh using HomeBrew:
 
@@ -25,6 +27,8 @@ Make sure you are connected to your Kubernetes cluster and run the following com
 ```shell
 helm install stable/influxdb --name influxdb --namespace influxdb
 ```
+
+This will create a service named `influxdb.influxdb.svc`. You'll need that string below.
 
 Port forward to access InfluxDB locally:
 
@@ -41,40 +45,34 @@ influx -execute 'create database wine_ml' -host localhost -port 8086
 
 You can use different database names, but make the corresponding configuration change in the following steps.
 
-Run this command to see the host name:
+If you changed anything above, the service name, the port, or the database name used, you'll need to edit one or both configuration files:
 
-```shell
-kubectl describe pods -n influxdb -l app=influxdb | grep Node:
-```
+* Wine app: `wine-quality-ml/src/main/resources/reference.conf`
+* Airlines app: `airline-flights-ml/src/main/resources/reference.conf`
 
-In a cloud environment, like AWS, you might see output like this:
-
-```
-Node:   ip-1-2-3-4.us-east-2.compute.internal/1.2.3.4
-```
-
-You'll use _either_ `ip-1-2-3-4.us-east-2.compute.internal` or `1.2.3.4` for the `host` setting next.
-
-Now, for the Wine app, edit the configuration file `wine-quality-ml/src/main/resources/reference.conf`. Edit the `host` and `database` field to match your environment:
+Edit the `host`, `port`, and `database` field to match your setup. Here is the default content for the Wine app:
 
 ```
+...
 influxdb : {
-  host : "",
+  host : "influxdb.influxdb.svc",
   port : 8086,
   database : "wine_ml"
 }
 ```
 
-Do the same for `airline-flights-ml/src/main/resources/reference.conf`:
+For the Airline app, it is the same, except for the database name, in `airline-flights-ml/src/main/resources/reference.conf`:
 
 
 ```
 influxdb : {
-  host : "",
+  host : "influxdb.influxdb.svc",
   port : 8086,
   database : "airline_ml"
 }
 ```
+
+> NOTE: You can also override these config values on the command-line, as discussed below.
 
 ### Setup Kubeflow - Recommender Example
 
@@ -84,11 +82,13 @@ Instructions - TBD
 
 ### Air Traffic H20 Example
 
-The `RecordsReader` class under the `util` project is able to load files from the `CLASSPATH`, a file system (POSIX, not HDFS), and from URLs. There is a truncated data file from 1990, about 1MB in size, in the `data` subproject, but the default configuration in `airline-flights-model-serving-pipeline/src/main/resources/reference.conf/` has entries to pull down many large files from the original URL, storing them locally in the running image for the ingress object. By default, all but one are commented out. You may wish to add a few more, but _if this pod runs out of memory, remove some of them from the list!_
+The `RecordsReader` class under the `util` project is able to load files from the `CLASSPATH`, a file system (POSIX, not HDFS), and from URLs. There is also an API that determines from the configuration while which source to use. This logic is used by the wine and airline apps to load their data and model files.
 
-> WARNING: If you decide to load files from the `CLASSPATH` instead, keep in mind that these files are bundled into the application Docker image, so avoid downloading too many of them or the size will be huge!
+For the airline app, there is a truncated data file from 1990, about 1MB in size, in the `data` subproject, but the default configuration in `airline-flights-ml/src/main/resources/reference.conf/` has entries to pull down many large files from the original URL, storing them locally in the running image for the ingress object. By default, all but one are commented out. You may wish to add a few more, but _if this pod runs out of memory, remove some of them from the list!_
 
-This application does not attempt to load new model files. The single model is stored in `data/src/main/resources/airline/models` and loaded from the `CLASSPATH` at startup.
+> WARNING: If you decide to load files from the `CLASSPATH` instead, keep in mind that these files are bundled into the application Docker image, so avoid loading too many of them or the image size will be huge!
+
+In contrast the airline app does not attempt to load new model files. The single model is stored in `data/src/main/resources/airline/models` and loaded from the `CLASSPATH` at startup.
 
 ## Build and Deploy the Applications
 
@@ -96,14 +96,14 @@ Decide which of the three projects you want to build and deploy, then change to 
 
 So, from the `sbt` prompt, do _one_ of the following first:
 
-1. Wine quality: `project wineModelServingPipeline` (corresponding to the directory `wine-model-serving-pipeline`)
-2. Airline flights: `project airlineFlightsModelServingPipeline` (corresponding to the directory `airline-flights-model-serving-pipeline`)
-3. Recommender: `project recommenderModelServingPipeline` (corresponding to the directory `recommender-model-serving-pipeline`)
+1. Wine quality: `project wineModelServingPipeline` (corresponding to the directory `wine-quality-ml`)
+2. Airline flights: `project airlineFlightsModelServingPipeline` (corresponding to the directory `airline-flights-ml`)
+3. Recommender: `project recommenderModelServingPipeline` (corresponding to the directory `recommender-ml`)
 
-Now build. First, you can explicitly verify the blueprint, although this command is also run as part of `buildAndPublish`:
+Now build. First, you can explicitly verify the blueprint, although this command is also run as part of `buildAndPublish` next:
 
 ```
-verifyBlueprint
+sbt verifyBlueprint
 ```
 
 Build the project:
@@ -112,41 +112,34 @@ Build the project:
 sbt buildAndPublish
 ```
 
-The correct image name and tag is echoed by this command, which you'll need next. You can also get it in a separate shell window from Docker:
+The image name will be based on one of the following strings, where `USER` will be replaced with your user name at build time:
+
+* Wine app: `wine-quality-ml-USER`
+* Airline app: `airline-flights-ml-USER`
+* Recommender app: `recommender-ml-USER`
+
+The full image name, including the Docker registry URL in your cluster and the auto-generated tag for the image, is printed as part of the output of the `buildAndPublish` command. Copy and past that text for the deployment command next, replacing the placeholder `IMAGE` shown:
 
 ```shell
-docker images
+kubectl pipelines deploy IMAGE
 ```
 
-Deploy the Project, setting `TAG_NAME` for your Docker image and `APP_NAME` to one of following, appropriate for the app you're deploying:
-
-* `wine` for the `wine-model-serving-pipeline` app
-* `airline-flights` for the `airline-flights-model-serving-pipeline` app
-* `recommender` for the `recommender-model-serving-pipeline` app
-
-Or, just insert the strings in the command.
-
-For the recommender app, use this command
+For the airline and wine apps, you can also override InfluxDB parameters on the command line (or any other parameters, really). For the wine app it would look as follows, where any or all of the configuration flags could be supplied. Here, the default values are shown on the right hand sides of the equal signs:
 
 ```shell
-TAG_NAME=...
-APP_NAME=...
-kubectl pipelines deploy docker-registry-default.gsa2.lightbend.com/lightbend/${APP_NAME}-model-serving-pipeline:$TAG_NAME
+kubectl pipelines deploy IMAGE \
+  wine-quality.influxdb.host="influxdb.influxdb.svc" \
+  wine-quality.influxdb.port="8086" \
+  wine-quality.influxdb.database="wine_ml"
 ```
 
-For the other two apps, which write records and results to InfluxDB, use this command, where `DB_NAME` should be set to `wine_ml` for the wine app and `airline_flights` for the airline app:
+Similarly, for the airline apps:
 
 ```shell
-TAG_NAME=...
-APP_NAME=...
-DB_NAME=...
-kubectl pipelines deploy docker-registry-default.gsa2.lightbend.com/lightbend/${APP_NAME}-model-serving-pipeline:$TAG_NAME \
-  raw-egress.InfluxHost="influxdb.influxdb.svc" \
-  raw-egress.InfluxPort="8086" \
-  raw-egress.InfluxDatabase="$DB_NAME" \
-  influx-result-egress.InfluxHost="influxdb.influxdb.svc" \
-  influx-result-egress.InfluxPort="8086" \
-  influx-result-egress.InfluxDatabase="$DB_NAME"
+kubectl pipelines deploy IMAGE \
+  airline-flights.influxdb.host="influxdb.influxdb.svc" \
+  airline-flights.influxdb.port="8086" \
+  airline-flights.influxdb.database="airline_ml"
 ```
 
 ## Notes
