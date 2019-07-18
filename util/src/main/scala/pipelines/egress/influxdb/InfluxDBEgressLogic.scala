@@ -53,7 +53,7 @@ final case class InfluxDBEgressLogic[IN](
   }
 
   protected def get(context: StreamletContext, key: String): String = {
-    val value = context.streamletConfig.getString(key)
+    val value = context.config.getString(key)
     if (value == null || value == "") throw InfluxDBEgressLogic.ConfigKeyNotFound(key)
     else value
   }
