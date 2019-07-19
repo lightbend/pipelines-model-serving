@@ -20,7 +20,7 @@ import scala.collection.JavaConverters._
  */
 final case object WineModelDataIngress extends AkkaStreamlet {
 
-  val out = AvroOutlet[ModelDescriptor]("out", _.name)
+  val out = AvroOutlet[ModelDescriptor]("out", _.dataType)
 
   final override val shape = StreamletShape(out)
 
