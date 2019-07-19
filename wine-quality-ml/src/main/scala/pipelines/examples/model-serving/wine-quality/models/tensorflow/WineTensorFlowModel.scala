@@ -1,10 +1,10 @@
-package pipelines.examples.modelserving.winemodel.tensorflow
+package pipelines.examples.modelserving.winequality.models.tensorflow
 
 import com.lightbend.modelserving.model.tensorflow.TensorFlowModel
 import com.lightbend.modelserving.model.{ Model, ModelFactory }
 import com.lightbend.modelserving.model.ModelToServe
 import org.tensorflow.Tensor
-import pipelines.examples.data.WineRecord
+import pipelines.examples.modelserving.winequality.data.WineRecord
 
 /**
  * TensorFlow model implementation for wine data
@@ -45,8 +45,7 @@ object WineTensorFlowModel extends ModelFactory[WineRecord, Double] {
       record.density.toFloat,
       record.pH.toFloat,
       record.sulphates.toFloat,
-      record.alcohol.toFloat
-    )
+      record.alcohol.toFloat)
     Tensor.create(Array(data))
   }
 

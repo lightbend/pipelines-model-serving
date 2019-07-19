@@ -1,7 +1,7 @@
-package pipelines.examples.modelserving.recommendermodel
+package pipelines.examples.modelserving.recommender
 
+import pipelines.examples.modelserving.recommender.data.RecommenderRecord
 import com.lightbend.modelserving.model.DataToServe
-import pipelines.examples.data.RecommenderRecord
 
 case class RecommendationDataRecord(record: RecommenderRecord) extends DataToServe {
   def getType: String = record.dataType

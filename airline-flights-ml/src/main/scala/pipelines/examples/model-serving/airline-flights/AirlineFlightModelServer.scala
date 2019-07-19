@@ -1,8 +1,8 @@
 package pipelines.examples.modelserving.airlineflights
 
+import pipelines.examples.modelserving.airlineflights.data._
 import pipelines.akkastream.AkkaStreamlet
 import pipelines.akkastream.scaladsl.RunnableGraphStreamletLogic
-import pipelines.examples.data._
 import pipelines.streamlets.avro.{ AvroInlet, AvroOutlet }
 import pipelines.streamlets.StreamletShape
 

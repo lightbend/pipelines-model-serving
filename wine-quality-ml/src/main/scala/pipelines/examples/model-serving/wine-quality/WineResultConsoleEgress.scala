@@ -1,10 +1,10 @@
-package pipelines.examples.ml.egress
+package pipelines.examples.modelserving.winequality
 
+import pipelines.examples.modelserving.winequality.data._
 import pipelines.streamlets.StreamletShape
 import pipelines.streamlets.avro.AvroInlet
 import pipelines.akkastream.AkkaStreamlet
-import pipelines.egress.ConsoleEgressLogic
-import pipelines.examples.data._
+import pipelinesx.egress.ConsoleEgressLogic
 
 final case object WineResultConsoleEgress extends AkkaStreamlet {
   val in = AvroInlet[WineResult]("in")

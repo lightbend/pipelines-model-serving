@@ -1,10 +1,14 @@
-package pipelines.examples.ingestor
+package pipelines.examples.modelserving.winequality
 
-import org.scalatest.{ FunSpec, BeforeAndAfter }
-import pipelines.examples.data._
-import pipelines.test.OutputInterceptor
+import org.scalatest.{ FunSpec, BeforeAndAfterAll }
+import pipelines.examples.modelserving.winequality.data._
+import pipelinesx.test.OutputInterceptor
 
-class WineModelsReaderTest extends FunSpec with BeforeAndAfter with OutputInterceptor {
+class WineModelsReaderTest extends FunSpec with BeforeAndAfterAll with OutputInterceptor {
+
+  override def afterAll: Unit = {
+    resetOutputs()
+  }
 
   val initializingMsgFmt = "WineModelsReader: Initializing from resource %s"
   val testGoodModelsResources = Array("wine/data/100_winequality_red.csv")
@@ -55,9 +59,9 @@ class WineModelsReaderTest extends FunSpec with BeforeAndAfter with OutputInterc
             case ((countPMML, countTensorFlow), _) ⇒
               val modelDescriptor = reader.next()
               modelDescriptor.modeltype match {
-                case ModelType.PMML       ⇒ (countPMML + 1, countTensorFlow)
+                case ModelType.PMML ⇒ (countPMML + 1, countTensorFlow)
                 case ModelType.TENSORFLOW ⇒ (countPMML, countTensorFlow + 1)
-                case other                ⇒ fail(s"Bad map key: $other")
+                case other ⇒ fail(s"Bad map key: $other")
               }
           }
           assert(totalPMML == countPMML)

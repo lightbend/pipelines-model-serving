@@ -7,7 +7,7 @@
   <logger name="akka.io"             level="INFO" />
   <logger name="akka.kafka.internal" level="INFO" />
 
-  <logger name="pipelines.ingress.RecordsReader$"   level="DEBUG" />
+  <logger name="pipelinesx.ingress.RecordsReader$"   level="DEBUG" />
 
   <root level="DEBUG">
 <!--

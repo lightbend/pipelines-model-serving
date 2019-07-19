@@ -1,4 +1,4 @@
-package pipelines.egress.influxdb
+package pipelinesx.egress.influxdb
 
 import java.util.Date
 import java.util.concurrent.TimeUnit

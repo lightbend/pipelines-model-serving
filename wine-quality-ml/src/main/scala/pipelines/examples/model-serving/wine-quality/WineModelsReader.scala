@@ -1,7 +1,7 @@
-package pipelines.examples.ingestor
+package pipelines.examples.modelserving.winequality
 
-import pipelines.examples.data._
-import pipelines.ingress.ByteArrayReader
+import pipelines.examples.modelserving.winequality.data._
+import pipelinesx.ingress.ByteArrayReader
 
 /**
  * Provides an infinite stream of wine records, repeatedly reading them from
@@ -59,9 +59,9 @@ final case class WineModelsReader(resourceNames: Map[ModelType, Seq[String]]) {
 
   protected def finished(modelType: ModelType, currentIndex: Int): Boolean =
     resourceNames.get(modelType) match {
-      case None                                      ⇒ true
+      case None ⇒ true
       case Some(names) if currentIndex >= names.size ⇒ true
-      case _                                         ⇒ false
+      case _ ⇒ false
     }
 
   protected def init(whichType: ModelType): Unit = {

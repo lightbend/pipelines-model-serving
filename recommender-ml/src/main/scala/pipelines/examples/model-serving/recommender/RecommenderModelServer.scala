@@ -1,16 +1,16 @@
-package pipelines.examples.modelserving
+package pipelines.examples.modelserving.recommender
 
+import pipelines.examples.modelserving.recommender.models.{ RecommendationDataRecord, RecommendationFactoryResolver }
+import pipelines.examples.modelserving.recommender.data.{ ProductPrediction, RecommenderRecord, RecommendationResult }
+import com.lightbend.modelserving.model.actor.{ ModelServingActor, ModelServingManager }
+import com.lightbend.modelserving.model.{ ModelDescriptor, ModelType, ModelToServe, ServingActorResolver, ServingResult }
 import akka.Done
 import akka.actor.ActorSystem
 import akka.pattern.ask
 import akka.stream.scaladsl.Sink
 import akka.util.Timeout
-import com.lightbend.modelserving.model.actor.{ ModelServingActor, ModelServingManager }
-import com.lightbend.modelserving.model.{ ModelToServe, ServingActorResolver, ServingResult }
 import pipelines.akkastream.AkkaStreamlet
 import pipelines.akkastream.scaladsl.{ FlowWithPipelinesContext, RunnableGraphStreamletLogic }
-import pipelines.examples.modelserving.recommendermodel.{ RecommendationDataRecord, RecommendationFactoryResolver }
-import pipelines.examples.data.{ ModelDescriptor, ModelType, ProductPrediction, RecommenderRecord, RecommendationResult }
 import pipelines.streamlets.StreamletShape
 import pipelines.streamlets.avro.{ AvroInlet, AvroOutlet }
 import scala.concurrent.duration._

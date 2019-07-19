@@ -7,7 +7,7 @@
   <logger name="akka.io"             level="INFO" />
   <logger name="akka.kafka.internal" level="INFO" />
 
-  <logger name="pipelines.ingress.RecordsReader$"  level="INFO" />
+  <logger name="pipelinesx.ingress.RecordsReader$"  level="INFO" />
 
   <logger name="org.apache.kafka"                  level="${LOGLEVEL_KAFKA:-INFO}" />
   <logger name="org.apache.kafka.common.utils"     level="${LOGLEVEL_KAFKA:-WARN}" />

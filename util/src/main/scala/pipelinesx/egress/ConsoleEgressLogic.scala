@@ -1,4 +1,4 @@
-package pipelines.egress
+package pipelinesx.egress
 
 import pipelines.streamlets._
 import pipelines.akkastream._

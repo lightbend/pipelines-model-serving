@@ -1,7 +1,5 @@
 package com.lightbend.modelserving.model
 
-import pipelines.examples.data.ModelType
-
 /**
  * Generic definition of a machine learning model
  */

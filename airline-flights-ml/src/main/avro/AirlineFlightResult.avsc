@@ -1,5 +1,5 @@
 {
-    "namespace": "pipelines.examples.data",
+    "namespace": "pipelines.examples.modelserving.airlineflights.data",
     "type": "record",
     "name": "AirlineFlightResult",
     "fields":[

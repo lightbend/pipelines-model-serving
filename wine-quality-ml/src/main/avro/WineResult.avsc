@@ -1,5 +1,5 @@
 {
-  "namespace": "pipelines.examples.data",
+  "namespace": "pipelines.examples.modelserving.winequality.data",
   "type": "record",
   "name": "WineResult",
   "fields":[

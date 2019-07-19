@@ -1,5 +1,6 @@
-package pipelines.examples.ingestor
+package pipelines.examples.modelserving.recommender
 
+import pipelines.examples.modelserving.recommender.data._
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
@@ -8,12 +9,11 @@ import pipelines.akkastream.AkkaStreamlet
 import pipelines.akkastream.scaladsl.{ RunnableGraphStreamletLogic }
 import pipelines.streamlets.avro.AvroOutlet
 import pipelines.streamlets.StreamletShape
-import pipelines.examples.data._
 import scala.collection.mutable.ListBuffer
 import scala.util.Random
 import scala.concurrent.duration._
-import pipelines.config.ConfigUtil
-import pipelines.config.ConfigUtil.implicits._
+import pipelinesx.config.ConfigUtil
+import pipelinesx.config.ConfigUtil.implicits._
 
 /**
  * Ingress of data for recommendations. In this case, every second we
@@ -37,7 +37,7 @@ object RecommenderDataIngressUtil {
     ConfigUtil.default.getOrElse[Int]("recommender.data-frequency-milliseconds")(1).milliseconds
 
   def makeSource(
-      frequency: FiniteDuration = dataFrequencyMilliseconds): Source[RecommenderRecord, NotUsed] = {
+    frequency: FiniteDuration = dataFrequencyMilliseconds): Source[RecommenderRecord, NotUsed] = {
     Source.repeat(RecommenderRecordMaker)
       .map(maker ⇒ maker.make())
       .throttle(1, frequency)

@@ -1,6 +1,6 @@
-package pipelines.egress.influxdb
+package pipelinesx.egress.influxdb
 
-import pipelines.egress.FlowEgressLogic
+import pipelinesx.egress.FlowEgressLogic
 import pipelines.streamlets.CodecInlet
 import pipelines.akkastream.StreamletContext
 import pipelines.akkastream.scaladsl._

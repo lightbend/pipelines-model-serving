@@ -1,4 +1,4 @@
-package pipelines.ingress
+package pipelinesx.ingress
 
 import org.scalatest.FunSpec
 
@@ -41,18 +41,20 @@ class ByteArrayReaderTest extends FunSpec {
         }
       }
 
+      val dataFile = "good-records1.csv"
+
       it("returns a byte array for the contents of a file from the CLASSPATH") {
-        ByteArrayReader.fromClasspath("/wine/data/10_winequality_red.csv") match {
-          case Left(error) => fail(s"Failed to return bytes for the file wine/data/10_winequality_red.csv: error = $error")
+        ByteArrayReader.fromClasspath("/" + dataFile) match {
+          case Left(error) => fail(s"Failed to return bytes for the file $dataFile: error = $error")
           case Right(bytes @ _) => // pass
         }
       }
 
       it("the returned byte array is the contents of the file") {
-        ByteArrayReader.fromClasspath("/wine/data/10_winequality_red.csv") match {
-          case Left(error) => fail(s"Failed to return bytes for the file wine/data/10_winequality_red.csv: error = $error")
+        ByteArrayReader.fromClasspath("/" + dataFile) match {
+          case Left(error) => fail(s"Failed to return bytes for the file $dataFile: error = $error")
           case Right(bytes) =>
-            val expected = scala.io.Source.fromResource("wine/data/10_winequality_red.csv").getLines.reduceLeft(_ + "\n" + _)
+            val expected = scala.io.Source.fromResource(dataFile).getLines.reduceLeft(_ + "\n" + _)
             (bytes zip expected.getBytes).zipWithIndex foreach {
               case ((a, b), i) =>
                 assert(a == b, s"$i, $a != $b")

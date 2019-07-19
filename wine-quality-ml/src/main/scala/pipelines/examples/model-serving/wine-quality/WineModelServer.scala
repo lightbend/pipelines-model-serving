@@ -1,4 +1,4 @@
-package pipelines.examples.modelserving
+package pipelines.examples.modelserving.winequality
 
 import akka.Done
 import akka.actor.ActorSystem
@@ -9,8 +9,8 @@ import com.lightbend.modelserving.model.actor.{ ModelServingActor, ModelServingM
 import com.lightbend.modelserving.model.{ ModelToServe, ServingActorResolver, ServingResult }
 import pipelines.akkastream.AkkaStreamlet
 import pipelines.akkastream.scaladsl.{ FlowWithPipelinesContext, RunnableGraphStreamletLogic }
-import pipelines.examples.data.{ ModelDescriptor, WineRecord, WineResult }
-import pipelines.examples.modelserving.winemodel.{ WineDataRecord, WineFactoryResolver }
+import pipelines.examples.modelserving.winequality.data.{ WineRecord, WineResult }
+import pipelines.examples.modelserving.winequality.models.{ ModelDescriptor, WineDataRecord, WineFactoryResolver }
 import pipelines.streamlets.StreamletShape
 import pipelines.streamlets.avro.{ AvroInlet, AvroOutlet }
 import scala.concurrent.duration._

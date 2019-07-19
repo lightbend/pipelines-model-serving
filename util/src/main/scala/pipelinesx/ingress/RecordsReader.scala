@@ -1,14 +1,14 @@
-package pipelines.ingress
+package pipelinesx.ingress
 
+import pipelinesx.config.ConfigUtil
+import pipelinesx.config.ConfigUtil.implicits._
+import pipelinesx.logging.{ LoggingUtil, MutableLogger }
 import scala.io.{ BufferedSource, Source }
 import java.io.{ File, FilenameFilter, FileInputStream, FileOutputStream, InputStream }
 import java.util.zip.{ GZIPInputStream, ZipInputStream }
 import java.net.URL
 import scala.collection.JavaConverters._
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream
-import pipelines.config.ConfigUtil
-import pipelines.config.ConfigUtil.implicits._
-import pipelines.logging.{ LoggingUtil, MutableLogger }
 
 /**
  * Provides an infinite stream of text-based records from one or more files in
@@ -390,7 +390,7 @@ object RecordsReader {
     }
 
     val fsp = configKeyRoot + ".data-sources.from-file-system.paths"
-    val fsfp = configKeyRoot + ".data-sources.from-file-system.folder-paths"
+    val fsfp = configKeyRoot + ".data-sources.from-file-system.dir-paths"
     val fnre = configKeyRoot + ".data-sources.from-file-system.file-name-regex"
     config.get[Seq[String]](fsp) match {
       case Some(list) if list.size > 0 => list.map(p => new File(p))

@@ -1,9 +1,7 @@
 package pipelines.examples.modelserving.airlineflights
 
-import pipelines.examples.modelserving.AirlineFlightModelServer
-import pipelines.examples.ingestor.AirlineFlightRecordsIngressUtil
-import pipelines.examples.data._
-import pipelines.ingress.RecordsReader
+import pipelines.examples.modelserving.airlineflights.data._
+import pipelinesx.ingress.RecordsReader
 
 /**
  * For testing the logic outside of Pipelines. Try -h or --help for information

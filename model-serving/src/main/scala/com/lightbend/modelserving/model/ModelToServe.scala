@@ -17,8 +17,6 @@ package com.lightbend.modelserving.model
 
 import java.io.DataOutputStream
 
-import pipelines.examples.data.{ ModelDescriptor, ModelType }
-
 /**
  * Various data transformation methods.
  */

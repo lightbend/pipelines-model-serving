@@ -1,19 +1,38 @@
-package pipelines.test
+package pipelinesx.test
 
 import java.io.{ ByteArrayOutputStream, PrintStream }
 
 /**
- * Mixin trait to capture stdout and stderr, by intercepting Java's System.err and
- * System.out, then assert the contents are what's expected (or ignore them).
- * WARNING: Does not successfully capture output in all cases, including Java
- * logging libraries that are initialized first, even when configured to write to
- * the console, and possibly some multi-threaded apps. Hence, this class has
- * limited power.
+ * Mixin trait for tests to capture stdout and stderr, by intercepting Java's
+ * System.out and System.err, then assert the contents are what's expected (or
+ * ignore them).
+ * Known limitations:
+ * 1. Does not successfully capture output in all cases, including Java
+ *    logging libraries that are initialized first, even when configured to write
+ *    to the console, and possibly some multi-threaded apps. Hence, this class
+ *    has limited power.
+ * 2. When run with sbt interactively, it appears that stdout isn't always restored
+ *    properly, so subsequent sbt prompts and the commands you type aren't echoed!
+ *    The workaround is to restart sbt.
  */
 trait OutputInterceptor {
 
   // Set this to true in a test to add the debug print statements below:
   var dumpOutputStreams: Boolean = false
+
+  protected val savesSystemOut = System.out // JDK
+  protected val savesSystemErr = System.err // JDK
+
+  /**
+   * Force rest to the default streams.
+   * Because there appear to be cases where this doesn't always happen in a test,
+   * it's recommended to use this with a test-wide "after" method, like the
+   * ScalaTest "BeforeAndAfterAll.afterAll" method.
+   */
+  def resetOutputs(): Unit = {
+    System.setOut(savesSystemOut)
+    System.setErr(savesSystemErr)
+  }
 
   protected lazy val name = getClass().getName()
 
@@ -125,9 +144,6 @@ trait OutputInterceptor {
     val outPrint = new PrintStream(outCapture)
     val errPrint = new PrintStream(errCapture)
 
-    val saveOut = System.out // JDK
-    val saveErr = System.err // JDK
-
     // Capture _both_ stdout and stderr hooks at the Java and Scala levels.
     try {
       Console.withOut(outCapture) {
@@ -140,8 +156,7 @@ trait OutputInterceptor {
     } finally {
       // Not sure this is really needed, but there appear to be cases where stdout
       // is not longer shown in a console after the test suite runs.
-      System.setOut(saveOut)
-      System.setErr(saveErr)
+      resetOutputs()
     }
 
     val outLines1 = outCapture.toString.split("\n").toSeq

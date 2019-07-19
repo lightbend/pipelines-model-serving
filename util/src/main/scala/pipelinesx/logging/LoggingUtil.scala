@@ -1,4 +1,4 @@
-package pipelines.logging
+package pipelinesx.logging
 
 import org.slf4j.{ Logger => SLogger, LoggerFactory => SLoggerFactory }
 import akka.actor.ActorSystem

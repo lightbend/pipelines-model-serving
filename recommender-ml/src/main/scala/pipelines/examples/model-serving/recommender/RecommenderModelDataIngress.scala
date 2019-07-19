@@ -1,4 +1,4 @@
-package pipelines.examples.ingestor
+package pipelines.examples.modelserving.recommender
 
 import akka.NotUsed
 import akka.actor.ActorSystem
@@ -8,10 +8,11 @@ import pipelines.akkastream.AkkaStreamlet
 import pipelines.akkastream.scaladsl.{ RunnableGraphStreamletLogic }
 import pipelines.streamlets.avro.AvroOutlet
 import pipelines.streamlets.StreamletShape
-import pipelines.examples.data._
-import pipelines.config.ConfigUtil
-import pipelines.config.ConfigUtil.implicits._
+import pipelines.examples.modelserving.recommender.data._
+import pipelinesx.config.ConfigUtil
+import pipelinesx.config.ConfigUtil.implicits._
 import scala.concurrent.duration._
+import com.lightbend.modelserving.model.ModelDescriptor
 
 /**
  * Ingress of model updates. In this case, every two minutes we load and
@@ -32,8 +33,8 @@ final case object RecommenderModelDataIngress extends AkkaStreamlet {
 
 /** Encapsulate the logic of iterating through the models ad infinitum. */
 protected final class ModelDescriptorFinder(
-    initialServerIndex: Int,
-    serverLocations: Vector[String]) {
+  initialServerIndex: Int,
+  serverLocations: Vector[String]) {
 
   def getModelDescriptor(): ModelDescriptor = {
     val i = nextServerIndex()
@@ -65,8 +66,8 @@ object RecommenderModelDataIngressUtil {
 
   /** Helper method extracted from RecommenderModelDataIngress for easier unit testing. */
   def makeSource(
-      serverLocations: Vector[String] = recommenderServerLocations,
-      frequency: FiniteDuration = modelFrequencySeconds): Source[ModelDescriptor, NotUsed] = {
+    serverLocations: Vector[String] = recommenderServerLocations,
+    frequency: FiniteDuration = modelFrequencySeconds): Source[ModelDescriptor, NotUsed] = {
     val modelFinder = new ModelDescriptorFinder(0, serverLocations)
     Source.repeat(modelFinder)
       .map(finder ⇒ finder.getModelDescriptor())
@@ -86,7 +87,7 @@ object RecommenderModelDataIngressUtil {
       case ("-h" | "--help") +: _ ⇒
         help()
         sys.exit(0)
-      case Nil       ⇒ freq
+      case Nil ⇒ freq
       case n +: tail ⇒ parseArgs(tail, n.toInt.seconds)
       case x +: _ ⇒
         println(s"ERROR: Unrecognized argument $x. All args: ${args.mkString(" ")}")

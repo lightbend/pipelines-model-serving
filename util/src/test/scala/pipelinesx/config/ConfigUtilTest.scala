@@ -1,4 +1,4 @@
-package pipelines.config
+package pipelinesx.config
 
 import org.scalatest.FunSpec
 import com.typesafe.config.ConfigFactory

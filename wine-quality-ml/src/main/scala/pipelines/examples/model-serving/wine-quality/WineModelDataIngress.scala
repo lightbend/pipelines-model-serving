@@ -1,4 +1,4 @@
-package pipelines.examples.ingestor
+package pipelines.examples.modelserving.winequality
 
 import akka.NotUsed
 import akka.actor.ActorSystem
@@ -8,11 +8,12 @@ import pipelines.streamlets.avro.AvroOutlet
 import pipelines.streamlets.StreamletShape
 import pipelines.akkastream.AkkaStreamlet
 import pipelines.akkastream.scaladsl.{ RunnableGraphStreamletLogic }
-import pipelines.examples.data._
-import pipelines.config.ConfigUtil
-import pipelines.config.ConfigUtil.implicits._
+import pipelines.examples.modelserving.winequality.data._
+import pipelinesx.config.ConfigUtil
+import pipelinesx.config.ConfigUtil.implicits._
 import scala.concurrent.duration._
 import scala.collection.JavaConverters._
+import com.lightbend.modelserving.model.ModelDescriptor
 
 /**
  * One at a time every two minutes, loads a PMML or TensorFlow model and
@@ -44,15 +45,15 @@ object WineModelDataIngressUtil {
           case (map, e) ⇒
             val modelType = ModelType.valueOf(e.getKey.toUpperCase)
             val list = e.getValue.valueType.toString match {
-              case "LIST"   ⇒ e.getValue.unwrapped.asInstanceOf[java.util.ArrayList[String]].toArray.map(_.toString)
+              case "LIST" ⇒ e.getValue.unwrapped.asInstanceOf[java.util.ArrayList[String]].toArray.map(_.toString)
               case "STRING" ⇒ Array(e.getValue.unwrapped.toString)
             }
             map + (modelType -> list)
         }
 
   def makeSource(
-      modelsResources: Map[ModelType, Seq[String]] = wineModelsResources,
-      frequency: FiniteDuration = modelFrequencySeconds): Source[ModelDescriptor, NotUsed] = {
+    modelsResources: Map[ModelType, Seq[String]] = wineModelsResources,
+    frequency: FiniteDuration = modelFrequencySeconds): Source[ModelDescriptor, NotUsed] = {
     val recordsReader = WineModelsReader(modelsResources)
     Source.repeat(recordsReader)
       .map(reader ⇒ reader.next())

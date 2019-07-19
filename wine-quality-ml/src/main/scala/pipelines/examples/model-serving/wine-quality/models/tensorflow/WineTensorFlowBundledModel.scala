@@ -1,9 +1,9 @@
-package pipelines.examples.modelserving.winemodel.tensorflow
+package pipelines.examples.modelserving.winequality.models.tensorflow
 
 import com.lightbend.modelserving.model.tensorflow.TensorFlowBundleModel
 import com.lightbend.modelserving.model.{ Model, ModelFactory }
 import com.lightbend.modelserving.model.ModelToServe
-import pipelines.examples.data.WineRecord
+import pipelines.examples.modelserving.winequality.data.WineRecord
 
 /**
  * Implementation of TensorFlow bundled model for Wine.

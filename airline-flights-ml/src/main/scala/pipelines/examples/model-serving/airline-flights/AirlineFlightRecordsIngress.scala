@@ -1,15 +1,15 @@
 package pipelines.examples.modelserving.airlineflights
 
+import pipelines.examples.modelserving.airlineflights.data._
 import akka.NotUsed
 import akka.stream.scaladsl.Source
 import pipelines.akkastream.scaladsl._
 import pipelines.akkastream.AkkaStreamlet
 import pipelines.streamlets.avro.AvroOutlet
 import pipelines.streamlets.StreamletShape
-import pipelines.examples.data._
-import pipelines.ingress.RecordsReader
-import pipelines.config.ConfigUtil
-import pipelines.config.ConfigUtil.implicits._
+import pipelinesx.ingress.RecordsReader
+import pipelinesx.config.ConfigUtil
+import pipelinesx.config.ConfigUtil.implicits._
 import scala.concurrent.duration._
 
 /**
@@ -38,8 +38,8 @@ object AirlineFlightRecordsIngressUtil {
       .getOrElse[Int](rootConfigKey + ".data-frequency-milliseconds")(1).milliseconds
 
   def makeSource(
-      configRoot: String = rootConfigKey,
-      frequency: FiniteDuration = dataFrequencyMilliseconds): Source[AirlineFlightRecord, NotUsed] = {
+    configRoot: String = rootConfigKey,
+    frequency: FiniteDuration = dataFrequencyMilliseconds): Source[AirlineFlightRecord, NotUsed] = {
     val reader = makeRecordsReader(configRoot)
     Source.repeat(NotUsed)
       .map(_ ⇒ reader.next()._2) // Only keep the record part of the tuple

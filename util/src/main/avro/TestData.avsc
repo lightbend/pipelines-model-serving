@@ -1,5 +1,5 @@
 {
-    "namespace": "pipelines.test",
+    "namespace": "pipelinesx.test",
     "type": "record",
     "name": "TestData",
     "fields":[

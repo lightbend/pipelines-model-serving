@@ -1,4 +1,4 @@
-package pipelines.examples.ingestor
+package pipelines.examples.modelserving.winequality
 
 import org.scalatest.{ FunSpec, BeforeAndAfterAll }
 import akka.testkit._
@@ -6,8 +6,8 @@ import akka.actor._
 import akka.stream._
 import scala.io.Source
 import pipelines.akkastream.testkit._
-import pipelines.examples.data.WineRecord
-import pipelines.test.OutputInterceptor
+import pipelines.examples.modelserving.winequality.data.WineRecord
+import pipelinesx.test.OutputInterceptor
 import com.typesafe.config.ConfigFactory
 
 class WineDataIngressTest extends FunSpec with BeforeAndAfterAll with OutputInterceptor {
@@ -22,6 +22,7 @@ class WineDataIngressTest extends FunSpec with BeforeAndAfterAll with OutputInte
   private implicit val mat = ActorMaterializer()
 
   override def afterAll: Unit = {
+    resetOutput()
     TestKit.shutdownActorSystem(system)
   }
 

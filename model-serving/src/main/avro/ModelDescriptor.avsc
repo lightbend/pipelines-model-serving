@@ -1,5 +1,5 @@
 {
-  "namespace": "pipelines.examples.data",
+  "namespace": "com.lightbend.modelserving.model",
   "type": "record",
   "name": "ModelDescriptor",
   "fields":[

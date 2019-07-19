@@ -1,9 +1,9 @@
-package pipelines.examples.modelserving.recommendermodel.tensorflow
+package pipelines.examples.modelserving.recommender.models.tensorflow
 
-import com.google.gson.Gson
+import pipelines.examples.modelserving.recommender.data.{ ProductPrediction, RecommenderRecord }
 import com.lightbend.modelserving.model.{ Model, ModelFactory, ModelToServe }
-import pipelines.examples.data.{ ProductPrediction, RecommenderRecord }
 import com.lightbend.modelserving.model.tensorflow.TensorFlowServingModel
+import com.google.gson.Gson
 
 class RecommenderTensorflowServingModel(inputStream: Array[Byte]) extends TensorFlowServingModel[RecommenderRecord, Seq[ProductPrediction], TFRequest, TFPredictionResult](inputStream) {
 

@@ -9,7 +9,7 @@ import org.tensorflow.{ Graph, SavedModelBundle, Session }
 
 import scala.collection.mutable.{ Map => MMap }
 import org.tensorflow.framework.{ MetaGraphDef, SavedModel, SignatureDef, TensorInfo, TensorShapeProto }
-import pipelines.examples.data.ModelType
+import com.lightbend.modelserving.model.ModelType
 
 import scala.collection.JavaConverters._
 

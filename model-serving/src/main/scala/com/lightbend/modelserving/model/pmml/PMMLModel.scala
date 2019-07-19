@@ -3,12 +3,11 @@ package com.lightbend.modelserving.model.pmml
 import java.io._
 import java.util
 
-import com.lightbend.modelserving.model.Model
+import com.lightbend.modelserving.model.{ Model, ModelType }
 import org.dmg.pmml.{ FieldName, PMML }
 import org.jpmml.evaluator.visitors._
 import org.jpmml.evaluator._
 import org.jpmml.model.PMMLUtil
-import pipelines.examples.data.ModelType
 
 import scala.collection._
 

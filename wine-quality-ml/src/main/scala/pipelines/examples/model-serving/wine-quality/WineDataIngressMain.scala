@@ -1,15 +1,15 @@
-package pipelines.examples.ingestor
+package pipelines.examples.modelserving.winequality
 
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{ Source, Sink }
-import pipelines.examples.data.WineRecord
-import pipelines.ingress.RecordsReader
-import pipelines.config.ConfigUtil
-import pipelines.config.ConfigUtil.implicits._
+import pipelines.examples.modelserving.winequality.data.WineRecord
+import pipelinesx.ingress.RecordsReader
+import pipelinesx.config.ConfigUtil
+import pipelinesx.config.ConfigUtil.implicits._
+import pipelinesx.logging.{ Logger, LoggingUtil }
 import scala.concurrent.duration._
-import pipelines.logging.{ Logger, LoggingUtil }
 
 /**
  * Test program for [[WineDataIngressUtil]]; reads wine records and prints them.

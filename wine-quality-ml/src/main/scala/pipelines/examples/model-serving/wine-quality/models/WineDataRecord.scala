@@ -1,7 +1,7 @@
-package pipelines.examples.modelserving.winemodel
+package pipelines.examples.modelserving.winequality
 
 import com.lightbend.modelserving.model.DataToServe
-import pipelines.examples.data.WineRecord
+import pipelines.examples.modelserving.winequality.data.WineRecord
 
 case class WineDataRecord(record: WineRecord) extends DataToServe {
   def getType: String = record.dataType

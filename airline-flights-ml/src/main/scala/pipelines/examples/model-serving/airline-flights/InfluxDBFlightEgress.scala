@@ -1,12 +1,11 @@
-package pipelines.examples.modelserving.airlineflights
+package pipelines.examples.modelserving.airlineflights.airlineflights
 
+import pipelines.examples.modelserving.airlineflights.data._
 import pipelines.streamlets.StreamletShape
 import pipelines.streamlets.avro.AvroInlet
 import pipelines.akkastream.AkkaStreamlet
-import pipelines.egress.influxdb.{ InfluxDBEgressLogic, InfluxDBUtil }
-import pipelines.examples.data._
+import pipelinesx.egress.influxdb.{ InfluxDBEgressLogic, InfluxDBUtil }
 import org.influxdb.dto.Point
-import pipelines.examples.data._
 
 final case object InfluxDBAirlineFlightResultEgress extends AkkaStreamlet {
   val in = AvroInlet[AirlineFlightResult]("in")

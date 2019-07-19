@@ -4,7 +4,7 @@ import java.io.{ ObjectInputStream, ObjectOutputStream }
 
 import com.lightbend.modelserving.model.Model
 import org.tensorflow.{ Graph, Session }
-import pipelines.examples.data.ModelType
+import com.lightbend.modelserving.model.ModelType
 
 /**
  * Abstract class for any TensorFlow (optimized export) model processing. It has to be extended by the user

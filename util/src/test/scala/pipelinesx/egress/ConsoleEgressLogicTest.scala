@@ -1,5 +1,7 @@
-package pipelines.egress
+package pipelinesx.egress
 
+import pipelinesx.test.{ OutputInterceptor, TestData }
+import pipelinesx.logging.StdoutStderrLogger
 import org.scalatest.{ FunSpec, BeforeAndAfterAll }
 import akka.testkit._
 import akka.actor._
@@ -9,8 +11,6 @@ import pipelines.streamlets.StreamletShape
 import pipelines.streamlets.avro.AvroInlet
 import pipelines.akkastream.AkkaStreamlet
 import pipelines.akkastream.testkit._
-import pipelines.test.{ OutputInterceptor, TestData }
-import pipelines.logging.StdoutStderrLogger
 import com.typesafe.config.ConfigFactory
 import scala.reflect.ClassTag
 
@@ -20,6 +20,7 @@ class ConsoleEgressLogicTest extends FunSpec with BeforeAndAfterAll with OutputI
   private implicit val mat = ActorMaterializer()
 
   override def afterAll: Unit = {
+    resetOutputs()
     TestKit.shutdownActorSystem(system)
   }
 

@@ -1,12 +1,16 @@
-package pipelines.ingress
+package pipelinesx.ingress
 
-import org.scalatest.FunSpec
-import pipelines.test.OutputInterceptor
-import pipelines.logging.StdoutStderrLogger
+import org.scalatest.{ FunSpec, BeforeAndAfterAll }
+import pipelinesx.test.OutputInterceptor
+import pipelinesx.logging.StdoutStderrLogger
 import java.io.File
 import java.net.URL
 
-class RecordsReaderTest extends FunSpec with OutputInterceptor {
+class RecordsReaderTest extends FunSpec with BeforeAndAfterAll with OutputInterceptor {
+
+  override def afterAll: Unit = {
+    resetOutputs()
+  }
 
   val clazz = this.getClass()
   val className = clazz.getName()
@@ -16,17 +20,28 @@ class RecordsReaderTest extends FunSpec with OutputInterceptor {
   val testBadRecordsResources = Array("bad-records.csv")
   val testGoodRecordsFiles = testGoodRecordsResources.map(s => new File("util/src/test/resources/" + s))
   val testBadRecordsFiles = testBadRecordsResources.map(s => new File("util/src/test/resources/" + s))
-  val testGoodRecordsURLs = Array(new URL("http://stat-computing.org/dataexpo/2009/1987.csv.bz2"))
+  val testGoodRecordsURLs = Array(new URL("https://lightbend.com/about-lightbend"))
   val testBadRecordsURLs = Array(new URL("http://example.foo"))
   def identityR = (r: String) => Right(r)
-  def intStringTupleCSVParse = (r: String) => r.split(",") match {
-    case Array(i, s) => try {
-      Right(i.toInt -> s)
-    } catch {
-      case scala.util.control.NonFatal(e) => Left(e.toString)
+
+  def intStringTupleCSVParse(separator: String = ","): String => Either[String,(Int,String)] =
+    (r: String) => r.split(separator) match {
+      case Array(i, s) =>
+        try { Right(i.toInt -> s) }
+        catch { case scala.util.control.NonFatal(e) => Left(e.toString) }
+      case ary => Left(r)
     }
-    case ary => Left(r)
-  }
+  def nonEmptyIntArrayCSVParse(separator: String = ","): String => Either[String,Array[Int]] =
+    (r: String) => {
+      val array = r.split(separator)
+      if (array.length == 0) Left("empty array!")
+      else try {
+        Right(array.map(_.toInt))
+      } catch {
+        case scala.util.control.NonFatal(e) => Left(s"Non-integer elements: $r. (${e})")
+      }
+    }
+
 
   describe("RecordsReader") {
     describe("fromFileSystem()") {
@@ -43,7 +58,7 @@ class RecordsReaderTest extends FunSpec with OutputInterceptor {
         }
       }
 
-      it("Raises an exception if the resource doesn't exist") {
+      it("Raises an exception if the file doesn't exist") {
         ignoreOutput {
           intercept[RecordsReader.FailedToLoadResources[_]] {
             RecordsReader.fromFileSystem(Seq(new File("foobar")))(identityR)
@@ -99,15 +114,112 @@ class RecordsReaderTest extends FunSpec with OutputInterceptor {
     }
 
     describe("fromConfiguration()") {
-      it("throws an exception if an invalid configuration is specified") {
+      it("throws an exception if the specified configuration root key is not found") {
         intercept[RecordsReader$InvalidConfiguration] {
           RecordsReader.fromConfiguration("bad")(identityR)
         }
       }
 
-      it("Loads one or more file resources based on the configuration") {
+      it("throws an exception if 'data-sources' under the specified configuration root key is not found") {
+        intercept[RecordsReader$InvalidConfiguration] {
+          RecordsReader.fromConfiguration("records-reader-test-without-data-sources")(identityR)
+        }
+      }
+
+      it("throws an exception if 'which-source' is not found under 'data-sources'") {
+        intercept[RecordsReader$InvalidConfiguration] {
+          RecordsReader.fromConfiguration("records-reader-test-without-which-source")(identityR)
+        }
+      }
+
+      it("throws an exception if 'which-source' is not 'CLASSPATH', 'FileSystem', or 'URLs'") {
+        intercept[RecordsReader$InvalidConfiguration] {
+          RecordsReader.fromConfiguration("records-reader-test-empty-which-source")(identityR)
+        }
+        intercept[RecordsReader$InvalidConfiguration] {
+          RecordsReader.fromConfiguration("records-reader-test-invalid-which-source")(identityR)
+        }
+      }
+
+      Seq("classpath", "filesystem", "urls"). foreach { x =>
+        it(s"throws an exception when $x source is specified, but the configuration for it is missing") {
+          intercept[RecordsReader$InvalidConfiguration] {
+            RecordsReader.fromConfiguration(s"records-reader-test-$x-without-$x")(identityR)
+          }
+        }
+
+        it(s"throws an exception when $x source is specified, but the configuration for it is empty") {
+          intercept[RecordsReader$InvalidConfiguration] {
+            RecordsReader.fromConfiguration(s"records-reader-test-$x-with-empty-$x")(identityR)
+          }
+        }
+      }
+
+      it("throws an exception if the CLASSPATH 'paths' is empty") {
+        intercept[RecordsReader$InvalidConfiguration] {
+          RecordsReader.fromConfiguration("records-reader-test-classpath-with-empty-paths")(identityR)
+        }
+      }
+
+      it("throws an exception if the CLASSPATH 'paths' entries are invalid") {
+        intercept[RecordsReader$InvalidConfiguration] {
+          RecordsReader.fromConfiguration("records-reader-test-classpath-with-invalid-paths")(identityR)
+        }
+      }
+
+      it("throws an exception if the File System 'paths' and 'dir-paths' are both empty") {
+        intercept[RecordsReader$InvalidConfiguration] {
+          RecordsReader.fromConfiguration("records-reader-test-filesystem-with-empty-paths-and-dir-paths")(identityR)
+        }
+      }
+
+      val colonDelimitedLine = "7.4;0.7;0;1.9;0.076;11;34;0.9978;3.51;0.56;9.4;5"
+
+      it("does not throw an exception if the File System 'dir-paths' entries is non-empty but 'file-name-regex' not found ('' is used)") {
+        assert(colonDelimitedLine ==
+          RecordsReader.fromConfiguration("records-reader-test-filesystem-with-nonempty-dir-paths-empty-file-name-regex")(identityR).next())
+      }
+
+      it("finds the files matching the File System 'dir-paths' 'file-name-regex' entries") {
+        assert(colonDelimitedLine ==
+          RecordsReader.fromConfiguration("records-reader-test-filesystem-with-nonempty-dir-paths-nonempty-matching-file-name-regex")(identityR).next())
+      }
+
+      it("throws an exception if the File System 'dir-paths' and 'file-name-regex' don't match any files") {
+        intercept[RecordsReader$InvalidConfiguration] {
+          RecordsReader.fromConfiguration("records-reader-test-filesystem-with-nonempty-dir-paths-nonempty-nonmatching-file-name-regex")(identityR).next()
+        }
+      }
+
+      it("finds the File System 'paths' files instead of the 'dir-paths', if both are nonempty") {
+        assert(colonDelimitedLine ==
+          RecordsReader.fromConfiguration("records-reader-test-filesystem-with-nonempty-paths-and-dir-paths")(identityR).next())
+      }
+
+      it("throws an exception if either of the URLs 'base-urls' or 'files' are empty") {
+        intercept[RecordsReader$InvalidConfiguration] {
+          RecordsReader.fromConfiguration("records-reader-test-urls-with-empty-base-urls")(identityR).next()
+        }
+        intercept[RecordsReader$InvalidConfiguration] {
+          RecordsReader.fromConfiguration("records-reader-test-urls-with-empty-files")(identityR).next()
+        }
+      }
+
+      it("loads one or more file resources from the CLASSPATH when the configuration specifies that source") {
         ignoreOutput {
-          assert(RecordsReader.fromConfiguration("records-reader-test")(identityR).next() != null)
+          assert(RecordsReader.fromConfiguration("records-reader-test-classpath")(identityR).next() != null)
+        }
+      }
+
+      it("loads one or more file resources from the file system when the configuration specifies that source") {
+        ignoreOutput {
+          assert(RecordsReader.fromConfiguration("records-reader-test-filesystem")(identityR).next() != null)
+        }
+      }
+
+      it("loads one or more file resources from URLs when the configuration specifies that source") {
+        ignoreOutput {
+          assert(RecordsReader.fromConfiguration("records-reader-test-urls")(identityR).next() != null)
         }
       }
     }
@@ -186,7 +298,7 @@ class RecordsReaderTest extends FunSpec with OutputInterceptor {
           rereadTest(
             RecordsReader.SourceKind.FileSystem,
             testGoodRecordsFiles,
-            RecordsReader.fromFileSystem[(Int, String)](testGoodRecordsFiles)(intStringTupleCSVParse))
+            RecordsReader.fromFileSystem[(Int, String)](testGoodRecordsFiles)(intStringTupleCSVParse()))
         }
 
         it("Prints errors for bad records") {
@@ -194,7 +306,7 @@ class RecordsReaderTest extends FunSpec with OutputInterceptor {
             RecordsReader.SourceKind.FileSystem,
             "util/src/test/resources/",
             testBadRecordsFiles,
-            RecordsReader.fromFileSystem[(Int, String)](testBadRecordsFiles)(intStringTupleCSVParse))
+            RecordsReader.fromFileSystem[(Int, String)](testBadRecordsFiles)(intStringTupleCSVParse()))
         }
       }
     }
@@ -205,7 +317,7 @@ class RecordsReaderTest extends FunSpec with OutputInterceptor {
           rereadTest(
             RecordsReader.SourceKind.CLASSPATH,
             testGoodRecordsResources,
-            RecordsReader.fromClasspath(testGoodRecordsResources)(intStringTupleCSVParse))
+            RecordsReader.fromClasspath(testGoodRecordsResources)(intStringTupleCSVParse()))
         }
 
         it("Prints errors for bad records") {
@@ -213,7 +325,18 @@ class RecordsReaderTest extends FunSpec with OutputInterceptor {
             RecordsReader.SourceKind.CLASSPATH,
             "",
             testBadRecordsResources,
-            RecordsReader.fromClasspath(testBadRecordsResources)(intStringTupleCSVParse))
+            RecordsReader.fromClasspath(testBadRecordsResources)(intStringTupleCSVParse()))
+        }
+      }
+    }
+
+    describe("Configuration reader") {
+      describe("next") {
+        it("Continuously rereads the resource until terminated") {
+          rereadTest(
+            RecordsReader.SourceKind.CLASSPATH,
+            testGoodRecordsResources,
+            RecordsReader.fromConfiguration("records-reader-test-classpath2")(intStringTupleCSVParse()))
         }
       }
     }

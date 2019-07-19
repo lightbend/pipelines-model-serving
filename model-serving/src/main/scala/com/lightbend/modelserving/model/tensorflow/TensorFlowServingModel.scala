@@ -1,7 +1,7 @@
 package com.lightbend.modelserving.model.tensorflow
 
 import com.lightbend.modelserving.model.Model
-import pipelines.examples.data.ModelType
+import com.lightbend.modelserving.model.ModelType
 
 import com.google.gson.Gson
 import scalaj.http.Http

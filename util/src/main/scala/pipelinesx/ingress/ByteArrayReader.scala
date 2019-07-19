@@ -1,8 +1,8 @@
-package pipelines.ingress
+package pipelinesx.ingress
 
+import pipelinesx.logging.{ Logger, LoggingUtil }
 import java.io.{ BufferedInputStream, FileInputStream, InputStream }
 import java.net.URL
-import pipelines.logging.{ Logger, LoggingUtil }
 
 /**
  * Return a byte array read from a file source, either in a file system or the
