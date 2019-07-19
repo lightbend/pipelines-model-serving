@@ -5,29 +5,31 @@ import akka.actor.ActorSystem
 import akka.stream.scaladsl.Sink
 import akka.pattern.ask
 import akka.util.Timeout
-import com.lightbend.modelserving.model.actor.{ ModelServingActor, ModelServingManager }
-import com.lightbend.modelserving.model.{ ModelToServe, ServingActorResolver, ServingResult }
+import com.lightbend.modelserving.model.actor.{ModelServingActor, ModelServingManager}
+import com.lightbend.modelserving.model.{ModelToServe, ServingActorResolver, ServingResult}
 import pipelines.akkastream.AkkaStreamlet
-import pipelines.akkastream.scaladsl.{ FlowWithPipelinesContext, RunnableGraphStreamletLogic }
-import pipelines.examples.data.{ ModelDescriptor, WineRecord, WineResult }
-import pipelines.examples.modelserving.winemodel.{ WineDataRecord, WineFactoryResolver }
+import pipelines.akkastream.scaladsl.{FlowWithPipelinesContext, RunnableGraphStreamletLogic}
+import pipelines.examples.data.{ModelDescriptor, ModelType, WineRecord, WineResult}
+import pipelines.examples.modelserving.winemodel.{WineDataRecord, WineFactoryResolver}
 import pipelines.streamlets.StreamletShape
-import pipelines.streamlets.avro.{ AvroInlet, AvroOutlet }
+import pipelines.streamlets.avro.{AvroInlet, AvroOutlet}
+
 import scala.concurrent.duration._
 
 final case object WineModelServer extends AkkaStreamlet {
 
+  val dtype = "wine"
   val in0 = AvroInlet[WineRecord]("in-0")
   val in1 = AvroInlet[ModelDescriptor]("in-1")
-  val out = AvroOutlet[WineResult]("out", _.name)
+  val out = AvroOutlet[WineResult]("out", _.dataType)
   final override val shape = StreamletShape.withInlets(in0, in1).withOutlets(out)
 
   override final def createLogic = new RunnableGraphStreamletLogic() {
 
     ModelToServe.setResolver[WineRecord, Double](WineFactoryResolver)
 
-    val actors = Map("wine" ->
-      context.system.actorOf(ModelServingActor.props[WineRecord, Double]("wine")))
+    val actors = Map(dtype ->
+      context.system.actorOf(ModelServingActor.props[WineRecord, Double](dtype)))
 
     val modelserver = context.system.actorOf(
       ModelServingManager.props(new ServingActorResolver(actors)))
@@ -58,15 +60,30 @@ final case object WineModelServer extends AkkaStreamlet {
 object WineModelServerMain {
   def main(args: Array[String]): Unit = {
 
+    val dtype = "wine"
     implicit val system: ActorSystem = ActorSystem("ModelServing")
+    implicit val executor = system.getDispatcher
     implicit val askTimeout: Timeout = Timeout(30.seconds)
 
-    val actors = Map("wine" -> system.actorOf(ModelServingActor.props[WineRecord, Double]("wine")))
+    ModelToServe.setResolver[WineRecord, Double](WineFactoryResolver)
+
+    val actors = Map(dtype -> system.actorOf(ModelServingActor.props[WineRecord, Double](dtype)))
 
     val modelserver = system.actorOf(ModelServingManager.props(new ServingActorResolver(actors)))
-    val record = WineRecord(.0, .0, .0, .0, .0, .0, .0, .0, .0, .0, .0, "wine")
-    val result = modelserver.ask(WineDataRecord(record)).mapTo[ServingResult[Double]]
+
+    val is = this.getClass.getClassLoader.getResourceAsStream("wine/models/winequalityDecisionTreeClassification.pmml")
+    val pmml = new Array[Byte](is.available)
+    is.read(pmml)
+    val model = new ModelDescriptor(name = "Wine Model", description = "winequalityDecisionTreeClassification",
+      dataType = dtype, modeltype = ModelType.PMML, modeldata = Some(pmml), modeldatalocation = None)
+
+    modelserver.ask(ModelToServe.fromModelRecord(model))
     Thread.sleep(100)
-    println(result)
+
+    val record = WineRecord(.0, .0, .0, .0, .0, .0, .0, .0, .0, .0, .0, dtype)
+    val result = modelserver.ask(WineDataRecord(record)).mapTo[ServingResult[Double]]
+    result.map(data => {
+      println(s"Result ${data.result.get}, model ${data.name}, data type ${data.dataType}, duration ${data.duration}")
+    })
   }
 }

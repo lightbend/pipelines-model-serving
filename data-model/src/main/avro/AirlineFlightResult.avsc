@@ -58,6 +58,16 @@
       {
         "name": "delayPredictionProbability",
         "type": "double"
+      },
+      {
+        "name": "modelname",
+        "type": "string"
+      },{
+        "name": "dataType",
+        "type": "string"
+      },{
+        "name": "duration",
+        "type": "long"
       }
     ]
 }

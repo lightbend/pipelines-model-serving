@@ -26,7 +26,7 @@ class AirlineFlightH2OModel(inputStream: Array[Byte]) extends H2OModel[AirlineFl
   def toResult(record: AirlineFlightRecord, prediction: BinomialModelPrediction): AirlineFlightResult = {
     val probs = prediction.classProbabilities
     val probability = if (probs.length == 2) probs(1) else 0.0
-    println(s"Prediction that flight departure will be delayed: ${prediction.label} (probability: $probability) for $record")
+//    println(s"Prediction that flight departure will be delayed: ${prediction.label} (probability: $probability) for $record")
     AirlineFlightResult(
       year = record.year,
       month = record.month,
@@ -41,7 +41,10 @@ class AirlineFlightH2OModel(inputStream: Array[Byte]) extends H2OModel[AirlineFl
       origin = record.origin,
       destination = record.destination,
       delayPredictionLabel = prediction.label,
-      delayPredictionProbability = probability)
+      delayPredictionProbability = probability,
+      modelname = "",
+      dataType =  "",
+      duration = 0)
   }
 
   /** Score a record with the model */

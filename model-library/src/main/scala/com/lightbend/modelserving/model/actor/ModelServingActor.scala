@@ -1,7 +1,7 @@
 package com.lightbend.modelserving.model.actor
 
 import akka.Done
-import akka.actor.{Actor, Props}
+import akka.actor.{ Actor, Props }
 import com.lightbend.modelserving.model._
 import com.lightbend.modelserving.model.persistence.FilePersistence
 
@@ -18,8 +18,9 @@ class ModelServingActor[RECORD, RESULT](dataType: String) extends Actor {
   override def preStart {
     FilePersistence.restoreState(dataType) match {
       case Some(value) => // manage to restore
-        currentModel = value._1.asInstanceOf[Option[Model[RECORD, RESULT]]]
+        currentModel = Some(value._1.asInstanceOf[Model[RECORD, RESULT]])
         currentState = Some(ModelToServeStats(value._2, value._3, value._1.getType.ordinal(), System.currentTimeMillis()))
+        println(s"Restored model ${value._2} - ${value._3}")
       case _ =>
     }
   }
@@ -67,7 +68,7 @@ class ModelServingActor[RECORD, RESULT](dataType: String) extends Actor {
 }
 
 object ModelServingActor {
-  def props[RECORD, RESULT](dataType : String): Props = Props(new ModelServingActor[RECORD, RESULT](dataType))
+  def props[RECORD, RESULT](dataType: String): Props = Props(new ModelServingActor[RECORD, RESULT](dataType))
 }
 
 /** Used as an Actor message. */

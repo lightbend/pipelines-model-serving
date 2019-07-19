@@ -34,7 +34,7 @@ class H2OProcessorTest extends FlatSpec {
   }
 
   private def createModel() : Option[AirlineFlightH2OModel] = {
-    val is = this.getClass.getClassLoader.getResourceAsStream("gbm_mojo_test.zip")
+    val is = this.getClass.getClassLoader.getResourceAsStream("airlines/models/mojo/gbm_pojo_test.zip")
     val mojo = new Array[Byte](is.available)
     is.read(mojo)
     val modelToServe = ModelToServe("airline","airline",ModelType.H2O.ordinal(), mojo, null, "airline")

@@ -13,7 +13,7 @@ object FilePersistence {
 
   private final val baseDir = "persistence"
 
-  private def getLock(fileChannel: FileChannel, shared : Boolean): (FileLock, Boolean) = {
+  private def getLock(fileChannel: FileChannel, shared: Boolean): (FileLock, Boolean) = {
     try {
       (fileChannel.tryLock(0L, Long.MaxValue, shared), true)
     } catch {
@@ -24,7 +24,7 @@ object FilePersistence {
     }
   }
 
-  private def obtainLock(fileChannel: FileChannel, shared : Boolean): FileLock = getLock(fileChannel, shared) match {
+  private def obtainLock(fileChannel: FileChannel, shared: Boolean): FileLock = getLock(fileChannel, shared) match {
     case lck if (lck._2) =>
       lck._1 match {
         case null => // retry after wait
@@ -65,7 +65,7 @@ object FilePersistence {
     }
   }
 
-  def saveState(dataType: String, model: Model[_, _], name : String, description : String): Unit = getDataOutputStream(dataType) match {
+  def saveState(dataType: String, model: Model[_, _], name: String, description: String): Unit = getDataOutputStream(dataType) match {
     case Some(output) => // We can write to the file
       try {
         val bytes = model.toBytes

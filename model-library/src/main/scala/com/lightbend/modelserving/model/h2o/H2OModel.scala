@@ -1,11 +1,11 @@
 package com.lightbend.modelserving.model.h2o
 
-import java.io.{ByteArrayInputStream, ByteArrayOutputStream, ObjectInputStream, ObjectOutputStream, Serializable}
+import java.io.{ ByteArrayInputStream, ByteArrayOutputStream, ObjectInputStream, ObjectOutputStream, Serializable }
 import java.util.zip.ZipInputStream
 
 import com.lightbend.modelserving.model.Model
 import hex.ModelCategory
-import hex.genmodel.{InMemoryMojoReaderBackend, MojoModel}
+import hex.genmodel.{ InMemoryMojoReaderBackend, MojoModel }
 import hex.genmodel.easy.EasyPredictModelWrapper
 import pipelines.examples.data.ModelType
 
