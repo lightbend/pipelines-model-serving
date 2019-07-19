@@ -12,7 +12,7 @@ import pipelines.examples.modelserving.recommender.data._
 import pipelinesx.config.ConfigUtil
 import pipelinesx.config.ConfigUtil.implicits._
 import scala.concurrent.duration._
-import com.lightbend.modelserving.model.ModelDescriptor
+import com.lightbend.modelserving.model.{ ModelDescriptor, ModelType }
 
 /**
  * Ingress of model updates. In this case, every two minutes we load and

@@ -1,4 +1,4 @@
-package pipelines.examples.modelserving.winequality
+package pipelines.examples.modelserving.winequality.models
 
 import com.lightbend.modelserving.model.DataToServe
 import pipelines.examples.modelserving.winequality.data.WineRecord

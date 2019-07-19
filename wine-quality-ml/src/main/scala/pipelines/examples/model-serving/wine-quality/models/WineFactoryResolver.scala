@@ -1,7 +1,7 @@
-package pipelines.examples.modelserving.winequality
+package pipelines.examples.modelserving.winequality.models
 
-import com.lightbend.modelserving.model.{ ModelFactory, ModelFactoryResolver }
-import pipelines.examples.modelserving.winequality.data.{ ModelType, WineRecord }
+import com.lightbend.modelserving.model.{ ModelType, ModelFactory, ModelFactoryResolver }
+import pipelines.examples.modelserving.winequality.data.WineRecord
 import pipelines.examples.modelserving.winequality.models.pmml.WinePMMLModel
 import pipelines.examples.modelserving.winequality.models.tensorflow.{ WineTensorFlowBundledModel, WineTensorFlowModel }
 

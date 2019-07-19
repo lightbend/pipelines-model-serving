@@ -1,6 +1,5 @@
 package pipelines.examples.modelserving.recommender
 
-import pipelines.examples.modelserving.recommender.models.{ RecommendationDataRecord, RecommendationFactoryResolver }
 import pipelines.examples.modelserving.recommender.data.{ ProductPrediction, RecommenderRecord, RecommendationResult }
 import com.lightbend.modelserving.model.actor.{ ModelServingActor, ModelServingManager }
 import com.lightbend.modelserving.model.{ ModelDescriptor, ModelType, ModelToServe, ServingActorResolver, ServingResult }

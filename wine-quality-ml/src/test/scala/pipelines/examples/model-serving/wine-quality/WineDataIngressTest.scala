@@ -7,14 +7,15 @@ import akka.stream._
 import scala.io.Source
 import pipelines.akkastream.testkit._
 import pipelines.examples.modelserving.winequality.data.WineRecord
-import pipelinesx.test.OutputInterceptor
 import com.typesafe.config.ConfigFactory
+import com.lightbend.modelserving.model.ModelType
+import pipelinesx.test.OutputInterceptor
 
 class WineDataIngressTest extends FunSpec with BeforeAndAfterAll with OutputInterceptor {
 
   val initializingMsgFmt = "RecordsReader: Initializing from resource %s"
-  // val filePrefix = "data-ingestors/src/test/resources/"
-  val filePrefix = "data-ingestors/target/scala-2.12/test-classes/"
+  // val filePrefix = "wine-quality-ml/target/scala-2.12/test-classes/"
+  val filePrefix = "target/scala-2.12/test-classes/"
   val testGoodRecordsResources = Array("wine/data/10_winequality_red.csv")
   val testBadRecordsResources = Array("wine/data/error_winequality_red.csv")
   val emptyOutput: Array[String] = Array()
@@ -22,7 +23,7 @@ class WineDataIngressTest extends FunSpec with BeforeAndAfterAll with OutputInte
   private implicit val mat = ActorMaterializer()
 
   override def afterAll: Unit = {
-    resetOutput()
+    resetOutputs()
     TestKit.shutdownActorSystem(system)
   }
 
@@ -63,7 +64,7 @@ class WineDataIngressTest extends FunSpec with BeforeAndAfterAll with OutputInte
   }
 
   describe("WineDataIngress") {
-    it("Loads one or more CSV file resources from the classpath") {
+    it("Loads one or more CSV file resources from the CLASSPATH") {
       // NOTE: If this test fails, try running it again. For some reason, it sometimes
       // appears to not load the data or have too much of it! Then the very last check
       // for "Completed" fails. Obviously, I'd love for someone to figure out why this

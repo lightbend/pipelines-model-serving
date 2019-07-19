@@ -23,7 +23,7 @@ lazy val wineModelServingPipeline = (project in file("./wine-quality-ml"))
     name := s"wine-quality-ml-$user",
     version := thisVersion,
     pipelinesDockerRegistry := dockerRegistry,
-    libraryDependencies ++= Seq(influx),
+    libraryDependencies ++= Seq(influx, scalaTest),
     (sourceGenerators in Compile) += (avroScalaGenerateSpecific in Compile).taskValue
   )
   .dependsOn(util, modelServing)
@@ -35,7 +35,7 @@ lazy val recommenderModelServingPipeline = (project in file("./recommender-ml"))
     name := s"recommender-ml-$user",
     version := thisVersion,
     pipelinesDockerRegistry := dockerRegistry,
-    // libraryDependencies ++= Seq(),
+    libraryDependencies ++= Seq(scalaTest),
     (sourceGenerators in Compile) += (avroScalaGenerateSpecific in Compile).taskValue
   )
   .dependsOn(util, modelServing)
@@ -47,7 +47,7 @@ lazy val airlineFlightsModelServingPipeline = (project in file("./airline-flight
     name := s"airline-flights-ml-$user",
     version := thisVersion,
     pipelinesDockerRegistry := dockerRegistry,
-    libraryDependencies ++= Seq(influx),
+    libraryDependencies ++= Seq(influx, scalaTest),
     (sourceGenerators in Compile) += (avroScalaGenerateSpecific in Compile).taskValue
   )
   .dependsOn(util, modelServing)

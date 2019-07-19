@@ -6,11 +6,11 @@ import akka.stream.scaladsl.Sink
 import akka.pattern.ask
 import akka.util.Timeout
 import com.lightbend.modelserving.model.actor.{ ModelServingActor, ModelServingManager }
-import com.lightbend.modelserving.model.{ ModelToServe, ServingActorResolver, ServingResult }
+import com.lightbend.modelserving.model.{ ModelDescriptor, ModelType, ModelToServe, ServingActorResolver, ServingResult }
 import pipelines.akkastream.AkkaStreamlet
 import pipelines.akkastream.scaladsl.{ FlowWithPipelinesContext, RunnableGraphStreamletLogic }
+import pipelines.examples.modelserving.winequality.models.{ WineDataRecord, WineFactoryResolver }
 import pipelines.examples.modelserving.winequality.data.{ WineRecord, WineResult }
-import pipelines.examples.modelserving.winequality.models.{ ModelDescriptor, WineDataRecord, WineFactoryResolver }
 import pipelines.streamlets.StreamletShape
 import pipelines.streamlets.avro.{ AvroInlet, AvroOutlet }
 import scala.concurrent.duration._
