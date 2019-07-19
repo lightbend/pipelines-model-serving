@@ -15,7 +15,7 @@ object Dependencies {
   val h2o             = "ai.h2o"                          % "h2o-genmodel"              % h2oVersion
   val influx          = "org.influxdb"                    % "influxdb-java"             % influxVersion
   val gson            = "com.google.code.gson"            % "gson"                      % gsonVersion
-  val compress        = "org.apache.commons"              % "commons-compress"          %apacheCommonsCompress
+  val compress        = "org.apache.commons"              % "commons-compress"          % apacheCommonsCompress
   val scalajHTTP      = "org.scalaj"                     %% "scalaj-http"               % scalajHTTPVersion
 
   val slf4jAPI        = "org.slf4j"                       % "slf4j-api"                 % slf4jVersion
