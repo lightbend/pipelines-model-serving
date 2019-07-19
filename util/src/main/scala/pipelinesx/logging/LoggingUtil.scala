@@ -76,8 +76,8 @@ object LoggingUtil {
    * To override in a test to use stdout, call `mylogger.setLogger(StdoutStderrLogger)`.
    */
   def getLogger[T](clazz: Class[T]): MutableLogger = {
-    val which = if (useSLF4J) "SLF4J" else "stdout/stderr"
-    StdoutStderrLogger.write(Console.out, "INFO", this.getClass.getName, s"By default, using $which logger")
+    // val which = if (useSLF4J) "SLF4J" else "stdout/stderr"
+    // StdoutStderrLogger.write(Console.out, "INFO", this.getClass.getName, s"By default, using $which logger")
 
     if (useSLF4J) new MutableLogger(SLF4JLogger(SLoggerFactory.getLogger(clazz)))
     else new MutableLogger(StdoutStderrLogger(clazz))

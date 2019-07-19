@@ -37,7 +37,8 @@ trait OutputInterceptor {
   protected lazy val name = getClass().getName()
 
   /**
-   * Simply wrap a thunk to capture and ignore all stdout and stderr output.
+   * Simply wrap a thunk to capture and ignore all stdout and stderr output,
+   * _if_ the test passes, otherwise print the accumulated output.
    * @param test logic to execute.
    */
   def ignoreOutput(test: ⇒ Unit) = doCheckOutput(false)(test) { (outLines, errLines) => () }
@@ -87,28 +88,6 @@ trait OutputInterceptor {
     expectedOutLines: Seq[String],
     expectedErrLines: Seq[String])(
     test: ⇒ Unit) = doCheckOutput(true)(test)(defaultCheck(false, expectedOutLines, expectedErrLines))
-
-  /**
-   * Construct the default checker, which compares the actual with expected output,
-   * verbatim. When trimming is request, it is done by [[doCheckOutput]] before
-   * calling the function returned by this method.
-   */
-  protected def defaultCheck(
-    ignoreErrOutput: Boolean,
-    expectedOutLines: Seq[String],
-    expectedErrLines: Seq[String]): (Seq[String], Seq[String]) => Unit =
-    (outLines, errLines) => {
-      assert(
-        outLines.size == expectedOutLines.size, sizeDiffString("out", outLines, expectedOutLines))
-      assert(
-        outLines.toSeq == expectedOutLines, notEqualDiffString("out", outLines, expectedOutLines))
-      if (ignoreErrOutput == false) {
-        assert(
-          errLines.size == expectedErrLines.size, sizeDiffString("err", errLines, expectedErrLines))
-        assert(
-          errLines.toSeq == expectedErrLines, notEqualDiffString("err", errLines, expectedErrLines))
-      }
-    }
 
   /**
    * Wrap a test to capture and all stdout and stderr output, then apply the
@@ -173,13 +152,66 @@ trait OutputInterceptor {
     checkActualOutErrLines(outLines, errLines)
   }
 
+  protected def dumpCapturedOutput(outStrings: String, errStrings: String): Unit =
+    println(s"""
+      |captured stdout:
+      |  ${outStrings.replaceAll("\n", "\n  ")}
+      |
+      |captured stderr:
+      |  ${errStrings.replaceAll("\n", "\n  ")}
+      |
+      |""".stripMargin)
+
+  /**
+   * Construct the default checker, which compares the actual with expected output,
+   * verbatim. When trimming is request, it is done by [[doCheckOutput]] before
+   * calling the function returned by this method.
+   */
+  protected def defaultCheck(
+    ignoreErrOutput: Boolean,
+    expectedOutLines: Seq[String],
+    expectedErrLines: Seq[String]): (Seq[String], Seq[String]) => Unit =
+    (outLines, errLines) => {
+      diffLines("out", outLines, expectedOutLines)
+      if (ignoreErrOutput == false) {
+        diffLines("err", errLines, expectedErrLines)
+      }
+    }
+
+  protected def diffLines(
+    label: String,
+    actual: Seq[String],
+    expected: Seq[String]): Unit = {
+    assert(
+      actual.size == expected.size, sizeDiffString(label, actual, expected))
+    actual.zip(expected).zipWithIndex.foreach {
+      case ((a, e), i) =>
+        assert(a == e, notEqualDiffString(label, i, a, e, actual, expected))
+    }
+  }
+
   private def sizeDiffString(label: String, actual: Seq[String], expected: Seq[String]): String =
     diffString(s"$label - size mismatch: ${actual.size} != ${expected.size}", actual, expected)
-  private def notEqualDiffString(label: String, actual: Seq[String], expected: Seq[String]): String =
-    diffString(s"$label - mismatch", actual, expected)
 
-  private def diffString(prefix: String, actual: Seq[String], expected: Seq[String]): String =
-    s"""${name} - ${prefix} (Note: Seq() looks empty, but could be Seq("")):\nActual:   ${actual}\nExpected: ${expected}"""
+  private def notEqualDiffString(
+    label: String,
+    index: Int,
+    actualLine: String,
+    expectedLine: String,
+    actual: Seq[String],
+    expected: Seq[String]): String =
+    diffString(s"$label - mismatch at line $index: $actualLine != $expectedLine", actual, expected)
+
+  private def diffString(prefix: String, actual: Seq[String], expected: Seq[String]): String = {
+    val sb = new StringBuilder()
+    sb.append(s"${name} - ${prefix}\n")
+    sb.append("Actual =?= Expected (Note: Seq() looks empty, but could be Seq(\"\")):\n")
+    actual.zip(expected).zipWithIndex.foreach {
+      case ((a, e), i) =>
+        sb.append("%4d: %s =?= %s\n".format(i, a, e))
+    }
+    sb.toString
+  }
 }
 
 object OutputInterceptor {

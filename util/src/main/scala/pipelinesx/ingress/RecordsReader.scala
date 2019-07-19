@@ -368,14 +368,19 @@ object RecordsReader {
     new File(tmpdir, s"${prefix}_${hashStr}${suffix2}")
   }
 
+  /** A FilenameFilter that accepts everything, by default. */
+  protected val defaultFilenameFilter = new FilenameFilter {
+    def accept(dir: File, name: String): Boolean = true
+  }
+
   protected def determineFilesFromConfiguration(configKeyRoot: String): Seq[File] = {
     // Works correctly even if the string is empty.
-    def makeFilenameFilter(regexString: String) = new FilenameFilter {
-      import scala.util.matching.Regex
-      val re = new Regex(Regex.quote(regexString))
-
-      def accept(dir: File, name: String): Boolean = re.findAllIn(name).size > 0
-    }
+    def makeFilenameFilter(regexString: String): FilenameFilter =
+      if (regexString.trim.size == 0) defaultFilenameFilter
+      else new FilenameFilter {
+        val re = new scala.util.matching.Regex(regexString)
+        def accept(dir: File, name: String): Boolean = re.findAllIn(name).size > 0
+      }
 
     def addFiles(root: String, regexString: String, filter: FilenameFilter): Vector[File] = {
       val dir = new File(root)
@@ -390,19 +395,19 @@ object RecordsReader {
     }
 
     val fsp = configKeyRoot + ".data-sources.from-file-system.paths"
-    val fsfp = configKeyRoot + ".data-sources.from-file-system.dir-paths"
-    val fnre = configKeyRoot + ".data-sources.from-file-system.file-name-regex"
+    val fsdp = configKeyRoot + ".data-sources.from-file-system.dir-paths"
+    val fsfnr = configKeyRoot + ".data-sources.from-file-system.file-name-regex"
     config.get[Seq[String]](fsp) match {
       case Some(list) if list.size > 0 => list.map(p => new File(p))
       case _ =>
-        val regexString = ConfigUtil.default.getOrElse[String](fnre)("")
-        ConfigUtil.default.get[Seq[String]](fsfp) match {
+        val regexString = config.getOrElse[String](fsfnr)("")
+        config.get[Seq[String]](fsdp) match {
           case Some(dirs) if dirs.size > 0 =>
             val filter = makeFilenameFilter(regexString)
             dirs.foldLeft(Vector.empty[File]) {
               case (v, d) => v ++ addFiles(d, regexString, filter)
             }
-          case _ => throw InvalidConfiguration(config, Seq(fsfp))
+          case _ => throw InvalidConfiguration(config, Seq(fsdp))
         }
     }
   }
@@ -450,26 +455,30 @@ object RecordsReader {
     extends IllegalArgumentException(
       "The specified resource list for records was empty.")
 
+  abstract class ConfigurationError(message: String, cause: Throwable)
+    extends RuntimeException(message, cause)
+
   /** If the keys were found with unexpected values, put the values in the message string. */
   final case class InvalidConfiguration(config: ConfigUtil, keys: Seq[String], message: String = "")
-    extends IllegalArgumentException(
-      s"The configuration loaded from application.conf, etc. was missing one or more expected keys or unexpected values were returned: ${seqToString(keys)}. $message config = ${config.toStringWithFormatting()}")
+    extends ConfigurationError(
+      s"The configuration loaded from application.conf, etc. was missing one or more expected keys or unexpected values were returned: ${seqToString(keys)}. $message", null) // config = ${config.toStringWithFormatting()}")
 
   protected val extraErrMsgs = Map(
     FileSystem -> "Do the paths exist?",
     CLASSPATH -> "Do they exist on the CLASSPATH?",
     URLs -> "Do the URLs exist?")
+
   final case class FailedToLoadResources[T](resources: Seq[T], origin: SourceKind.Value, cause: Throwable = null)
-    extends IllegalArgumentException(
+    extends ConfigurationError(
       s"Failed to load resources: ${failedMsg(resources, origin: SourceKind.Value)}", cause)
+
+  final case class AllRecordsAreBad[T](resources: Seq[T])
+    extends ConfigurationError(
+      s"All records found in the resources ${seqToString(resources)} failed to parse!!", null)
 
   private def failedMsg[T](resources: Seq[T], origin: SourceKind.Value) =
     if (resources.size == 0) s"list is empty! Check the specification in 'application.conf'."
     else s"${seqToString(resources)}. ${extraErrMsgs(origin)}"
-
-  final case class AllRecordsAreBad[T](resources: Seq[T])
-    extends IllegalArgumentException(
-      s"All records found in the resources ${seqToString(resources)} failed to parse!!")
 
   protected def seqToString[T](seq: Seq[T]): String = seq.mkString("[", ", ", "]")
 
