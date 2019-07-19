@@ -16,18 +16,19 @@ import scala.concurrent.duration._
 
 final case object RecommenderModelServer extends AkkaStreamlet {
 
+  val dtype = "recommender"
   val in0 = AvroInlet[RecommenderRecord]("in-0")
   val in1 = AvroInlet[ModelDescriptor]("in-1")
-  val out = AvroOutlet[RecommendationResult]("out", _.name)
+  val out = AvroOutlet[RecommendationResult]("out", _.dataType)
   final override val shape = StreamletShape.withInlets(in0, in1).withOutlets(out)
 
   override final def createLogic = new RunnableGraphStreamletLogic() {
 
     ModelToServe.setResolver[RecommenderRecord, Seq[ProductPrediction]](RecommendationFactoryResolver)
 
-    val actors = Map("recommender" ->
+    val actors = Map(dtype ->
       context.system.actorOf(
-        ModelServingActor.props[RecommenderRecord, Seq[ProductPrediction]]))
+        ModelServingActor.props[RecommenderRecord, Seq[ProductPrediction]](dtype)))
 
     val modelserver = context.system.actorOf(
       ModelServingManager.props(new ServingActorResolver(actors)))
@@ -60,19 +61,20 @@ final case object RecommenderModelServer extends AkkaStreamlet {
 object RecommenderModelServerMain {
   def main(args: Array[String]): Unit = {
 
+    val dtype = "recommender"
     implicit val system: ActorSystem = ActorSystem("ModelServing")
     implicit val askTimeout: Timeout = Timeout(30.seconds)
 
-    val actors = Map("recommender" -> system.actorOf(ModelServingActor.props[RecommenderRecord, Seq[ProductPrediction]]))
+    val actors = Map(dtype -> system.actorOf(ModelServingActor.props[RecommenderRecord, Seq[ProductPrediction]](dtype)))
     ModelToServe.setResolver[RecommenderRecord, Seq[ProductPrediction]](RecommendationFactoryResolver)
 
     val modelserver = system.actorOf(ModelServingManager.props(new ServingActorResolver(actors)))
     val model = new ModelDescriptor(name = "Tensorflow Model", description = "For model Serving",
-      dataType = "recommender", modeltype = ModelType.TENSORFLOWSERVING, modeldata = null,
+      dataType = dtype, modeltype = ModelType.TENSORFLOWSERVING, modeldata = null,
       modeldatalocation = Some("http://recommender1-service-kubeflow.lightshift.lightbend.com/v1/models/recommender1/versions/1:predict"))
 
     modelserver.ask(ModelToServe.fromModelRecord(model))
-    val record = new RecommenderRecord(10L, Seq(1L, 2L, 3L, 4L), "recommender")
+    val record = new RecommenderRecord(10L, Seq(1L, 2L, 3L, 4L), dtype)
     Thread.sleep(1000)
     val result = modelserver.ask(RecommendationDataRecord(record)).mapTo[ServingResult[Seq[ProductPrediction]]]
     Thread.sleep(1000)

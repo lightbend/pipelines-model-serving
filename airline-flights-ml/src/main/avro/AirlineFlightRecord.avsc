@@ -118,6 +118,10 @@
       {
         "name": "lateAircraftDelay",
         "type": "int"
+      },
+      {
+        "name": "dataType",
+        "type": "string"
       }
     ]
 }

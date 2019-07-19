@@ -1,111 +1,100 @@
 package pipelines.examples.modelserving.airlineflights
 
-import pipelines.examples.modelserving.airlineflights.data._
+import pipelines.examples.modelserving.airlineflights.data.{AirlineFlightRecord, AirlineFlightResult}
+import pipelines.examples.modelserving.airlineflights.models.{AirlineFlightDataRecord, AirlineFlightFactoryResolver}
+import com.lightbend.modelserving.model.actor.{ModelServingActor, ModelServingManager}
+import com.lightbend.modelserving.model.{ ModelDescriptor, ModelType, ModelToServe, ServingActorResolver, ServingResult }
+import akka.Done
+import akka.actor.ActorSystem
+import akka.pattern.ask
+import akka.stream.scaladsl.Sink
+import akka.util.Timeout
 import pipelines.akkastream.AkkaStreamlet
-import pipelines.akkastream.scaladsl.RunnableGraphStreamletLogic
-import pipelines.streamlets.avro.{ AvroInlet, AvroOutlet }
+import pipelines.akkastream.scaladsl.{FlowWithPipelinesContext, RunnableGraphStreamletLogic}
 import pipelines.streamlets.StreamletShape
+import pipelines.streamlets.avro.{AvroInlet, AvroOutlet}
 
-import hex.genmodel.MojoModel
-import hex.genmodel.easy.EasyPredictModelWrapper
-import hex.genmodel.easy.RowData
+import scala.concurrent.duration._
 
-import java.io.{ File, FileOutputStream }
+final case object AirlineFlightModelServer extends AkkaStreamlet {
 
-final case object AirlineFlightModelServerStreamlet extends AkkaStreamlet {
-
-  val in = AvroInlet[AirlineFlightRecord]("in")
-  val out = AvroOutlet[AirlineFlightResult]("out", r ⇒ r.uniqueCarrier)
-
-  final override val shape = StreamletShape.withInlets(in).withOutlets(out)
+  val dtype = "airline"
+  val in0 = AvroInlet[AirlineFlightRecord]("in-0")
+  val in1 = AvroInlet[ModelDescriptor]("in-1")
+  val out = AvroOutlet[AirlineFlightResult]("out", _.dataType)
+  final override val shape = StreamletShape.withInlets(in0, in1).withOutlets(out)
 
   override final def createLogic = new RunnableGraphStreamletLogic() {
-    val server = new AirlineFlightModelServer()
+
+    ModelToServe.setResolver[AirlineFlightRecord, AirlineFlightResult](AirlineFlightFactoryResolver)
+
+    val actors = Map(dtype ->
+      context.system.actorOf(
+        ModelServingActor.props[AirlineFlightRecord, AirlineFlightResult](dtype)))
+
+    val modelserver = context.system.actorOf(
+      ModelServingManager.props(new ServingActorResolver(actors)))
+
+    implicit val askTimeout: Timeout = Timeout(30.seconds)
+
     def runnableGraph() = {
-      atLeastOnceSource(in).map(record ⇒ server.score(record)).to(atLeastOnceSink(out))
+      atLeastOnceSource(in1).via(modelFlow).runWith(Sink.ignore)
+      atLeastOnceSource(in0).via(dataFlow).to(atLeastOnceSink(out))
     }
+    protected def dataFlow =
+      FlowWithPipelinesContext[AirlineFlightRecord].mapAsync(1) {
+        data =>
+          modelserver.ask(AirlineFlightDataRecord(data))
+            .mapTo[ServingResult[AirlineFlightResult]]
+      }.filter {
+        r => r.result != None
+      }.map {
+        r =>
+          val result = r.result.get
+          result.modelname = r.name
+          result.dataType = r.dataType
+          result.duration = r.duration
+          result
+      }
+    protected def modelFlow =
+      FlowWithPipelinesContext[ModelDescriptor].map {
+        model ⇒ ModelToServe.fromModelRecord(model)
+      }.mapAsync(1) {
+        model ⇒ modelserver.ask(model).mapTo[Done]
+      }
   }
 }
 
-class AirlineFlightModelServer() {
+object AirlineFlightModelServerMain {
+  def main(args: Array[String]): Unit = {
 
-  protected lazy val config = com.typesafe.config.ConfigFactory.load()
-  protected lazy val currentModel: EasyPredictModelWrapper = getModel()
+    val dtype = "airline"
+    implicit val system: ActorSystem = ActorSystem("ModelServing")
+    implicit val executor = system.getDispatcher
+    implicit val askTimeout: Timeout = Timeout(30.seconds)
 
-  // Hack: We load the file from a resource on the class path, write it to a temp.
-  // file locally, then use the Mojo API to load _that_ file. A real implementation
-  // would read the file directly from a PVC-mounted file system instead, which also
-  // is required for periodic updates.
-  // Also, for this implementation, we only read one model in the list of models...
-  protected def getModel(): EasyPredictModelWrapper = {
-    val tmpFile = "/tmp/mojo.zip"
-    lazy val resource: String =
-      config.getStringList("airline-flights.model-sources").get(0)
-    val classloader = Thread.currentThread().getContextClassLoader()
-    val is = classloader.getResourceAsStream(resource)
-    val os = new FileOutputStream(new File(tmpFile))
-    val n = 1024 * 1024
-    val buffer = Array.fill[Byte](n)(0)
-    println("Writing model zip file bytes...")
-    var actual = is.read(buffer, 0, n)
-    while (actual > 0) {
-      print(s"$actual ")
-      os.write(buffer, 0, actual)
-      actual = is.read(buffer, 0, n)
-    }
-    println()
-    is.close()
-    os.close()
+    ModelToServe.setResolver[AirlineFlightRecord, AirlineFlightResult](AirlineFlightFactoryResolver)
 
-    new EasyPredictModelWrapper(MojoModel.load(tmpFile))
-  }
+    val actors = Map(dtype -> system.actorOf(ModelServingActor.props[AirlineFlightRecord, AirlineFlightResult](dtype)))
 
-  def toRow(record: AirlineFlightRecord): RowData = {
-    val row = new RowData
-    row.put("Year", record.year.toString)
-    row.put("Month", record.month.toString)
-    row.put("DayofMonth", record.dayOfMonth.toString) // note spelling...
-    row.put("DayOfWeek", record.dayOfWeek.toString)
-    row.put("CRSDepTime", record.crsDepTime.toString) // spelling...
-    row.put("UniqueCarrier", record.uniqueCarrier.toString)
-    row.put("Origin", record.origin.toString)
-    row.put("Dest", record.destination.toString) // spelling...
-    row
-  }
+    val modelserver = system.actorOf(ModelServingManager.props(new ServingActorResolver(actors)))
+    val is = this.getClass.getClassLoader.getResourceAsStream("airlines/models/mojo/gbm_pojo_test.zip")
+    val mojo = new Array[Byte](is.available)
+    is.read(mojo)
 
-  def toResult(record: AirlineFlightRecord, label: String, probability: Double): AirlineFlightResult =
-    AirlineFlightResult(
-      year = record.year,
-      month = record.month,
-      dayOfMonth = record.dayOfMonth,
-      dayOfWeek = record.dayOfWeek,
-      depTime = record.depTime,
-      arrTime = record.arrTime,
-      uniqueCarrier = record.uniqueCarrier,
-      flightNum = record.flightNum,
-      arrDelay = record.arrDelay,
-      depDelay = record.depDelay,
-      origin = record.origin,
-      destination = record.destination,
-      delayPredictionLabel = label,
-      delayPredictionProbability = probability)
+    val model = new ModelDescriptor(name = "Airline model", description = "Mojo airline model",
+      dataType = dtype, modeltype = ModelType.H2O, modeldata = Some(mojo), modeldatalocation = None)
 
-  // We cheat a bit; on errors, we stuff the error string in the "prediction" string
-  // and still pretend it's normal.
-  // TODO: write these records to a separate error egress.
-  def score(record: AirlineFlightRecord): AirlineFlightResult = {
-    val row = toRow(record)
-    try {
-      val prediction = currentModel.predictBinomial(row)
-      val probs = prediction.classProbabilities
-      val probability = if (probs.length == 2) probs(1) else 0.0
-      println(s"Prediction that flight departure will be delayed: ${prediction.label} (probability: $probability) for $record")
-      toResult(record, prediction.label, probability)
-    } catch {
-      case util.control.NonFatal(ex) ⇒
-        println(s"""ERROR: Exception "$ex" while scoring record $record""")
-        toResult(record, ex.getMessage(), 0.0)
-    }
+    modelserver.ask(ModelToServe.fromModelRecord(model))
+    val record = AirlineFlightRecord(1990,1,3,3,1707,1630,1755,1723,"US", 29,0,48,53,0,32,37,"CMH","IND",182,0,0,0,0,0,0,0,0,0,0,dtype)
+    Thread.sleep(1000)
+    val result = modelserver.ask(AirlineFlightDataRecord(record)).mapTo[ServingResult[AirlineFlightResult]]
+    result.map(data => {
+      val r = data.result.get
+      r.modelname = data.name
+      r.dataType = data.dataType
+      r.duration = data.duration
+      println(r)
+    })
   }
 }
-

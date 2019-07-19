@@ -21,7 +21,7 @@ import pipelinesx.config.ConfigUtil.implicits._
  */
 final case object RecommenderDataIngress extends AkkaStreamlet {
 
-  val out = AvroOutlet[RecommenderRecord]("out", _.user.toString)
+  val out = AvroOutlet[RecommenderRecord]("out", _.dataType)
 
   final override val shape = StreamletShape.withOutlets(out)
 

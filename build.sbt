@@ -61,8 +61,6 @@ lazy val util = (project in file("./util"))
     (sourceGenerators in Compile) += (avroScalaGenerateSpecific in Compile).taskValue,
   )
 
-//    libraryDependencies ++= Seq(akkaSprayJson, alpakkaFile, alpakkaKafka, compress)
-
 lazy val modelServing = (project in file("./model-serving"))
   .enablePlugins(PipelinesAkkaStreamsLibraryPlugin)
   .settings(
@@ -71,6 +69,15 @@ lazy val modelServing = (project in file("./model-serving"))
     (sourceGenerators in Compile) += (avroScalaGenerateSpecific in Compile).taskValue,
   )
   .dependsOn(util)
+
+lazy val dataIngestors = (project in file("./data-ingestors"))
+  .enablePlugins(PipelinesAkkaStreamsLibraryPlugin)
+  .settings(
+    name := "data-ingestors",
+    commonSettings,
+    libraryDependencies ++= Seq(akkaSprayJson, compress, alpakkaFile, alpakkaKafka, scalaTest),
+  )
+  .dependsOn(util, data, dataModel, modelLibrary)
 
 lazy val commonSettings = Seq(
   scalaVersion := "2.12.8",

@@ -1,6 +1,6 @@
 package pipelines.examples.modelserving.airlineflights
 
-import pipelines.examples.modelserving.airlineflights.data._
+import pipelines.examples.modelserving.airlineflights.data.{AirlineFlightRecord, AirlineFlightResult}
 import pipelinesx.ingress.RecordsReader
 
 /**
@@ -34,7 +34,7 @@ object AirlineFlightsMain {
     println("AirlineFlightsMain: Running airlines test application.")
     println(s"Printing a maximum of ${options.count} flight records")
 
-    val server = new AirlineFlightModelServer()
+    val server = new AirlineFlightModelDeanServer()
     val reader = RecordsReader.fromConfiguration[AirlineFlightRecord](
       configurationKeyRoot = AirlineFlightRecordsIngressUtil.rootConfigKey,
       dropFirstN = 1)(
