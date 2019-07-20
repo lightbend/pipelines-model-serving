@@ -18,8 +18,8 @@ class RecordsReaderTest extends FunSpec with BeforeAndAfterAll with OutputInterc
 
   val testGoodRecordsResources = Array("good-records1.csv", "good-records2.csv")
   val testBadRecordsResources = Array("bad-records.csv")
-  val testGoodRecordsFiles = testGoodRecordsResources.map(s => new File("util/src/test/resources/" + s))
-  val testBadRecordsFiles = testBadRecordsResources.map(s => new File("util/src/test/resources/" + s))
+  val testGoodRecordsFiles = testGoodRecordsResources.map(s => new File("pipelinesx/src/test/resources/" + s))
+  val testBadRecordsFiles = testBadRecordsResources.map(s => new File("pipelinesx/src/test/resources/" + s))
   val testGoodRecordsURLs = Array(new URL("https://lightbend.com/about-lightbend"))
   val testBadRecordsURLs = Array(new URL("http://example.foo"))
   def identityR = (r: String) => Right(r)
@@ -346,7 +346,7 @@ class RecordsReaderTest extends FunSpec with BeforeAndAfterAll with OutputInterc
           ignoreOutput {
             badRecordsTest(
               RecordsReader.SourceKind.FileSystem,
-              "util/src/test/resources/",
+              "pipelinesx/src/test/resources/",
               testBadRecordsFiles,
               RecordsReader.fromFileSystem[(Int, String)](testBadRecordsFiles)(intStringTupleCSVParse()))
           }

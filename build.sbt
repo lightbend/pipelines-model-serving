@@ -26,7 +26,7 @@ lazy val wineModelServingPipeline = (project in file("./wine-quality-ml"))
     libraryDependencies ++= Seq(influx, scalaTest),
     (sourceGenerators in Compile) += (avroScalaGenerateSpecific in Compile).taskValue
   )
-  .dependsOn(util, modelServing)
+  .dependsOn(pipelinesx, modelServing)
 
 lazy val recommenderModelServingPipeline = (project in file("./recommender-ml"))
   .enablePlugins(PipelinesApplicationPlugin)
@@ -38,7 +38,7 @@ lazy val recommenderModelServingPipeline = (project in file("./recommender-ml"))
     libraryDependencies ++= Seq(scalaTest),
     (sourceGenerators in Compile) += (avroScalaGenerateSpecific in Compile).taskValue
   )
-  .dependsOn(util, modelServing)
+  .dependsOn(pipelinesx, modelServing)
 
 lazy val airlineFlightsModelServingPipeline = (project in file("./airline-flights-ml"))
   .enablePlugins(PipelinesApplicationPlugin)
@@ -50,13 +50,13 @@ lazy val airlineFlightsModelServingPipeline = (project in file("./airline-flight
     libraryDependencies ++= Seq(influx, scalaTest),
     (sourceGenerators in Compile) += (avroScalaGenerateSpecific in Compile).taskValue
   )
-  .dependsOn(util, modelServing)
+  .dependsOn(pipelinesx, modelServing)
 
-lazy val util = (project in file("./util"))
+lazy val pipelinesx = (project in file("./pipelinesx"))
   .enablePlugins(PipelinesLibraryPlugin)
   .enablePlugins(PipelinesAkkaStreamsLibraryPlugin)
   .settings(
-    name := "util",
+    name := "pipelinesx",
     libraryDependencies ++= logging ++ Seq(/*alpakkaKafka,*/ bijection, json2avro, influx, scalaTest),
     (sourceGenerators in Compile) += (avroScalaGenerateSpecific in Compile).taskValue,
   )
@@ -68,16 +68,7 @@ lazy val modelServing = (project in file("./model-serving"))
     libraryDependencies ++= Seq(tensorflow, tensorflowProto, pmml, pmmlextensions, h2o, bijection, json2avro, gson, scalajHTTP),
     (sourceGenerators in Compile) += (avroScalaGenerateSpecific in Compile).taskValue,
   )
-  .dependsOn(util)
-
-lazy val dataIngestors = (project in file("./data-ingestors"))
-  .enablePlugins(PipelinesAkkaStreamsLibraryPlugin)
-  .settings(
-    name := "data-ingestors",
-    commonSettings,
-    libraryDependencies ++= Seq(akkaSprayJson, compress, alpakkaFile, alpakkaKafka, scalaTest),
-  )
-  .dependsOn(util, data, dataModel, modelLibrary)
+  .dependsOn(pipelinesx)
 
 lazy val commonSettings = Seq(
   scalaVersion := "2.12.8",
