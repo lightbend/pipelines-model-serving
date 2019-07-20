@@ -1,7 +1,7 @@
 package pipelines.examples.modelserving.airlineflights.models
 
-import pipelines.examples.modelserving.airlineflights.data.{ AirlineFlightRecord, AirlineFlightResult}
-import com.lightbend.modelserving.model.{ ModelFactory, ModelFactoryResolver }
+import pipelines.examples.modelserving.airlineflights.data.{ AirlineFlightRecord, AirlineFlightResult }
+import com.lightbend.modelserving.model.{ ModelFactory, ModelFactoryResolver, ModelType }
 
 /**
  * Model factory resolver - requires specific factories

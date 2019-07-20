@@ -20,7 +20,7 @@ final case object AirlineFlightModelDeanServer extends AkkaStreamlet {
   final override val shape = StreamletShape.withInlets(in).withOutlets(out)
 
   override final def createLogic = new RunnableGraphStreamletLogic() {
-    val server = new AirlineFlightModelDeanServer()
+    val server = new AirlineFlightModelDeanServerUtil()
     def runnableGraph() = {
       atLeastOnceSource(in).map(record ⇒ server.score(record)).to(atLeastOnceSink(out))
     }
@@ -90,7 +90,7 @@ class AirlineFlightModelDeanServerUtil() {
       delayPredictionLabel = label,
       delayPredictionProbability = probability,
       modelname = "",
-      dataType =  "",
+      dataType = "",
       duration = 0)
 
   // We cheat a bit; on errors, we stuff the error string in the "prediction" string

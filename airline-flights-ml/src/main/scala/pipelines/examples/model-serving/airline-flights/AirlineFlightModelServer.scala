@@ -1,8 +1,8 @@
 package pipelines.examples.modelserving.airlineflights
 
-import pipelines.examples.modelserving.airlineflights.data.{AirlineFlightRecord, AirlineFlightResult}
-import pipelines.examples.modelserving.airlineflights.models.{AirlineFlightDataRecord, AirlineFlightFactoryResolver}
-import com.lightbend.modelserving.model.actor.{ModelServingActor, ModelServingManager}
+import pipelines.examples.modelserving.airlineflights.data.{ AirlineFlightRecord, AirlineFlightResult }
+import pipelines.examples.modelserving.airlineflights.models.{ AirlineFlightDataRecord, AirlineFlightFactoryResolver }
+import com.lightbend.modelserving.model.actor.{ ModelServingActor, ModelServingManager }
 import com.lightbend.modelserving.model.{ ModelDescriptor, ModelType, ModelToServe, ServingActorResolver, ServingResult }
 import akka.Done
 import akka.actor.ActorSystem
@@ -10,9 +10,9 @@ import akka.pattern.ask
 import akka.stream.scaladsl.Sink
 import akka.util.Timeout
 import pipelines.akkastream.AkkaStreamlet
-import pipelines.akkastream.scaladsl.{FlowWithPipelinesContext, RunnableGraphStreamletLogic}
+import pipelines.akkastream.scaladsl.{ FlowWithPipelinesContext, RunnableGraphStreamletLogic }
 import pipelines.streamlets.StreamletShape
-import pipelines.streamlets.avro.{AvroInlet, AvroOutlet}
+import pipelines.streamlets.avro.{ AvroInlet, AvroOutlet }
 
 import scala.concurrent.duration._
 
@@ -86,7 +86,7 @@ object AirlineFlightModelServerMain {
       dataType = dtype, modeltype = ModelType.H2O, modeldata = Some(mojo), modeldatalocation = None)
 
     modelserver.ask(ModelToServe.fromModelRecord(model))
-    val record = AirlineFlightRecord(1990,1,3,3,1707,1630,1755,1723,"US", 29,0,48,53,0,32,37,"CMH","IND",182,0,0,0,0,0,0,0,0,0,0,dtype)
+    val record = AirlineFlightRecord(1990, 1, 3, 3, 1707, 1630, 1755, 1723, "US", 29, 0, 48, 53, 0, 32, 37, "CMH", "IND", 182, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, dtype)
     Thread.sleep(1000)
     val result = modelserver.ask(AirlineFlightDataRecord(record)).mapTo[ServingResult[AirlineFlightResult]]
     result.map(data => {

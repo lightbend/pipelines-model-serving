@@ -54,7 +54,7 @@ object AirlineFlightModelDataIngressUtil {
 
   /** Helper method extracted from AirlineFlightModelDataIngress for easier unit testing. */
   def makeSource(
-      frequency: FiniteDuration = modelFrequencySeconds): Source[ModelDescriptor, NotUsed] = {
+    frequency: FiniteDuration = modelFrequencySeconds): Source[ModelDescriptor, NotUsed] = {
     val modelFinder = new ModelDescriptorProvider()
     Source.repeat(modelFinder)
       .map(finder ⇒ finder.getModelDescriptor())
@@ -74,7 +74,7 @@ object AirlineFlightModelDataIngressUtil {
       case ("-h" | "--help") +: _ ⇒
         help()
         sys.exit(0)
-      case Nil       ⇒ freq
+      case Nil ⇒ freq
       case n +: tail ⇒ parseArgs(tail, n.toInt.seconds)
       case x +: _ ⇒
         println(s"ERROR: Unrecognized argument $x. All args: ${args.mkString(" ")}")

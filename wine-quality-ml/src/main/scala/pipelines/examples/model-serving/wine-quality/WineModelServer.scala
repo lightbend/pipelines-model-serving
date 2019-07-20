@@ -12,7 +12,7 @@ import com.lightbend.modelserving.model.{ ModelDescriptor, ModelType, ModelToSer
 import pipelines.akkastream.AkkaStreamlet
 import pipelines.akkastream.scaladsl.{ FlowWithPipelinesContext, RunnableGraphStreamletLogic }
 import pipelines.streamlets.StreamletShape
-import pipelines.streamlets.avro.{AvroInlet, AvroOutlet}
+import pipelines.streamlets.avro.{ AvroInlet, AvroOutlet }
 
 import scala.concurrent.duration._
 
