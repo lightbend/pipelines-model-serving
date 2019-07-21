@@ -24,9 +24,6 @@ final case object RecommenderModelServer extends AkkaStreamlet {
 
   override final def createLogic = new RunnableGraphStreamletLogic() {
 
-    val modelserver = context.system.actorOf(
-      ModelServingManager.props(new ServingActorResolver(actors)))
-
     val modelManager = new ModelManager[RecommenderRecord, Seq[ProductPrediction]](RecommendationFactoryResolver)
 
     val actors = Map(dtype ->

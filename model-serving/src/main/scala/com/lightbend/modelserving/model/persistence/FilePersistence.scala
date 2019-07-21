@@ -3,13 +3,13 @@ package com.lightbend.modelserving.model.persistence
 import java.io.{ DataInputStream, DataOutputStream, File, FileInputStream, FileOutputStream }
 import java.nio.channels.{ FileChannel, FileLock }
 
-import com.lightbend.modelserving.model.{ Model, ModelToServe }
+import com.lightbend.modelserving.model.{ Model, ModelManager, ModelToServe }
 
 /**
  * Persists the state information to a file for quick recovery.
  */
 
-object FilePersistence {
+final case class FilePersistence[RECORD, RESULT](modelManager: ModelManager[RECORD, RESULT]) {
 
   private final val baseDir = "persistence"
 
@@ -69,7 +69,7 @@ object FilePersistence {
    * Save the state to a file system.
    * @return either an error string or true.
    */
-  def saveState[RECORD, RESULT](
+  def saveState(
     dataType: String,
     model: Model[RECORD, RESULT],
     name: String,
@@ -101,7 +101,7 @@ object FilePersistence {
    * Restore the state from a file system.
    * @return either an error string or the model and related data.
    */
-  def restoreState[RECORD, RESULT](
+  def restoreState(
     dataType: String): Either[String, (Model[RECORD, RESULT], String, String)] =
     getDataInputStream(dataType) match {
       case Right(input) =>
@@ -113,7 +113,7 @@ object FilePersistence {
           val modelType = dis.readLong.toInt
           val bytes = new Array[Byte](length)
           dis.read(bytes)
-          ModelToServe.restore[RECORD, RESULT](modelType, bytes) match {
+          modelManager.restore(modelType, bytes) match {
             case Right(model) => Right((model, name, description))
             case Left(error) =>
               Left(s"Could not restore the state for dataType $dataType (name = $name, description = $description, length = $length, modelType = $modelType). $error")

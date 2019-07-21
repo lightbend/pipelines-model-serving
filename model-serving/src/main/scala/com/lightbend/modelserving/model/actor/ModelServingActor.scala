@@ -15,11 +15,13 @@ class ModelServingActor[RECORD, RESULT](dataType: String, modelManager: ModelMan
   val log = Logging(context.system, this)
   log.info(s"Creating model serving actor for $dataType")
 
+  private var filePersistence = FilePersistence[RECORD, RESULT](modelManager)
+
   private var currentModel: Option[Model[RECORD, RESULT]] = None
   var currentState: Option[ModelToServeStats] = None
 
   override def preStart {
-    FilePersistence.restoreState[RECORD, RESULT](dataType) match {
+    filePersistence.restoreState(dataType) match {
       case Right((model, name, description)) =>
         currentModel = Some(model)
         currentState = Some(ModelToServeStats(name, description, model.getType.ordinal(), System.currentTimeMillis()))
@@ -42,7 +44,7 @@ class ModelServingActor[RECORD, RESULT](dataType: String, modelManager: ModelMan
           currentModel = Some(m)
           currentState = Some(ModelToServeStats(model))
           // persist new model
-          FilePersistence.saveState(dataType, m, model.name, model.description) match {
+          filePersistence.saveState(dataType, m, model.name, model.description) match {
             case Left(error) => log.error(error)
             case Right(true) => log.info(s"Successfully saved state for model type $dataType, model name = ${model.name}")
             case Right(false) => log.error("BUG: FilePersistence.saveState returned Right(false).")
@@ -52,12 +54,12 @@ class ModelServingActor[RECORD, RESULT](dataType: String, modelManager: ModelMan
       }
       sender() ! Done
 
-    case record: DataToServe =>
+    case record: DataToServe[RECORD] =>
       // Process data
       currentModel match {
         case Some(model) =>
           val start = System.currentTimeMillis()
-          val prediction = model.score(record.getRecord)
+          val prediction = model.score(record.record)
           val duration = System.currentTimeMillis() - start
           currentState = currentState.map(_.incrementUsage(duration))
           log.info(s"Processed data in $duration ms with result $prediction")

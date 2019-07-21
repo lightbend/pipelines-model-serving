@@ -26,7 +26,7 @@ final case object AirlineFlightModelServer extends AkkaStreamlet {
 
   override final def createLogic = new RunnableGraphStreamletLogic() {
 
-    val modelManager = new ModelManager[AirlineFlightRecord, AirlineFlightResult](AirlineFlightsFactoryResolver)
+    val modelManager = new ModelManager[AirlineFlightRecord, AirlineFlightResult](AirlineFlightFactoryResolver)
 
     val actors = Map(dtype ->
       context.system.actorOf(
@@ -73,7 +73,7 @@ object AirlineFlightModelServerMain {
     implicit val executor = system.getDispatcher
     implicit val askTimeout: Timeout = Timeout(30.seconds)
 
-    val modelManager = new ModelManager[AirlineFlightRecord, AirlineFlightResult](AirlineFlightsFactoryResolver)
+    val modelManager = new ModelManager[AirlineFlightRecord, AirlineFlightResult](AirlineFlightFactoryResolver)
     val actors = Map(dtype -> system.actorOf(ModelServingActor.props[AirlineFlightRecord, AirlineFlightResult](dtype, modelManager)))
 
     val modelserver = system.actorOf(ModelServingManager.props(new ServingActorResolver(actors)))
@@ -84,7 +84,7 @@ object AirlineFlightModelServerMain {
     val model = new ModelDescriptor(name = "Airline model", description = "Mojo airline model",
       dataType = dtype, modeltype = ModelType.H2O, modeldata = Some(mojo), modeldatalocation = None)
 
-    modelserver.ask(ModelToServe.fromModelRecord(model))
+    modelserver.ask(modelManager.fromModelRecord(model))
     val record = AirlineFlightRecord(1990, 1, 3, 3, 1707, 1630, 1755, 1723, "US", 29, 0, 48, 53, 0, 32, 37, "CMH", "IND", 182, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, dtype)
     Thread.sleep(1000)
     val result = modelserver.ask(AirlineFlightDataRecord(record)).mapTo[ServingResult[AirlineFlightResult]]

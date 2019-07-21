@@ -23,7 +23,7 @@ class ModelServingManager(actorResolver: ServingActorResolver) extends Actor {
           sender() ! Done
       }
 
-    case record: DataToServe =>
+    case record: DataToServe[_] =>
       actorResolver.getActor(record.getType) match {
         case Some(modelServer) =>
           //          println(s"forwarding data request to $modelServer")
