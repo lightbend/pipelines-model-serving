@@ -3,8 +3,9 @@ import sbt.Keys._
 import scalariform.formatter.preferences._
 import Dependencies._
 
-lazy val thisVersion = "1.2.0"
+lazy val thisVersion = "1.3.0"
 version := thisVersion
+fork := true
 
 // The following assumes an environment variable that defines the OpenShift cluster
 // domain name and uses the default registry prefix. Adapt for your environment or
@@ -23,8 +24,7 @@ lazy val wineModelServingPipeline = (project in file("./wine-quality-ml"))
     name := s"wine-quality-ml-$user",
     version := thisVersion,
     pipelinesDockerRegistry := dockerRegistry,
-    libraryDependencies ++= Seq(influx, scalaTest),
-    (sourceGenerators in Compile) += (avroScalaGenerateSpecific in Compile).taskValue
+    libraryDependencies ++= Seq(influx, scalaTest)
   )
   .dependsOn(pipelinesx, modelServing)
 
@@ -35,8 +35,7 @@ lazy val recommenderModelServingPipeline = (project in file("./recommender-ml"))
     name := s"recommender-ml-$user",
     version := thisVersion,
     pipelinesDockerRegistry := dockerRegistry,
-    libraryDependencies ++= Seq(scalaTest),
-    (sourceGenerators in Compile) += (avroScalaGenerateSpecific in Compile).taskValue
+    libraryDependencies ++= Seq(scalaTest)
   )
   .dependsOn(pipelinesx, modelServing)
 
@@ -47,8 +46,7 @@ lazy val airlineFlightsModelServingPipeline = (project in file("./airline-flight
     name := s"airline-flights-ml-$user",
     version := thisVersion,
     pipelinesDockerRegistry := dockerRegistry,
-    libraryDependencies ++= Seq(influx, scalaTest),
-    (sourceGenerators in Compile) += (avroScalaGenerateSpecific in Compile).taskValue
+    libraryDependencies ++= Seq(influx, scalaTest)
   )
   .dependsOn(pipelinesx, modelServing)
 
@@ -57,16 +55,14 @@ lazy val pipelinesx = (project in file("./pipelinesx"))
   .enablePlugins(PipelinesAkkaStreamsLibraryPlugin)
   .settings(
     name := "pipelinesx",
-    libraryDependencies ++= logging ++ Seq(/*alpakkaKafka,*/ bijection, json2avro, influx, scalaTest),
-    (sourceGenerators in Compile) += (avroScalaGenerateSpecific in Compile).taskValue,
+    libraryDependencies ++= logging ++ Seq(/*alpakkaKafka,*/ bijection, json2avro, influx, scalaTest)
   )
 
 lazy val modelServing = (project in file("./model-serving"))
   .enablePlugins(PipelinesAkkaStreamsLibraryPlugin)
   .settings(
     name := "model-serving",
-    libraryDependencies ++= Seq(tensorflow, tensorflowProto, pmml, pmmlextensions, h2o, bijection, json2avro, gson, scalajHTTP),
-    (sourceGenerators in Compile) += (avroScalaGenerateSpecific in Compile).taskValue,
+    libraryDependencies ++= Seq(tensorflow, tensorflowProto, pmml, pmmlextensions, h2o, bijection, json2avro, gson, scalajHTTP)
   )
   .dependsOn(pipelinesx)
 
