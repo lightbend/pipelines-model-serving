@@ -2,6 +2,7 @@ package com.lightbend.modelserving.model.actor
 
 import akka.Done
 import akka.actor.{ Actor, Props }
+import akka.event.Logging
 import com.lightbend.modelserving.model._
 import com.lightbend.modelserving.model.persistence.FilePersistence
 
@@ -11,7 +12,9 @@ import com.lightbend.modelserving.model.persistence.FilePersistence
  */
 class ModelServingActor[RECORD, RESULT](dataType: String) extends Actor {
 
-  println("Creating model serving actor for wine")
+  val log = Logging(context.system, this)
+  log.info(s"Creating model serving actor for $dataType")
+
   private var currentModel: Option[Model[RECORD, RESULT]] = None
   var currentState: Option[ModelToServeStats] = None
 
@@ -20,7 +23,7 @@ class ModelServingActor[RECORD, RESULT](dataType: String) extends Actor {
       case Some(value) => // manage to restore
         currentModel = Some(value._1.asInstanceOf[Model[RECORD, RESULT]])
         currentState = Some(ModelToServeStats(value._2, value._3, value._1.getType.ordinal(), System.currentTimeMillis()))
-        println(s"Restored model ${value._2} - ${value._3}")
+        log.info(s"Restored model ${value._2} - ${value._3}")
       case _ =>
     }
   }
@@ -28,7 +31,7 @@ class ModelServingActor[RECORD, RESULT](dataType: String) extends Actor {
   override def receive: PartialFunction[Any, Unit] = {
     case model: ModelToServe =>
       // Update model
-      println(s"Updated model: $model")
+      log.info(s"Received new model: $model")
 
       ModelToServe.toModel[RECORD, RESULT](model) match {
         case Right(m) =>
@@ -40,7 +43,7 @@ class ModelServingActor[RECORD, RESULT](dataType: String) extends Actor {
           // persist new model
           FilePersistence.saveState(dataType, m, model.name, model.description)
         case Left(error) =>
-          println(s"ERROR: (ModelServingActor.receive) Failed to convert model ($model). Error: $error")
+          log.error(s"Failed to instantiate the model: $error")
       }
       sender() ! Done
 
@@ -52,11 +55,11 @@ class ModelServingActor[RECORD, RESULT](dataType: String) extends Actor {
           val prediction = model.score(record.getRecord.asInstanceOf[RECORD])
           val duration = System.currentTimeMillis() - start
           currentState = currentState.map(_.incrementUsage(duration))
-          println(s"Processed data in $duration ms with result $prediction")
+          log.info(s"Processed data in $duration ms with result $prediction")
           sender() ! ServingResult(currentState.get.name, record.getType, duration, Some(prediction))
 
         case None =>
-          println(s"no model skipping")
+          log.warning(s"no model skipping")
           sender() ! ServingResult("No model available")
       }
 
