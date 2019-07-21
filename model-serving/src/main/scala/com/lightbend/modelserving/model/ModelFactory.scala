@@ -19,6 +19,28 @@ package com.lightbend.modelserving.model
  * Generic definition of a model factory
  */
 trait ModelFactory[RECORD, RESULT] {
-  def create(input: ModelToServe): Option[Model[RECORD, RESULT]]
-  def restore(bytes: Array[Byte]): Model[RECORD, RESULT]
+
+  /** Used as a label for the kind of model in error messages. */
+  def modelName: String
+  def make(input: ModelToServe): Model[RECORD, RESULT]
+  def make(bytes: Array[Byte]): Model[RECORD, RESULT]
+
+  def create(input: ModelToServe): Either[String, Model[RECORD, RESULT]] = {
+    try {
+      Right(make(input.model))
+    } catch {
+      case scala.util.control.NonFatal(th) ⇒
+        Left(s"Failed to create a new $modelName from with the input $input. $th. ${formatStackTrace(th)}")
+    }
+  }
+
+  def restore(bytes: Array[Byte]): Either[String, Model[RECORD, RESULT]] =
+    try {
+      Right(make(bytes))
+    } catch {
+      case scala.util.control.NonFatal(th) ⇒
+        Left(s"Failed to restore a $modelName from a byte array. $th. ${formatStackTrace(th)}")
+    }
+
+  private def formatStackTrace(th: Throwable): String = th.getStackTrace().mkString("\n  ", "\n  ", "\n")
 }

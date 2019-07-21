@@ -10,7 +10,7 @@ import com.lightbend.modelserving.model.persistence.FilePersistence
  * Actor that handles messages to update a model and to score records using the current model.
  * @param dataType indicating either the record type or model parameters. Used as a file name.
  */
-class ModelServingActor[RECORD, RESULT](dataType: String) extends Actor {
+class ModelServingActor[RECORD, RESULT](dataType: String, modelManager: ModelManager[RECORD, RESULT]) extends Actor {
 
   val log = Logging(context.system, this)
   log.info(s"Creating model serving actor for $dataType")
@@ -19,12 +19,13 @@ class ModelServingActor[RECORD, RESULT](dataType: String) extends Actor {
   var currentState: Option[ModelToServeStats] = None
 
   override def preStart {
-    FilePersistence.restoreState(dataType) match {
-      case Some(value) => // manage to restore
-        currentModel = Some(value._1.asInstanceOf[Model[RECORD, RESULT]])
-        currentState = Some(ModelToServeStats(value._2, value._3, value._1.getType.ordinal(), System.currentTimeMillis()))
-        log.info(s"Restored model ${value._2} - ${value._3}")
-      case _ =>
+    FilePersistence.restoreState[RECORD, RESULT](dataType) match {
+      case Right((model, name, description)) =>
+        currentModel = Some(model)
+        currentState = Some(ModelToServeStats(name, description, model.getType.ordinal(), System.currentTimeMillis()))
+        log.info(s"Restored model $name - $description")
+      case Left(error) =>
+        log.error(error)
     }
   }
 
@@ -33,7 +34,7 @@ class ModelServingActor[RECORD, RESULT](dataType: String) extends Actor {
       // Update model
       log.info(s"Received new model: $model")
 
-      ModelToServe.toModel[RECORD, RESULT](model) match {
+      modelManager.toModel(model) match {
         case Right(m) =>
           // close current model first
           currentModel.foreach(_.cleanup())
@@ -41,7 +42,11 @@ class ModelServingActor[RECORD, RESULT](dataType: String) extends Actor {
           currentModel = Some(m)
           currentState = Some(ModelToServeStats(model))
           // persist new model
-          FilePersistence.saveState(dataType, m, model.name, model.description)
+          FilePersistence.saveState(dataType, m, model.name, model.description) match {
+            case Left(error) => log.error(error)
+            case Right(true) => log.info(s"Successfully saved state for model type $dataType, model name = ${model.name}")
+            case Right(false) => log.error("BUG: FilePersistence.saveState returned Right(false).")
+          }
         case Left(error) =>
           log.error(s"Failed to instantiate the model: $error")
       }
@@ -52,7 +57,7 @@ class ModelServingActor[RECORD, RESULT](dataType: String) extends Actor {
       currentModel match {
         case Some(model) =>
           val start = System.currentTimeMillis()
-          val prediction = model.score(record.getRecord.asInstanceOf[RECORD])
+          val prediction = model.score(record.getRecord)
           val duration = System.currentTimeMillis() - start
           currentState = currentState.map(_.incrementUsage(duration))
           log.info(s"Processed data in $duration ms with result $prediction")
@@ -71,7 +76,10 @@ class ModelServingActor[RECORD, RESULT](dataType: String) extends Actor {
 }
 
 object ModelServingActor {
-  def props[RECORD, RESULT](dataType: String): Props = Props(new ModelServingActor[RECORD, RESULT](dataType))
+  def props[RECORD, RESULT](
+    dataType: String,
+    modelManager: ModelManager[RECORD, RESULT]): Props =
+    Props(new ModelServingActor[RECORD, RESULT](dataType, modelManager))
 }
 
 /** Used as an Actor message. */

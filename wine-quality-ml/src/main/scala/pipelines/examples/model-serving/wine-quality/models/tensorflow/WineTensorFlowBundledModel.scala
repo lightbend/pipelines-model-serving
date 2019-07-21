@@ -10,13 +10,7 @@ import pipelines.examples.modelserving.winequality.data.WineRecord
  */
 class WineTensorFlowBundledModel(inputStream: Array[Byte]) extends TensorFlowBundleModel[WineRecord, Double](inputStream) {
 
-  /**
-   * Score data.
-   *
-   * @param input object to score.
-   * @return scoring result
-   */
-  override def score(input: WineRecord): Double = {
+  override def score(input: WineRecord): Either[String, Double] = try {
     // Create input tensor
     val modelInput = WineTensorFlowModel.toTensor(input)
     // Serve model using TensorFlow APIs
@@ -28,7 +22,10 @@ class WineTensorFlowBundledModel(inputStream: Array[Byte]) extends TensorFlowBun
     val rshape = result.shape
     val rMatrix = Array.ofDim[Float](rshape(0).asInstanceOf[Int], rshape(1).asInstanceOf[Int])
     result.copyTo(rMatrix)
-    rMatrix(0).indices.maxBy(rMatrix(0)).toDouble
+    Right(rMatrix(0).indices.maxBy(rMatrix(0)).toDouble)
+  } catch {
+    case scala.util.control.NonFatal(th) =>
+      Left("WineTensorFlowBundledModel.score failed: $th")
   }
 }
 
@@ -37,18 +34,16 @@ class WineTensorFlowBundledModel(inputStream: Array[Byte]) extends TensorFlowBun
  */
 object WineTensorFlowBundledModel extends ModelFactory[WineRecord, Double] {
 
+  val modelName = "WineTensorFlowBundledModel"
+
   /**
    * Creates a new TensorFlow bundled model.
    *
    * @param descriptor model to serve representation of TensorFlow bundled model.
    * @return model
    */
-  override def create(input: ModelToServe): Option[Model[WineRecord, Double]] =
-    try
-      Some(new WineTensorFlowBundledModel(input.location.getBytes))
-    catch {
-      case _: Throwable ⇒ None
-    }
+  def make(input: ModelToServe): Model[WineRecord, Double] =
+    new WineTensorFlowBundledModel(input.location.getBytes)
 
   /**
    * Restore PMML model from binary.
@@ -56,6 +51,7 @@ object WineTensorFlowBundledModel extends ModelFactory[WineRecord, Double] {
    * @param bytes binary representation of TensorFlow bundled model.
    * @return model
    */
-  override def restore(bytes: Array[Byte]): Model[WineRecord, Double] = new WineTensorFlowBundledModel(bytes)
+  def make(bytes: Array[Byte]): Model[WineRecord, Double] =
+    new WineTensorFlowBundledModel(bytes)
 }
 

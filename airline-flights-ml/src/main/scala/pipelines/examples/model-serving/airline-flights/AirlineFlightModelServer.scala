@@ -3,7 +3,7 @@ package pipelines.examples.modelserving.airlineflights
 import pipelines.examples.modelserving.airlineflights.data.{ AirlineFlightRecord, AirlineFlightResult }
 import pipelines.examples.modelserving.airlineflights.models.{ AirlineFlightDataRecord, AirlineFlightFactoryResolver }
 import com.lightbend.modelserving.model.actor.{ ModelServingActor, ModelServingManager }
-import com.lightbend.modelserving.model.{ ModelDescriptor, ModelType, ModelToServe, ServingActorResolver, ServingResult }
+import com.lightbend.modelserving.model.{ ModelDescriptor, ModelManager, ModelType, ModelToServe, ServingActorResolver, ServingResult }
 import akka.Done
 import akka.actor.ActorSystem
 import akka.pattern.ask
@@ -26,11 +26,11 @@ final case object AirlineFlightModelServer extends AkkaStreamlet {
 
   override final def createLogic = new RunnableGraphStreamletLogic() {
 
-    ModelToServe.setResolver[AirlineFlightRecord, AirlineFlightResult](AirlineFlightFactoryResolver)
+    val modelManager = new ModelManager[AirlineFlightRecord, AirlineFlightResult](AirlineFlightsFactoryResolver)
 
     val actors = Map(dtype ->
       context.system.actorOf(
-        ModelServingActor.props[AirlineFlightRecord, AirlineFlightResult](dtype)))
+        ModelServingActor.props[AirlineFlightRecord, AirlineFlightResult](dtype, modelManager)))
 
     val modelserver = context.system.actorOf(
       ModelServingManager.props(new ServingActorResolver(actors)))
@@ -58,7 +58,7 @@ final case object AirlineFlightModelServer extends AkkaStreamlet {
       }
     protected def modelFlow =
       FlowWithPipelinesContext[ModelDescriptor].map {
-        model ⇒ ModelToServe.fromModelRecord(model)
+        model ⇒ modelManager.fromModelRecord(model)
       }.mapAsync(1) {
         model ⇒ modelserver.ask(model).mapTo[Done]
       }
@@ -73,9 +73,8 @@ object AirlineFlightModelServerMain {
     implicit val executor = system.getDispatcher
     implicit val askTimeout: Timeout = Timeout(30.seconds)
 
-    ModelToServe.setResolver[AirlineFlightRecord, AirlineFlightResult](AirlineFlightFactoryResolver)
-
-    val actors = Map(dtype -> system.actorOf(ModelServingActor.props[AirlineFlightRecord, AirlineFlightResult](dtype)))
+    val modelManager = new ModelManager[AirlineFlightRecord, AirlineFlightResult](AirlineFlightsFactoryResolver)
+    val actors = Map(dtype -> system.actorOf(ModelServingActor.props[AirlineFlightRecord, AirlineFlightResult](dtype, modelManager)))
 
     val modelserver = system.actorOf(ModelServingManager.props(new ServingActorResolver(actors)))
     val is = this.getClass.getClassLoader.getResourceAsStream("airlines/models/mojo/gbm_pojo_test.zip")

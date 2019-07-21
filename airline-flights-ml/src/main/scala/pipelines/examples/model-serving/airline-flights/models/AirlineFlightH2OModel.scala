@@ -23,11 +23,11 @@ class AirlineFlightH2OModel(inputStream: Array[Byte]) extends H2OModel[AirlineFl
   }
 
   // create resulting message based on input and prediction result
-  def toResult(record: AirlineFlightRecord, prediction: BinomialModelPrediction): AirlineFlightResult = {
+  def toResult(record: AirlineFlightRecord, prediction: BinomialModelPrediction): Either[String, AirlineFlightResult] = {
     val probs = prediction.classProbabilities
     val probability = if (probs.length == 2) probs(1) else 0.0
     //    println(s"Prediction that flight departure will be delayed: ${prediction.label} (probability: $probability) for $record")
-    AirlineFlightResult(
+    val afr = AirlineFlightResult(
       year = record.year,
       month = record.month,
       dayOfMonth = record.dayOfMonth,
@@ -45,10 +45,11 @@ class AirlineFlightH2OModel(inputStream: Array[Byte]) extends H2OModel[AirlineFl
       modelname = "",
       dataType = "",
       duration = 0)
+    Right(afr)
   }
 
   /** Score a record with the model */
-  override def score(input: AirlineFlightRecord): AirlineFlightResult = {
+  override def score(input: AirlineFlightRecord): Either[String, AirlineFlightResult] = {
     val row = toRow(input)
     val prediction = model.predict(row)
     toResult(input, prediction.asInstanceOf[BinomialModelPrediction])
@@ -60,13 +61,11 @@ class AirlineFlightH2OModel(inputStream: Array[Byte]) extends H2OModel[AirlineFl
  */
 object AirlineFlightH2OModel extends ModelFactory[AirlineFlightRecord, AirlineFlightResult] {
 
-  override def create(input: ModelToServe): Option[Model[AirlineFlightRecord, AirlineFlightResult]] = {
-    try {
-      Some(new AirlineFlightH2OModel(input.model))
-    } catch {
-      case _: Throwable ⇒ None
-    }
-  }
+  val modelName = "AirlineFlightH2OModel"
 
-  override def restore(bytes: Array[Byte]): Model[AirlineFlightRecord, AirlineFlightResult] = new AirlineFlightH2OModel(bytes)
+  def make(input: ModelToServe): Model[AirlineFlightRecord, AirlineFlightResult] =
+    new AirlineFlightH2OModel(input.model)
+
+  def make(bytes: Array[Byte]): Model[AirlineFlightRecord, AirlineFlightResult] =
+    new AirlineFlightH2OModel(bytes)
 }

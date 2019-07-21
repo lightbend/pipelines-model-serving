@@ -36,18 +36,16 @@ class RecommenderTensorflowServingModel(inputStream: Array[Byte]) extends Tensor
  */
 object RecommenderTensorflowServingModel extends ModelFactory[RecommenderRecord, Seq[ProductPrediction]] {
 
+  val modelName = "RecommenderTensorflowServingModel"
+
   /**
    * Creates a new TensorFlow serving model.
    *
    * @param descriptor model to serve representation of TensorFlow serving model.
    * @return model
    */
-  override def create(input: ModelToServe): Option[Model[RecommenderRecord, Seq[ProductPrediction]]] =
-    try
-      Some(new RecommenderTensorflowServingModel(input.location.getBytes))
-    catch {
-      case _: Throwable ⇒ None
-    }
+  def make(input: ModelToServe): Model[RecommenderRecord, Seq[ProductPrediction]] =
+    new RecommenderTensorflowServingModel(input.location.getBytes)
 
   /**
    * Restore model from binary.
@@ -55,7 +53,7 @@ object RecommenderTensorflowServingModel extends ModelFactory[RecommenderRecord,
    * @param bytes binary representation of TensorFlow serving model.
    * @return model
    */
-  override def restore(bytes: Array[Byte]): Model[RecommenderRecord, Seq[ProductPrediction]] =
+  def make(bytes: Array[Byte]): Model[RecommenderRecord, Seq[ProductPrediction]] =
     new RecommenderTensorflowServingModel(bytes)
 
   // Testing transformation

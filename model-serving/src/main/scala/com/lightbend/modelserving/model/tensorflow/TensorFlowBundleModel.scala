@@ -97,27 +97,27 @@ abstract class TensorFlowBundleModel[RECORD, RESULT](inputStream: Array[Byte]) e
       signature._1 -> Signature(parseInputOutput(signature._2.getInputsMap.asScala), parseInputOutput(signature._2.getOutputsMap.asScala))).toMap
   }
 
-  private def parseInputOutput(inputOutputs: MMap[String, TensorInfo]): Map[String, Field] = {
-    inputOutputs.map(inputOutput => {
-      var name = ""
-      var dtype: Descriptors.EnumValueDescriptor = null
-      var shape = Seq.empty[Int]
-      inputOutput._2.getAllFields.asScala.foreach(descriptor => {
-        if (descriptor._1.getName.contains("shape")) {
-          descriptor._2.asInstanceOf[TensorShapeProto].getDimList.toArray.map(d =>
-            d.asInstanceOf[TensorShapeProto.Dim].getSize).toSeq.foreach(v => shape = shape :+ v.toInt)
+  private def parseInputOutput(inputOutputs: MMap[String, TensorInfo]): Map[String, Field] =
+    inputOutputs.map {
+      case (key, info) =>
+        var name = ""
+        var dtype: Descriptors.EnumValueDescriptor = null
+        var shape = Seq.empty[Int]
+        info.getAllFields.asScala.foreach { descriptor =>
+          if (descriptor._1.getName.contains("shape")) {
+            descriptor._2.asInstanceOf[TensorShapeProto].getDimList.toArray.map(d =>
+              d.asInstanceOf[TensorShapeProto.Dim].getSize).toSeq.foreach(v => shape = shape :+ v.toInt)
 
+          }
+          if (descriptor._1.getName.contains("name")) {
+            name = descriptor._2.toString.split(":")(0)
+          }
+          if (descriptor._1.getName.contains("dtype")) {
+            dtype = descriptor._2.asInstanceOf[Descriptors.EnumValueDescriptor]
+          }
         }
-        if (descriptor._1.getName.contains("name")) {
-          name = descriptor._2.toString.split(":")(0)
-        }
-        if (descriptor._1.getName.contains("dtype")) {
-          dtype = descriptor._2.asInstanceOf[Descriptors.EnumValueDescriptor]
-        }
-      })
-      inputOutput._1 -> Field(name, dtype, shape)
-    }).toMap
-  }
+        key -> Field(name, dtype, shape)
+    }.toMap
 
   // This method gets all tags in the saved bundle and uses the first one. If you need a specific tag, overwrite this method
   // With a seq (of one) tags returning desired tag.
@@ -130,8 +130,9 @@ abstract class TensorFlowBundleModel[RECORD, RESULT](inputStream: Array[Byte]) e
       val byteArray = Files.readAllBytes(pbfiles(0).toPath)
       SavedModel.parseFrom(byteArray).getMetaGraphsList.asScala.
         flatMap(graph => graph.getMetaInfoDef.getTagsList.asByteStringList.asScala.map(_.toStringUtf8))
-    } else
+    } else {
       Seq.empty
+    }
   }
 }
 

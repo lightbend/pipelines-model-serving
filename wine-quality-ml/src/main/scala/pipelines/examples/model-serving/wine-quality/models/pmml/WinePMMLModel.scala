@@ -14,7 +14,7 @@ import scala.collection.JavaConverters._
 class WinePMMLModel(inputStream: Array[Byte]) extends PMMLModel[WineRecord, Double](inputStream) {
 
   /** Scoring (using PMML evaluator) */
-  override def score(input: WineRecord): Double = {
+  override def score(input: WineRecord): Either[String, Double] = {
     // Clear arguments (from previous run)
     arguments.clear()
     // Populate input based on record
@@ -26,10 +26,11 @@ class WinePMMLModel(inputStream: Array[Byte]) extends PMMLModel[WineRecord, Doub
     val result = evaluator.evaluate(arguments.asJava)
 
     // Prepare output
-    result.get(tname) match {
+    val d = result.get(tname) match {
       case c: Computable ⇒ c.getResult.toString.toDouble
       case v: Any ⇒ v.asInstanceOf[Double]
     }
+    Right(d)
   }
 }
 
@@ -38,13 +39,11 @@ class WinePMMLModel(inputStream: Array[Byte]) extends PMMLModel[WineRecord, Doub
  */
 object WinePMMLModel extends ModelFactory[WineRecord, Double] {
 
-  override def create(input: ModelToServe): Option[Model[WineRecord, Double]] = {
-    try {
-      Some(new WinePMMLModel(input.model))
-    } catch {
-      case _: Throwable ⇒ None
-    }
-  }
+  val modelName = "WinePMMLModel"
 
-  override def restore(bytes: Array[Byte]): Model[WineRecord, Double] = new WinePMMLModel(bytes)
+  def make(input: ModelToServe): Model[WineRecord, Double] =
+    new WinePMMLModel(input.model)
+
+  def make(bytes: Array[Byte]): Model[WineRecord, Double] =
+    new WinePMMLModel(bytes)
 }

@@ -39,14 +39,14 @@ abstract class TensorFlowServingModel[RECORD, RESULT, HTTPREQUEST, HTTPRESULT](i
     }
   }
 
-  // Convert incoming request to HTTP
+  /** Convert incoming request to HTTP */
   def getHTTPRequest(input: RECORD): HTTPREQUEST
 
-  // Convert HTTPResult to Result
-  def getResult(result: HTTPRESULT, input: RECORD): RESULT
+  /** Convert HTTPResult to Result */
+  def getResult(result: HTTPRESULT, input: RECORD): Either[String, RESULT]
 
   /** Score a record with the model */
-  override def score(input: RECORD): RESULT = {
+  override def score(input: RECORD): Either[String, RESULT] = {
     // Post request
     val result = Http(path).postData(gson.toJson(getHTTPRequest(input))).header("content-type", "application/json").asString
     result.code match {
@@ -54,8 +54,7 @@ abstract class TensorFlowServingModel[RECORD, RESULT, HTTPREQUEST, HTTPRESULT](i
         val prediction = gson.fromJson(result.body, clazz)
         getResult(prediction, input)
       case _ => // Error
-        println(s"Error processing serving request - code ${result.code}, error ${result.body}")
-        null.asInstanceOf[RESULT]
+        Left(s"Error processing serving request - code ${result.code}, error ${result.body}")
     }
   }
 }

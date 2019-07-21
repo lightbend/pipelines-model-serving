@@ -14,7 +14,7 @@ class WineTensorFlowModel(inputStream: Array[Byte]) extends TensorFlowModel[Wine
   import WineTensorFlowModel._
 
   /** Score a wine record with the model */
-  override def score(input: WineRecord): Double = {
+  override def score(input: WineRecord): Either[String, Double] = try {
 
     // Create input tensor
     val modelInput = toTensor(input)
@@ -26,7 +26,10 @@ class WineTensorFlowModel(inputStream: Array[Byte]) extends TensorFlowModel[Wine
     val rMatrix = Array.ofDim[Float](rshape(0).asInstanceOf[Int], rshape(1).asInstanceOf[Int])
     result.copyTo(rMatrix)
     // Get result
-    rMatrix(0).indices.maxBy(rMatrix(0)).toDouble
+    Right(rMatrix(0).indices.maxBy(rMatrix(0)).toDouble)
+  } catch {
+    case scala.util.control.NonFatal(th) =>
+      Left("WineTensorFlowModel.score failed: $th")
   }
 }
 
@@ -49,13 +52,11 @@ object WineTensorFlowModel extends ModelFactory[WineRecord, Double] {
     Tensor.create(Array(data))
   }
 
-  override def create(input: ModelToServe): Option[Model[WineRecord, Double]] = {
-    try {
-      Some(new WineTensorFlowModel(input.model))
-    } catch {
-      case _: Throwable ⇒ None
-    }
-  }
+  val modelName = "WineTensorFlowModel"
 
-  override def restore(bytes: Array[Byte]): Model[WineRecord, Double] = new WineTensorFlowModel(bytes)
+  def make(input: ModelToServe): Model[WineRecord, Double] =
+    new WineTensorFlowModel(input.model)
+
+  def make(bytes: Array[Byte]): Model[WineRecord, Double] =
+    new WineTensorFlowModel(bytes)
 }
