@@ -79,14 +79,20 @@ object ModelToServe {
   }
 
   /** Get the model from ModelToServe */
-  def toModel[RECORD, RESULT](model: ModelToServe): Option[Model[RECORD, RESULT]] = {
-    validateResolver()
-    resolver.getFactory(model.modelType) match {
-      case Some(factory) => factory.create(model) match {
-        case Some(model) => Some(model.asInstanceOf[Model[RECORD, RESULT]])
-        case _ => None
+  def toModel[RECORD, RESULT](model: ModelToServe): Either[String, Model[RECORD, RESULT]] = {
+    def errPrefix = s"ModelToServe.toModel(model = $model): "
+    try {
+      validateResolver()
+      resolver.getFactory(model.modelType) match {
+        case Some(factory) => factory.create(model) match {
+          case Some(model) => Right(model.asInstanceOf[Model[RECORD, RESULT]])
+          case _ => Left(s"$errPrefix Factory found, but it could not create the model.")
+        }
+        case _ => Left(s"$errPrefix No factory found for model type ${model.modelType}.")
       }
-      case _ => None
+    } catch {
+      case scala.util.control.NonFatal(th) =>
+        Left(s"ModelToServe.toModel(model = $model) failed: $th")
     }
   }
 

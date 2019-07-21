@@ -31,7 +31,7 @@ class ModelServingActor[RECORD, RESULT](dataType: String) extends Actor {
       println(s"Updated model: $model")
 
       ModelToServe.toModel[RECORD, RESULT](model) match {
-        case Some(m) => // Successfully got a new model
+        case Right(m) =>
           // close current model first
           currentModel.foreach(_.cleanup())
           // Update model and state
@@ -39,8 +39,8 @@ class ModelServingActor[RECORD, RESULT](dataType: String) extends Actor {
           currentState = Some(ModelToServeStats(model))
           // persist new model
           FilePersistence.saveState(dataType, m, model.name, model.description)
-        case _ => // Failed converting
-          println(s"Failed to convert model: $model")
+        case Left(error) =>
+          println(s"ERROR: (ModelServingActor.receive) Failed to convert model ($model). Error: $error")
       }
       sender() ! Done
 
