@@ -11,9 +11,10 @@ import java.io.{ ByteArrayOutputStream, PrintStream }
  *    logging libraries that are initialized first, even when configured to write
  *    to the console, and possibly some multi-threaded apps. Hence, this class
  *    has limited power.
- * 2. When run with sbt interactively, it appears that stdout isn't always restored
- *    properly, so subsequent sbt prompts and the commands you type aren't echoed!
- *    The workaround is to restart sbt.
+ * 2. When run with sbt interactively, _without_ `fork := true`, it appears that
+ *    stdout isn't always restored properly, so subsequent sbt prompts and the
+ *    commands you type are no longer echoed (but still work otherwise)! So, either
+ *    set `fork := true` or restart sbt when this happens.
  */
 trait OutputInterceptor {
 
