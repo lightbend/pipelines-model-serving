@@ -40,7 +40,7 @@ class ModelServingActor[RECORD, RESULT](dataType: String) extends Actor {
           // persist new model
           FilePersistence.saveState(dataType, m, model.name, model.description)
         case _ => // Failed converting
-          println(s"Failed to convert model: ${model.model}")
+          println(s"Failed to convert model: $model")
       }
       sender() ! Done
 
