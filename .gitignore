@@ -31,3 +31,4 @@ project/activator-sbt*
 airline-flights-ml/persistence/
 tmp/
 
+persistence

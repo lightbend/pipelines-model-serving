@@ -1,15 +1,15 @@
 package pipelines.examples.modelserving.winequality.models.tensorflow
 
 import com.lightbend.modelserving.model.tensorflow.TensorFlowModel
-import com.lightbend.modelserving.model.{ Model, ModelFactory }
-import com.lightbend.modelserving.model.ModelToServe
+import com.lightbend.modelserving.model.{ Model, ModelFactory, ModelMetadata }
 import org.tensorflow.Tensor
 import pipelines.examples.modelserving.winequality.data.WineRecord
 
 /**
  * TensorFlow model implementation for wine data
  */
-class WineTensorFlowModel(inputStream: Array[Byte]) extends TensorFlowModel[WineRecord, Double](inputStream) {
+class WineTensorFlowModel(metadata: ModelMetadata)
+  extends TensorFlowModel[WineRecord, Double](metadata) {
 
   import WineTensorFlowModel._
 
@@ -54,9 +54,6 @@ object WineTensorFlowModel extends ModelFactory[WineRecord, Double] {
 
   val modelName = "WineTensorFlowModel"
 
-  def make(input: ModelToServe): Model[WineRecord, Double] =
-    new WineTensorFlowModel(input.model)
-
-  def make(bytes: Array[Byte]): Model[WineRecord, Double] =
-    new WineTensorFlowModel(bytes)
+  def make(input: ModelMetadata): Model[WineRecord, Double] =
+    new WineTensorFlowModel(input)
 }

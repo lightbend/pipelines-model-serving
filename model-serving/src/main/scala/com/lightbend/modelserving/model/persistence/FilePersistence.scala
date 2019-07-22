@@ -1,17 +1,18 @@
 package com.lightbend.modelserving.model.persistence
 
-import java.io.{ DataInputStream, DataOutputStream, File, FileInputStream, FileOutputStream }
+import java.io.{ File, FileInputStream, FileOutputStream, ObjectInputStream, ObjectOutputStream }
 import java.nio.channels.{ FileChannel, FileLock }
 
-import com.lightbend.modelserving.model.{ Model, ModelManager, ModelToServe }
+import com.lightbend.modelserving.model.{ Model, ModelManager, ModelMetadata }
 
 /**
  * Persists the state information to a file for quick recovery.
+ * @param modelManager that encapsulates handling of Model I/O, etc.
+ * @param baseDirPath where to write the persistent models.
  */
-
-final case class FilePersistence[RECORD, RESULT](modelManager: ModelManager[RECORD, RESULT]) {
-
-  private final val baseDir = "persistence"
+final case class FilePersistence[RECORD, RESULT](
+  modelManager: ModelManager[RECORD, RESULT],
+  baseDirPath: String = "persistence") {
 
   private def getLock(fileChannel: FileChannel, shared: Boolean): (FileLock, Boolean) = {
     try {
@@ -24,110 +25,137 @@ final case class FilePersistence[RECORD, RESULT](modelManager: ModelManager[RECO
     }
   }
 
-  private def obtainLock(fileChannel: FileChannel, shared: Boolean): FileLock = getLock(fileChannel, shared) match {
-    case lck if (lck._2) =>
-      lck._1 match {
-        case null => // retry after wait
-          Thread.sleep(10)
-          obtainLock(fileChannel, shared)
-        case _ => // we got it
-          lck._1
-      }
-    case _ => null
-  }
-
-  // Gets ByteBuffer with exlsive lock on the file
-  private def getDataInputStream(fileName: String): Either[String, FileInputStream] = {
-    val file = new File(baseDir + "/" + fileName)
-    if (file.exists()) {
-      val fis = new FileInputStream(file)
-      val lock = obtainLock(fis.getChannel(), true)
-      lock match {
-        case null => Left(s"Failed to get lock for input stream for file $file")
-        case _ => Right(fis)
-      }
-    } else {
-      Left(s"getDataInputStream: $file doesn't exist! (basedir = $baseDir, fileName = $fileName)")
+  private def obtainLock(fileChannel: FileChannel, shared: Boolean): FileLock =
+    getLock(fileChannel, shared) match {
+      case lck if (lck._2) =>
+        lck._1 match {
+          case null => // retry after wait
+            Thread.sleep(10)
+            obtainLock(fileChannel, shared)
+          case _ => // we got it
+            lck._1
+        }
+      case _ => null
     }
+
+  protected def fullPath(path: String): String = baseDirPath + "/" + path
+
+  def stateExists(path: String): Boolean = {
+    val file = new File(fullPath(path))
+    file.exists()
   }
 
-  private def getDataOutputStream(fileName: String): Either[String, FileOutputStream] = {
+  // Gets an exclusive lock on the file
+  // Both are returned so we can close the channels for the file...
+  private def getInputStream(fileName: String): Either[String, (ObjectInputStream, FileInputStream)] = try {
+    val file = new File(baseDirPath + "/" + fileName)
+    val fis = new FileInputStream(file)
+    val lock = obtainLock(fis.getChannel(), true)
+    lock match {
+      case null => Left(s"Failed to get lock for input stream for file $file")
+      case _ =>
+        val is = new ObjectInputStream(fis)
+        Right(is -> fis)
+    }
+  } catch {
+    case scala.util.control.NonFatal(th) =>
+      Left(s"getInputStream failed: Does input ${fullPath(fileName)} exist? $th")
+  }
 
-    val dir = new File(baseDir)
+  // Both are returned so we can close the channels for the file...
+  private def getOutputStream(fileName: String): Either[String, (ObjectOutputStream, FileOutputStream)] = try {
+    val dir = new File(baseDirPath)
     if (!dir.exists()) dir.mkdir()
     val file = new File(dir, fileName)
     if (!file.exists()) file.createNewFile()
     val fos = new FileOutputStream(file)
     val lock = obtainLock(fos.getChannel(), false)
     lock match {
-      case null => Left(s"Failed to get lock for output stream for file $file")
-      case _ => Right(fos)
+      case null =>
+        Left(s"Failed to get lock for output stream for file $file")
+      case _ =>
+        val os = new ObjectOutputStream(fos)
+        Right(os -> fos)
     }
+  } catch {
+    case scala.util.control.NonFatal(th) =>
+      Left(s"getOutputStream failed: Is the ${fullPath(fileName)} location writable? $th")
   }
-
   /**
-   * Save the state to a file system.
-   * @return either an error string or true.
-   */
-  def saveState(
-    dataType: String,
-    model: Model[RECORD, RESULT],
-    name: String,
-    description: String): Either[String, Boolean] =
-    getDataOutputStream(dataType) match {
-      case Right(output) =>
-        try {
-          val bytes = model.toBytes
-          val dos = new DataOutputStream(output)
-          dos.writeUTF(name)
-          dos.writeUTF(description)
-          dos.writeLong(bytes.length)
-          dos.writeLong(model.getType.ordinal())
-          dos.write(bytes)
-          Right(true)
-        } catch {
-          case t: Throwable =>
-            Left(s"Error saving state for data type $dataType, name $name, description $description. $t" + formatStackTrace(t))
-        } finally {
-          output.flush()
-          output.close()
-          output.getChannel.close()
-        }
-      case Left(error) =>
-        Left(s"Error saving state for data type $dataType, name $name, description $description. $error")
-    }
-
-  /**
-   * Restore the state from a file system.
+   * Restore the state from a file system. Use [[stateExists]] first to determine
+   * if there is state to restore, as this method returns an error string if the
+   * state isn't already persisted.
    * @return either an error string or the model and related data.
    */
   def restoreState(
-    dataType: String): Either[String, (Model[RECORD, RESULT], String, String)] =
-    getDataInputStream(dataType) match {
-      case Right(input) =>
-        val dis = new DataInputStream(input)
+    fileName: String): Either[String, Model[RECORD, RESULT]] =
+    getInputStream(fileName) match {
+      case Right((is, fis)) =>
         try {
-          val name = dis.readUTF()
-          val description = dis.readUTF()
-          val length = dis.readLong.toInt
-          val modelType = dis.readLong.toInt
-          val bytes = new Array[Byte](length)
-          dis.read(bytes)
-          modelManager.restore(modelType, bytes) match {
-            case Right(model) => Right((model, name, description))
+          val metadata = ModelMetadata.read(is)
+          // val name = dis.readUTF()
+          // val description = dis.readUTF()
+          // val length = dis.readLong.toInt
+          // val modelType = dis.readLong.toInt
+          // val bytes = new Array[Byte](length)
+          // dis.read(bytes)
+
+          // val metadata = ModelMetadata(
+          //   name = name,
+          //   description = description,
+          //   modelType = modelType,
+          //   modelBytes = bytes,
+          //   location = Some(fileName))
+          // // dataType = dataType)
+
+          modelManager.create(metadata) match {
+            case Right(model) => Right(model)
             case Left(error) =>
-              Left(s"Could not restore the state for dataType $dataType (name = $name, description = $description, length = $length, modelType = $modelType). $error")
+              Left(s"Could not restore the state for source $fileName (metadata = $metadata). $error")
           }
         } catch {
           case t: Throwable =>
-            Left(s"Error restoring state for data type $dataType. $t" + formatStackTrace(t))
+            Left(s"Error restoring state for data type $fileName. $t" + formatStackTrace(t))
         } finally {
-          dis.close()
-          input.getChannel.close()
+          is.close()
+          fis.getChannel.close()
         }
       case Left(error) =>
-        Left(s"Error restoring state for data type; failed to get the input streams for data type $dataType. $error")
+        Left(s"Error restoring state for data type; failed to get the input streams for data type $fileName. $error")
     }
+
+  /**
+   * Save the state to a file system.
+   * @param model to persist.
+   * @param filePath the location to write the state, _relative_ to the "baseDirPath".
+   * @return either an error string or true.
+   */
+  def saveState(
+    model: Model[RECORD, RESULT],
+    filePath: String): Either[String, Boolean] = {
+    getOutputStream(filePath) match {
+      case Right((os, fos)) =>
+        try {
+          ModelMetadata.write(model.metadata, os)
+          // dos.writeUTF(model.metadata.name)
+          // dos.writeUTF(model.metadata.description)
+          // val bytes = model.metadata.modelBytes
+          // dos.writeLong(model.metadata.modelType)
+          // dos.writeLong(bytes.length)
+          // dos.write(bytes)
+          Right(true)
+        } catch {
+          case t: Throwable =>
+            Left(s"Error saving state for data type $filePath. $t" + formatStackTrace(t))
+        } finally {
+          os.flush()
+          os.close()
+          fos.getChannel.close()
+        }
+      case Left(error) =>
+        Left(s"Error saving state for data type $filePath. $error")
+    }
+  }
 
   private def formatStackTrace(th: Throwable): String = th.getStackTrace().mkString("\n  ", "\n  ", "\n")
 }

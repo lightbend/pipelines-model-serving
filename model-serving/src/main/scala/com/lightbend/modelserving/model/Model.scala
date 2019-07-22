@@ -13,9 +13,6 @@ trait Model[RECORD, RESULT] {
   /** Abstraction for cleaning up resources */
   def cleanup(): Unit
 
-  /** Serialize the model to bytes */
-  def toBytes(): Array[Byte]
-
-  /** Get the type of model. */
-  def getType: ModelType
+  /** The metadata about the model including the model type. */
+  val metadata: ModelMetadata
 }

@@ -8,54 +8,60 @@ import com.lightbend.modelserving.model.persistence.FilePersistence
 
 /**
  * Actor that handles messages to update a model and to score records using the current model.
- * @param dataType indicating either the record type or model parameters. Used as a file name.
+ * @param label used as a key to determine when to use this model and also as part of a file name for persistence of it.
  */
-class ModelServingActor[RECORD, RESULT](dataType: String, modelManager: ModelManager[RECORD, RESULT]) extends Actor {
+class ModelServingActor[RECORD, RESULT](label: String, modelManager: ModelManager[RECORD, RESULT]) extends Actor {
 
   val log = Logging(context.system, this)
-  log.info(s"Creating model serving actor for $dataType")
+  log.info(s"Creating ModelServingActor for $label")
 
   private var filePersistence = FilePersistence[RECORD, RESULT](modelManager)
 
   private var currentModel: Option[Model[RECORD, RESULT]] = None
-  var currentState: Option[ModelToServeStats] = None
+  var currentState: Option[ModelServingStats] = None
 
   override def preStart {
-    filePersistence.restoreState(dataType) match {
-      case Right((model, name, description)) =>
-        currentModel = Some(model)
-        currentState = Some(ModelToServeStats(name, description, model.getType.ordinal(), System.currentTimeMillis()))
-        log.info(s"Restored model $name - $description")
-      case Left(error) =>
-        log.error(error)
+    // check first to see if there's anything to restore...
+    if (filePersistence.stateExists(label)) {
+      filePersistence.restoreState(label) match {
+        case Right(model) =>
+          currentModel = Some(model)
+          currentState = Some(
+            ModelServingStats(
+              modelType = model.metadata.modelType,
+              name = model.metadata.name,
+              description = model.metadata.description,
+              since = System.currentTimeMillis()))
+          log.info(s"Restored model with metadata ${model.metadata}")
+        case Left(error) =>
+          log.error(error)
+      }
     }
   }
 
   override def receive: PartialFunction[Any, Unit] = {
-    case model: ModelToServe =>
-      // Update model
-      log.info(s"Received new model: $model")
+    case metadata: ModelMetadata =>
+      log.info(s"Received new model from metadata: $metadata")
 
-      modelManager.toModel(model) match {
-        case Right(m) =>
+      modelManager.create(metadata) match {
+        case Right(newModel) =>
           // close current model first
           currentModel.foreach(_.cleanup())
           // Update model and state
-          currentModel = Some(m)
-          currentState = Some(ModelToServeStats(model))
+          currentModel = Some(newModel)
+          currentState = Some(ModelServingStats(newModel.metadata))
           // persist new model
-          filePersistence.saveState(dataType, m, model.name, model.description) match {
+          filePersistence.saveState(newModel, metadata.constructName()) match {
             case Left(error) => log.error(error)
-            case Right(true) => log.info(s"Successfully saved state for model type $dataType, model name = ${model.name}")
-            case Right(false) => log.error("BUG: FilePersistence.saveState returned Right(false).")
+            case Right(true) => log.info(s"Successfully saved state for model $newModel")
+            case Right(false) => log.error(s"BUG: FilePersistence.saveState returned Right(false) for model $newModel.")
           }
         case Left(error) =>
-          log.error(s"Failed to instantiate the model: $error")
+          log.error(s"Failed to instantiate the model with metadata $metadata: $error")
       }
       sender() ! Done
 
     case record: DataToServe[RECORD] =>
-      // Process data
       currentModel match {
         case Some(model) =>
           val start = System.currentTimeMillis()
@@ -70,19 +76,20 @@ class ModelServingActor[RECORD, RESULT](dataType: String, modelManager: ModelMan
           sender() ! ServingResult("No model available")
       }
 
-    case _: GetState => {
-      // State query
-      sender() ! currentState.getOrElse(ModelToServeStats())
-    }
+    case _: GetState =>
+      sender() ! currentState.getOrElse(ModelServingStats.unknown)
+
+    case unknown =>
+      log.error(s"ModelServingActor: Unknown actor message received: $unknown")
   }
 }
 
 object ModelServingActor {
   def props[RECORD, RESULT](
-    dataType: String,
+    label: String,
     modelManager: ModelManager[RECORD, RESULT]): Props =
-    Props(new ModelServingActor[RECORD, RESULT](dataType, modelManager))
+    Props(new ModelServingActor[RECORD, RESULT](label, modelManager))
 }
 
 /** Used as an Actor message. */
-case class GetState(dataType: String)
+case class GetState(label: String)

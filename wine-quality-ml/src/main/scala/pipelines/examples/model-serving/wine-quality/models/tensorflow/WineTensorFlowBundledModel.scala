@@ -1,14 +1,15 @@
 package pipelines.examples.modelserving.winequality.models.tensorflow
 
 import com.lightbend.modelserving.model.tensorflow.TensorFlowBundleModel
-import com.lightbend.modelserving.model.{ Model, ModelFactory }
-import com.lightbend.modelserving.model.ModelToServe
+import com.lightbend.modelserving.model.{ Model, ModelMetadata, ModelFactory }
+import com.lightbend.modelserving.model.ModelMetadata
 import pipelines.examples.modelserving.winequality.data.WineRecord
 
 /**
  * Implementation of TensorFlow bundled model for Wine.
  */
-class WineTensorFlowBundledModel(inputStream: Array[Byte]) extends TensorFlowBundleModel[WineRecord, Double](inputStream) {
+class WineTensorFlowBundledModel(metadata: ModelMetadata)
+  extends TensorFlowBundleModel[WineRecord, Double](metadata) {
 
   override def score(input: WineRecord): Either[String, Double] = try {
     // Create input tensor
@@ -42,16 +43,7 @@ object WineTensorFlowBundledModel extends ModelFactory[WineRecord, Double] {
    * @param descriptor model to serve representation of TensorFlow bundled model.
    * @return model
    */
-  def make(input: ModelToServe): Model[WineRecord, Double] =
-    new WineTensorFlowBundledModel(input.location.getBytes)
-
-  /**
-   * Restore PMML model from binary.
-   *
-   * @param bytes binary representation of TensorFlow bundled model.
-   * @return model
-   */
-  def make(bytes: Array[Byte]): Model[WineRecord, Double] =
-    new WineTensorFlowBundledModel(bytes)
+  def make(metadata: ModelMetadata): Model[WineRecord, Double] =
+    new WineTensorFlowBundledModel(metadata)
 }
 

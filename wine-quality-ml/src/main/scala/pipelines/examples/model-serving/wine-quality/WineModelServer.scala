@@ -8,7 +8,7 @@ import akka.stream.scaladsl.Sink
 import akka.pattern.ask
 import akka.util.Timeout
 import com.lightbend.modelserving.model.actor.{ ModelServingActor, ModelServingManager }
-import com.lightbend.modelserving.model.{ ModelDescriptor, ModelManager, ModelType, ModelToServe, ServingActorResolver, ServingResult }
+import com.lightbend.modelserving.model.{ ModelDescriptor, ModelManager, ModelType, ModelMetadata, ServingActorResolver, ServingResult }
 import pipelines.akkastream.AkkaStreamlet
 import pipelines.akkastream.scaladsl.{ FlowWithPipelinesContext, RunnableGraphStreamletLogic }
 import pipelines.streamlets.StreamletShape
@@ -27,11 +27,11 @@ final case object WineModelServer extends AkkaStreamlet {
   override final def createLogic = new RunnableGraphStreamletLogic() {
 
     val modelManager = new ModelManager[WineRecord, Double](WineFactoryResolver)
-    val actors = Map(dtype ->
-      context.system.actorOf(ModelServingActor.props[WineRecord, Double](dtype, modelManager)))
+    val actor = context.system.actorOf(
+      ModelServingActor.props[WineRecord, Double](dtype, modelManager))
+    val resolver = new ServingActorResolver(Map(dtype -> actor), Some(actor))
 
-    val modelserver = context.system.actorOf(
-      ModelServingManager.props(new ServingActorResolver(actors)))
+    val modelserver = context.system.actorOf(ModelServingManager.props(resolver))
 
     implicit val askTimeout: Timeout = Timeout(30.seconds)
 
@@ -49,9 +49,9 @@ final case object WineModelServer extends AkkaStreamlet {
       }
     protected def modelFlow =
       FlowWithPipelinesContext[ModelDescriptor].map {
-        model ⇒ modelManager.fromModelRecord(model)
+        descriptor ⇒ ModelMetadata(descriptor, None)
       }.mapAsync(1) {
-        model ⇒ modelserver.ask(model).mapTo[Done]
+        metadata ⇒ modelserver.ask(metadata).mapTo[Done]
       }
   }
 }
@@ -69,13 +69,15 @@ object WineModelServerMain {
 
     val modelserver = system.actorOf(ModelServingManager.props(new ServingActorResolver(actors)))
 
-    val is = this.getClass.getClassLoader.getResourceAsStream("wine/models/winequalityDecisionTreeClassification.pmml")
+    val path = "wine/models/winequalityDecisionTreeClassification.pmml"
+    val is = this.getClass.getClassLoader.getResourceAsStream(path)
     val pmml = new Array[Byte](is.available)
     is.read(pmml)
-    val model = new ModelDescriptor(name = "Wine Model", description = "winequalityDecisionTreeClassification",
+    val descriptor = new ModelDescriptor(name = "Wine Model", description = "winequalityDecisionTreeClassification",
       dataType = dtype, modeltype = ModelType.PMML, modeldata = Some(pmml), modeldatalocation = None)
 
-    modelserver.ask(modelManager.fromModelRecord(model))
+    val metadata = ModelMetadata(descriptor, Some(path))
+    modelserver.ask(metadata)
     Thread.sleep(100)
 
     val record = WineRecord(.0, .0, .0, .0, .0, .0, .0, .0, .0, .0, .0, dtype)

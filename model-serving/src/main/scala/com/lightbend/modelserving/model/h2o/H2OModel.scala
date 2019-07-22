@@ -3,22 +3,22 @@ package com.lightbend.modelserving.model.h2o
 import java.io.{ ByteArrayInputStream, ByteArrayOutputStream, ObjectInputStream, ObjectOutputStream, Serializable }
 import java.util.zip.ZipInputStream
 
-import com.lightbend.modelserving.model.{ Model, ModelType }
+import com.lightbend.modelserving.model.{ Model, ModelMetadata, ModelType }
 import hex.ModelCategory
 import hex.genmodel.{ InMemoryMojoReaderBackend, MojoModel }
 import hex.genmodel.easy.EasyPredictModelWrapper
 
 import scala.collection.JavaConverters._
 
-abstract class H2OModel[RECORD, RESULT](inputStream: Array[Byte]) extends Model[RECORD, RESULT] with Serializable {
+abstract class H2OModel[RECORD, RESULT](val metadata: ModelMetadata)
+  extends Model[RECORD, RESULT] with Serializable {
 
-  var bytes = inputStream
   var model: EasyPredictModelWrapper = _
   setup()
 
   private def setup(): Unit = {
     val filesMap = scala.collection.mutable.Map[String, Array[Byte]]()
-    val zis = new ZipInputStream(new ByteArrayInputStream(inputStream))
+    val zis = new ZipInputStream(new ByteArrayInputStream(metadata.modelBytes))
     Stream.continually(zis.getNextEntry).takeWhile(_ != null).foreach { file =>
       val buffer = new Array[Byte](1024)
       val content = new ByteArrayOutputStream()
@@ -37,43 +37,37 @@ abstract class H2OModel[RECORD, RESULT](inputStream: Array[Byte]) extends Model[
   /** Abstraction for cleaning up resources */
   override def cleanup(): Unit = {}
 
-  /** Serialize the model to bytes */
-  override def toBytes(): Array[Byte] = bytes
-
-  /** Get the type of model. */
-  override def getType = ModelType.H2O
-
   /** Validate model type. */
   private def verifyModelType(mc: ModelCategory): Boolean = mc match {
     case ModelCategory.Unknown => false
     case _ => true
   }
 
-  override def equals(obj: Any): Boolean = {
-    obj match {
-      case h2oModel: H2OModel[RECORD, RESULT] ⇒
-        h2oModel.toBytes.toList == inputStream.toList
-      case _ ⇒ false
-    }
-  }
+  // private def writeObject(output: ObjectOutputStream): Unit = {
+  //   val start = System.currentTimeMillis()
+  //   output.writeObject(metadata)
+  //   println(s"H2O serialization in ${System.currentTimeMillis() - start} ms")
+  // }
 
-  private def writeObject(output: ObjectOutputStream): Unit = {
-    val start = System.currentTimeMillis()
-    output.writeObject(bytes)
-    println(s"H2O serialization in ${System.currentTimeMillis() - start} ms")
-  }
+  // private def readObject(input: ObjectInputStream): Unit = {
+  //   val start = System.currentTimeMillis()
+  //   metadata = input.readObject().asInstanceOf[ModelMetadata]
+  //   try {
+  //     setup()
+  //     println(s"H2O deserialization in ${System.currentTimeMillis() - start} ms")
+  //   } catch {
+  //     case t: Throwable ⇒
+  //       throw new RuntimeException(
+  //         s"H2OModel deserialization failed in ${System.currentTimeMillis() - start} ms", t)
+  //   }
+  // }
+}
 
-  private def readObject(input: ObjectInputStream): Unit = {
-    val start = System.currentTimeMillis()
-    bytes = input.readObject().asInstanceOf[Array[Byte]]
-    // Marshall H2O
-    try {
-      setup()
-      println(s"H2O deserialization in ${System.currentTimeMillis() - start} ms")
-    } catch {
-      case t: Throwable ⇒
-        println(s"H2O deserialization failed in ${System.currentTimeMillis() - start} ms")
-        println(s"Exception $t")
-    }
-  }
+object H2OModel {
+  def defaultMetadata: ModelMetadata = ModelMetadata(
+    name = "H2O Model",
+    description = "",
+    modelType = ModelType.H2O.ordinal,
+    modelBytes = Array.empty[Byte],
+    location = None)
 }

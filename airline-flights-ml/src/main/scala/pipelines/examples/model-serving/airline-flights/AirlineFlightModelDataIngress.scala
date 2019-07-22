@@ -41,9 +41,12 @@ protected final class ModelDescriptorProvider() {
   def getModelDescriptor(): ModelDescriptor = {
     index = index + 1
     new ModelDescriptor(
-      name = s"Airline flight Model $index", description = "Airline H2O flight Model",
-      modeltype = ModelType.H2O, modeldata = Some(mojo),
-      modeldatalocation = None, dataType = "airline")
+      name = s"Airline flight Model $index",
+      description = "Airline H2O flight Model",
+      modeltype = ModelType.H2O,
+      modeldata = Some(mojo),
+      modeldatalocation = None,
+      dataType = "airline")
   }
 }
 

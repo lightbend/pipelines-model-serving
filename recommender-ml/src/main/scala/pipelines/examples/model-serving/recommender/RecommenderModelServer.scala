@@ -2,7 +2,7 @@ package pipelines.examples.modelserving.recommender
 
 import pipelines.examples.modelserving.recommender.data.{ ProductPrediction, RecommenderRecord, RecommendationResult }
 import com.lightbend.modelserving.model.actor.{ ModelServingActor, ModelServingManager }
-import com.lightbend.modelserving.model.{ ModelDescriptor, ModelManager, ModelType, ModelToServe, ServingActorResolver, ServingResult }
+import com.lightbend.modelserving.model.{ ModelDescriptor, ModelManager, ModelType, ModelMetadata, ServingActorResolver, ServingResult }
 import akka.Done
 import akka.actor.ActorSystem
 import akka.pattern.ask
@@ -25,13 +25,11 @@ final case object RecommenderModelServer extends AkkaStreamlet {
   override final def createLogic = new RunnableGraphStreamletLogic() {
 
     val modelManager = new ModelManager[RecommenderRecord, Seq[ProductPrediction]](RecommendationFactoryResolver)
+    val actor = context.system.actorOf(
+      ModelServingActor.props[RecommenderRecord, Seq[ProductPrediction]](dtype, modelManager))
+    val resolver = new ServingActorResolver(Map(dtype -> actor), Some(actor))
 
-    val actors = Map(dtype ->
-      context.system.actorOf(
-        ModelServingActor.props[RecommenderRecord, Seq[ProductPrediction]](dtype, modelManager)))
-
-    val modelserver = context.system.actorOf(
-      ModelServingManager.props(new ServingActorResolver(actors)))
+    val modelserver = context.system.actorOf(ModelServingManager.props(resolver))
 
     implicit val askTimeout: Timeout = Timeout(30.seconds)
 
@@ -44,16 +42,16 @@ final case object RecommenderModelServer extends AkkaStreamlet {
         data ⇒
           modelserver.ask(RecommendationDataRecord(data))
             .mapTo[ServingResult[Seq[ProductPrediction]]]
-      }.filter {
-        r ⇒ r.result != None
+        // }.filter {
+        //   r ⇒ r.result != None
       }.map {
         r ⇒ RecommendationResult(r.name, r.dataType, r.duration, r.result.get)
       }
     protected def modelFlow =
       FlowWithPipelinesContext[ModelDescriptor].map {
-        model ⇒ modelManager.fromModelRecord(model)
+        descriptor ⇒ ModelMetadata(descriptor, None)
       }.mapAsync(1) {
-        model ⇒ modelserver.ask(model).mapTo[Done]
+        metadata ⇒ modelserver.ask(metadata).mapTo[Done]
       }
   }
 }
@@ -69,11 +67,17 @@ object RecommenderModelServerMain {
     val actors = Map(dtype -> system.actorOf(ModelServingActor.props[RecommenderRecord, Seq[ProductPrediction]](dtype, modelManager)))
 
     val modelserver = system.actorOf(ModelServingManager.props(new ServingActorResolver(actors)))
-    val model = new ModelDescriptor(name = "Tensorflow Model", description = "For model Serving",
-      dataType = dtype, modeltype = ModelType.TENSORFLOWSERVING, modeldata = null,
+    val descriptor = new ModelDescriptor(
+      name = "Tensorflow Model",
+      description = "For model Serving",
+      dataType = dtype,
+      modeltype = ModelType.TENSORFLOWSERVING,
+      modeldata = null,
       modeldatalocation = Some("http://recommender1-service-kubeflow.lightshift.lightbend.com/v1/models/recommender1/versions/1:predict"))
 
-    modelserver.ask(modelManager.fromModelRecord(model))
+    val metadata = ModelMetadata(descriptor, None)
+    println(s"Sending metadata $metadata to the scoring engine...")
+    modelserver.ask(metadata)
     val record = new RecommenderRecord(10L, Seq(1L, 2L, 3L, 4L), dtype)
     Thread.sleep(1000)
     val result = modelserver.ask(RecommendationDataRecord(record)).mapTo[ServingResult[Seq[ProductPrediction]]]

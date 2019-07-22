@@ -2,40 +2,42 @@ package com.lightbend.modelserving.model.actor
 
 import akka.Done
 import akka.actor.{ Actor, Props }
+import akka.event.Logging
 import com.lightbend.modelserving.model._
 
 /**
- * Router actor, which routes both model and data (records) to an appropriate actor
+ * Router actor, which routes both model and data (records) to an appropriate actor.
  * Based on http://michalplachta.com/2016/01/23/scalability-using-sharding-from-akka-cluster/
  */
 class ModelServingManager(actorResolver: ServingActorResolver) extends Actor {
 
-  println(s"Creating model serving manager")
+  val log = Logging(context.system, this)
+  log.info(s"Creating model serving manager")
 
   override def receive: PartialFunction[Any, Unit] = {
-    case model: ModelToServe =>
-      actorResolver.getActor(model.dataType) match {
+    case metadata: ModelMetadata => // new model
+      actorResolver.getActor(metadata.modelType.toString) match {
         case Some(modelServer) =>
-          //          println(s"forwarding model request to $modelServer")
-          modelServer forward model
+          log.info(s"forwarding model metadata $metadata to $modelServer")
+          modelServer forward metadata
         case _ =>
-          println(s"no model server skipping")
+          log.error(s"no model server found for metadata $metadata. Skipping...")
           sender() ! Done
       }
 
-    case record: DataToServe[_] =>
+    case record: DataToServe[_] => // data to score with existing model(s)
       actorResolver.getActor(record.getType) match {
         case Some(modelServer) =>
-          //          println(s"forwarding data request to $modelServer")
+          //          log.info(s"forwarding data request to $modelServer")
           modelServer forward record
         case _ =>
-          println(s"no model server skipping")
+          log.error(s"no model server found for type ${record.getType}. Skipping...")
           sender() ! ServingResult("No model server available")
       }
 
-    case getState: GetState => actorResolver.getActor(getState.dataType) match {
+    case getState: GetState => actorResolver.getActor(getState.label) match {
       case Some(server) => server forward getState
-      case _ => sender() ! ModelToServeStats()
+      case _ => sender() ! ModelServingStats.unknown
     }
 
     case _: GetModels => sender() ! GetModelsResult(actorResolver.getActors())

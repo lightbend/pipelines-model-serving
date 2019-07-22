@@ -3,7 +3,7 @@ package pipelines.examples.modelserving.airlineflights
 import pipelines.examples.modelserving.airlineflights.data.{ AirlineFlightRecord, AirlineFlightResult }
 import pipelines.examples.modelserving.airlineflights.models.{ AirlineFlightDataRecord, AirlineFlightFactoryResolver }
 import com.lightbend.modelserving.model.actor.{ ModelServingActor, ModelServingManager }
-import com.lightbend.modelserving.model.{ ModelDescriptor, ModelManager, ModelType, ModelToServe, ServingActorResolver, ServingResult }
+import com.lightbend.modelserving.model.{ ModelDescriptor, ModelManager, ModelType, ModelMetadata, ServingActorResolver, ServingResult }
 import akka.Done
 import akka.actor.ActorSystem
 import akka.pattern.ask
@@ -27,13 +27,11 @@ final case object AirlineFlightModelServer extends AkkaStreamlet {
   override final def createLogic = new RunnableGraphStreamletLogic() {
 
     val modelManager = new ModelManager[AirlineFlightRecord, AirlineFlightResult](AirlineFlightFactoryResolver)
+    val actor = context.system.actorOf(
+      ModelServingActor.props[AirlineFlightRecord, AirlineFlightResult](dtype, modelManager))
+    val resolver = new ServingActorResolver(Map(dtype -> actor), Some(actor))
 
-    val actors = Map(dtype ->
-      context.system.actorOf(
-        ModelServingActor.props[AirlineFlightRecord, AirlineFlightResult](dtype, modelManager)))
-
-    val modelserver = context.system.actorOf(
-      ModelServingManager.props(new ServingActorResolver(actors)))
+    val modelserver = context.system.actorOf(ModelServingManager.props(resolver))
 
     implicit val askTimeout: Timeout = Timeout(30.seconds)
 
@@ -41,6 +39,7 @@ final case object AirlineFlightModelServer extends AkkaStreamlet {
       atLeastOnceSource(in1).via(modelFlow).runWith(Sink.ignore)
       atLeastOnceSource(in0).via(dataFlow).to(atLeastOnceSink(out))
     }
+
     protected def dataFlow =
       FlowWithPipelinesContext[AirlineFlightRecord].mapAsync(1) {
         data =>
@@ -58,42 +57,66 @@ final case object AirlineFlightModelServer extends AkkaStreamlet {
       }
     protected def modelFlow =
       FlowWithPipelinesContext[ModelDescriptor].map {
-        model ⇒ modelManager.fromModelRecord(model)
+        descriptor ⇒ ModelMetadata(descriptor, None)
       }.mapAsync(1) {
-        model ⇒ modelserver.ask(model).mapTo[Done]
+        metadata ⇒ modelserver.ask(metadata).mapTo[Done]
       }
   }
 }
 
 object AirlineFlightModelServerMain {
+  // WARNING: Currently, the Pipelines plugin interferes with running mains,
+  // even when you use
+  //   runMain pipelines.examples.modelserving.airlineflights.AirlineFlightModelServerMain
+  // Instead, start the console and run it there:
+  // ```
+  // import pipelines.examples.modelserving.airlineflights._
+  // AirlineFlightModelServerMain.main(Array())
+  // ...
+  // ```
   def main(args: Array[String]): Unit = {
 
+    println("Starting...")
     val dtype = "airline"
     implicit val system: ActorSystem = ActorSystem("ModelServing")
     implicit val executor = system.getDispatcher
     implicit val askTimeout: Timeout = Timeout(30.seconds)
 
+    println("Making model manager and model serving actor...")
     val modelManager = new ModelManager[AirlineFlightRecord, AirlineFlightResult](AirlineFlightFactoryResolver)
     val actors = Map(dtype -> system.actorOf(ModelServingActor.props[AirlineFlightRecord, AirlineFlightResult](dtype, modelManager)))
 
+    println("Making model serving manager...")
     val modelserver = system.actorOf(ModelServingManager.props(new ServingActorResolver(actors)))
+
+    println("Getting the H2O model...")
     val is = this.getClass.getClassLoader.getResourceAsStream("airlines/models/mojo/gbm_pojo_test.zip")
     val mojo = new Array[Byte](is.available)
     is.read(mojo)
 
-    val model = new ModelDescriptor(name = "Airline model", description = "Mojo airline model",
-      dataType = dtype, modeltype = ModelType.H2O, modeldata = Some(mojo), modeldatalocation = None)
+    val descriptor = new ModelDescriptor(
+      name = "Airline model",
+      description = "Mojo airline model",
+      dataType = dtype,
+      modeltype = ModelType.H2O,
+      modeldata = Some(mojo),
+      modeldatalocation = None)
 
-    modelserver.ask(modelManager.fromModelRecord(model))
+    val metadata = ModelMetadata(descriptor, None)
+    println(s"Sending metadata $metadata to the scoring engine...")
+    modelserver.ask()
     val record = AirlineFlightRecord(1990, 1, 3, 3, 1707, 1630, 1755, 1723, "US", 29, 0, 48, 53, 0, 32, 37, "CMH", "IND", 182, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, dtype)
     Thread.sleep(1000)
+    println("Sending record to the scoring engine...")
     val result = modelserver.ask(AirlineFlightDataRecord(record)).mapTo[ServingResult[AirlineFlightResult]]
+    println(s"Received result: $result")
     result.map(data => {
       val r = data.result.get
       r.modelname = data.name
       r.dataType = data.dataType
       r.duration = data.duration
-      println(r)
+      println(s"full details: $r")
     })
+    sys.exit(0)
   }
 }

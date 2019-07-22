@@ -4,7 +4,7 @@ import java.io.{ File, ObjectInputStream, ObjectOutputStream }
 import java.nio.file.Files
 
 import com.google.protobuf.Descriptors
-import com.lightbend.modelserving.model.Model
+import com.lightbend.modelserving.model.{ Model, ModelMetadata }
 import org.tensorflow.{ Graph, SavedModelBundle, Session }
 
 import scala.collection.mutable.{ Map => MMap }
@@ -19,9 +19,9 @@ import scala.collection.JavaConverters._
  * This is a very simple implementation, assuming that the TensorFlow saved model bundle is local (constructor, get tags)
  * The realistic implementation has to use some shared data storage, for example, S3, Minio, etc.
  */
-abstract class TensorFlowBundleModel[RECORD, RESULT](inputStream: Array[Byte]) extends Model[RECORD, RESULT] with Serializable {
+abstract class TensorFlowBundleModel[RECORD, RESULT](val metadata: ModelMetadata)
+  extends Model[RECORD, RESULT] with Serializable {
 
-  var bytes = inputStream
   setup()
   var tags: Seq[String] = _
   var graph: Graph = _
@@ -30,7 +30,7 @@ abstract class TensorFlowBundleModel[RECORD, RESULT](inputStream: Array[Byte]) e
 
   private def setup(): Unit = {
     // Convert input into file path
-    val path = new String(bytes)
+    val path = new String(metadata.modelBytes)
     // get tags. We assume here that the first tag is the one we use
     tags = getTags(path)
     // get saved model bundle
@@ -59,38 +59,26 @@ abstract class TensorFlowBundleModel[RECORD, RESULT](inputStream: Array[Byte]) e
     }
   }
 
-  /** Convert TensorFlow model to bytes */
-  override def toBytes(): Array[Byte] = bytes
+  // TODO: Verify if these methods are actually needed, since they have only one field,
+  // the metadata, which has these methods:
+  // private def writeObject(output: ObjectOutputStream): Unit = {
+  //   val start = System.currentTimeMillis()
+  //   output.writeObject(metadata)
+  //   println(s"TensorFlow bundled serialization in ${System.currentTimeMillis() - start} ms")
+  // }
 
-  /** Get model type */
-  override def getType = ModelType.TENSORFLOWSAVED
-
-  override def equals(obj: Any): Boolean = {
-    obj match {
-      case tfModel: TensorFlowBundleModel[RECORD, RESULT] =>
-        tfModel.toBytes.toList == inputStream.toList
-      case _ => false
-    }
-  }
-
-  private def writeObject(output: ObjectOutputStream): Unit = {
-    val start = System.currentTimeMillis()
-    output.writeObject(bytes)
-    println(s"TensorFlow bundled serialization in ${System.currentTimeMillis() - start} ms")
-  }
-
-  private def readObject(input: ObjectInputStream): Unit = {
-    val start = System.currentTimeMillis()
-    bytes = input.readObject().asInstanceOf[Array[Byte]]
-    try {
-      setup()
-      println(s"TensorFlow bundled deserialization in ${System.currentTimeMillis() - start} ms")
-    } catch {
-      case t: Throwable =>
-        t.printStackTrace
-        println(s"TensorFlow bundled deserialization failed in ${System.currentTimeMillis() - start} ms")
-    }
-  }
+  // private def readObject(input: ObjectInputStream): Unit = {
+  //   val start = System.currentTimeMillis()
+  //   metadata = input.readObject().asInstanceOf[ModelMetadata]
+  //   try {
+  //     setup()
+  //     println(s"TensorFlow bundled deserialization in ${System.currentTimeMillis() - start} ms")
+  //   } catch {
+  //     case t: Throwable =>
+  //       throw new RuntimeException(
+  //         s"TensorFlow bundled deserialization failed in ${System.currentTimeMillis() - start} ms", t)
+  //   }
+  // }
 
   private def parseSignatures(signatures: MMap[String, SignatureDef]): Map[String, Signature] = {
     signatures.map(signature =>

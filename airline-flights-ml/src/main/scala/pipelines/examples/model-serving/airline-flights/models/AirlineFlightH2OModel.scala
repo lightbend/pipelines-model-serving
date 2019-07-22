@@ -1,12 +1,13 @@
 package pipelines.examples.modelserving.airlineflights.models
 
 import pipelines.examples.modelserving.airlineflights.data.{ AirlineFlightRecord, AirlineFlightResult }
-import com.lightbend.modelserving.model.{ Model, ModelFactory, ModelToServe }
+import com.lightbend.modelserving.model.{ Model, ModelFactory, ModelMetadata }
 import com.lightbend.modelserving.model.h2o.H2OModel
 import hex.genmodel.easy.RowData
 import hex.genmodel.easy.prediction.BinomialModelPrediction
 
-class AirlineFlightH2OModel(inputStream: Array[Byte]) extends H2OModel[AirlineFlightRecord, AirlineFlightResult](inputStream) {
+class AirlineFlightH2OModel(metadata: ModelMetadata)
+  extends H2OModel[AirlineFlightRecord, AirlineFlightResult](metadata) {
 
   // Convert input record to raw data for serving
   def toRow(record: AirlineFlightRecord): RowData = {
@@ -61,11 +62,6 @@ class AirlineFlightH2OModel(inputStream: Array[Byte]) extends H2OModel[AirlineFl
  */
 object AirlineFlightH2OModel extends ModelFactory[AirlineFlightRecord, AirlineFlightResult] {
 
-  val modelName = "AirlineFlightH2OModel"
-
-  def make(input: ModelToServe): Model[AirlineFlightRecord, AirlineFlightResult] =
-    new AirlineFlightH2OModel(input.model)
-
-  def make(bytes: Array[Byte]): Model[AirlineFlightRecord, AirlineFlightResult] =
-    new AirlineFlightH2OModel(bytes)
+  protected def make(metadata: ModelMetadata): Model[AirlineFlightRecord, AirlineFlightResult] =
+    new AirlineFlightH2OModel(metadata)
 }

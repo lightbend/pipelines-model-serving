@@ -34,17 +34,20 @@ object AirlineFlightsMain {
     println("AirlineFlightsMain: Running airlines test application.")
     println(s"Printing a maximum of ${options.count} flight records")
 
-    val server = new AirlineFlightModelDeanServerUtil()
-    val reader = RecordsReader.fromConfiguration[AirlineFlightRecord](
-      configurationKeyRoot = AirlineFlightRecordsIngressUtil.rootConfigKey,
-      dropFirstN = 1)(
-      AirlineFlightRecordsIngressUtil.parse)
-    (1 to options.count).foreach { n ⇒
-      val (_, record) = reader.next()
-      val result = server.score(record)
-      println("%7d: %s".format(n, result))
-      Thread.sleep(100)
-    }
+    // TODO
+    // val server = new AirlineFlightModelServerUtil()
+    // val reader = RecordsReader.fromConfiguration[AirlineFlightRecord](
+    //   configurationKeyRoot = AirlineFlightRecordsIngressUtil.rootConfigKey,
+    //   dropFirstN = 1)(
+    //   AirlineFlightRecordsIngressUtil.parse)
+    // (1 to options.count).foreach { n ⇒
+    //   val (_, record) = reader.next()
+    //   val result = server.score(record)
+    //   println("%7d: %s".format(n, result))
+    //   Thread.sleep(100)
+    // }
+
+    sys.exit(0)
   }
 
   def help(): Unit = {

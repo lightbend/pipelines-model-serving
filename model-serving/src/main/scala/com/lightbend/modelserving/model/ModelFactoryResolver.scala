@@ -24,6 +24,10 @@ package com.lightbend.modelserving.model
  * Additional types can be defined as required.
  */
 trait ModelFactoryResolver[RECORD, RESULT] {
-  /** Retrieve the model using an Int corresponding to the ModelType.value field */
-  def getFactory(whichFactory: Int): Option[ModelFactory[RECORD, RESULT]]
+  /** Retrieve a model using an Int corresponding to the ModelType.value field. */
+  def getFactory(modelTypeOrdinal: Int): Option[ModelFactory[RECORD, RESULT]]
+
+  /** Retrieve a model using metadata for it. */
+  def getFactory(modelMetadata: ModelMetadata): Option[ModelFactory[RECORD, RESULT]] =
+    getFactory(modelMetadata.modelType)
 }

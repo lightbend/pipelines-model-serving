@@ -15,33 +15,16 @@
 
 package com.lightbend.modelserving.model
 
-import java.io.DataOutputStream
-
-/**
- * Encapsulates a model to serve along with some metadata about it.
- * Using an Int for the modelType, instead of a ModelDescriptor.ModelType, which is what it represents, is
- * unfortunately necessary because otherwise you can't use these objects in Spark UDFs; you get a Scala Reflection
- * exception at runtime. Hence, the integration values for modelType should match the known integer values in the
- * ModelType objects. See also protobufs/src/main/protobuf/modeldescriptor.proto
- */
-final case class ModelToServe(
-  name: String,
-  description: String,
-  modelType: Int,
-  model: Array[Byte],
-  location: String,
-  dataType: String)
-
 /**
  * Model serving statistics definition
  */
-final case class ModelToServeStats(
+final case class ModelServingStats(
+  modelType: Int,
   name: String = "",
   description: String = "",
-  modelType: Int = ModelType.PMML.ordinal(),
   since: Long = 0,
   var usage: Long = 0,
-  var duration: Double = .0,
+  var duration: Double = 0.0,
   var min: Long = Long.MaxValue,
   var max: Long = Long.MinValue) {
 
@@ -49,7 +32,7 @@ final case class ModelToServeStats(
    * Increment model serving statistics; invoked after scoring every record.
    * @param executionTime Long value for the milliseconds it took to score the record.
    */
-  def incrementUsage(executionTime: Long): ModelToServeStats = {
+  def incrementUsage(executionTime: Long): ModelServingStats = {
     usage = usage + 1
     duration = duration + executionTime
     if (executionTime < min) min = executionTime
@@ -58,6 +41,12 @@ final case class ModelToServeStats(
   }
 }
 
-object ModelToServeStats {
-  def apply(m: ModelToServe): ModelToServeStats = ModelToServeStats(m.name, m.description, m.modelType, System.currentTimeMillis())
+object ModelServingStats {
+  def apply(m: ModelMetadata): ModelServingStats =
+    new ModelServingStats(m.modelType, m.name, m.description, System.currentTimeMillis())
+
+  val unknown = new ModelServingStats(
+    modelType = -1,
+    name = "<unknown>",
+    description = "No stats have been collected yet!")
 }
