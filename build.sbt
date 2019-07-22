@@ -62,7 +62,7 @@ lazy val modelServing = (project in file("./model-serving"))
   .enablePlugins(PipelinesAkkaStreamsLibraryPlugin)
   .settings(
     name := "model-serving",
-    libraryDependencies ++= Seq(tensorflow, tensorflowProto, pmml, pmmlextensions, h2o, bijection, json2avro, gson, scalajHTTP)
+    libraryDependencies ++= Seq(tensorflow, tensorflowProto, pmml, pmmlextensions, h2o, bijection, json2avro, gson, scalajHTTP, scalaTest)
   )
   .dependsOn(pipelinesx)
 

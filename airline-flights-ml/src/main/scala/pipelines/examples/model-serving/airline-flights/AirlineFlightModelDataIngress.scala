@@ -33,19 +33,26 @@ final case object AirlineFlightModelDataIngress extends AkkaStreamlet {
 /** Encapsulate the logic of iterating through the models ad infinitum. */
 protected final class ModelDescriptorProvider() {
 
-  val is = this.getClass.getClassLoader.getResourceAsStream("airlines/models/mojo/gbm_pojo_test.zip")
-  val mojo = new Array[Byte](is.available)
-  is.read(mojo)
-  var index = -1l
+  protected val sourcePaths: Array[String] =
+    AirlineFlightModelDataIngressUtil.modelSources.toArray
+  protected val sourceBytes: Array[Array[Byte]] = sourcePaths map { path =>
+    val is = this.getClass.getClassLoader.getResourceAsStream(path)
+    val mojo = new Array[Byte](is.available)
+    is.read(mojo)
+    mojo
+  }
+
+  var count = -1
 
   def getModelDescriptor(): ModelDescriptor = {
-    index = index + 1
+    count += 1
+    val index = count % sourceBytes.length
     new ModelDescriptor(
-      name = s"Airline flight Model $index",
+      name = s"Airline flight Model $count (model #${index + 1})",
       description = "Airline H2O flight Model",
       modeltype = ModelType.H2O,
-      modeldata = Some(mojo),
-      modeldatalocation = None,
+      modeldata = Some(sourceBytes(index)),
+      modeldatalocation = Some(sourcePaths(index)),
       dataType = "airline")
   }
 }
@@ -53,14 +60,18 @@ protected final class ModelDescriptorProvider() {
 object AirlineFlightModelDataIngressUtil {
 
   lazy val modelFrequencySeconds: FiniteDuration =
-    ConfigUtil.default.getOrElse[Int]("airlineflight.model-frequency-seconds")(120).seconds
+    ConfigUtil.default.getOrElse[Int](
+      "airline-flights.model-frequency-seconds")(120).seconds
+  lazy val modelSources: Seq[String] =
+    ConfigUtil.default.getOrElse[Seq[String]](
+      "airline-flights.from-classpath.paths")(Nil)
 
   /** Helper method extracted from AirlineFlightModelDataIngress for easier unit testing. */
   def makeSource(
     frequency: FiniteDuration = modelFrequencySeconds): Source[ModelDescriptor, NotUsed] = {
-    val modelFinder = new ModelDescriptorProvider()
-    Source.repeat(modelFinder)
-      .map(finder ⇒ finder.getModelDescriptor())
+    val provider = new ModelDescriptorProvider()
+    Source.repeat(provider)
+      .map(p ⇒ p.getModelDescriptor())
       .throttle(1, frequency)
   }
 

@@ -1,37 +1,62 @@
 package com.lightbend.modelserving.model.h2o
 
 import java.io.{ ByteArrayInputStream, ByteArrayOutputStream, ObjectInputStream, ObjectOutputStream, Serializable }
-import java.util.zip.ZipInputStream
+import java.util.zip.{ ZipEntry, ZipInputStream }
 
 import com.lightbend.modelserving.model.{ Model, ModelMetadata, ModelType }
 import hex.ModelCategory
 import hex.genmodel.{ InMemoryMojoReaderBackend, MojoModel }
 import hex.genmodel.easy.EasyPredictModelWrapper
+import scala.collection.mutable.{ Map => MMap }
 
-import scala.collection.JavaConverters._
-
+/**
+ * Abstraction for all H2O models.
+ * @param metadata about the model to construct. At this time, only loading the embedded "modelBytes" is supported.
+ */
 abstract class H2OModel[RECORD, RESULT](val metadata: ModelMetadata)
   extends Model[RECORD, RESULT] with Serializable {
 
-  var model: EasyPredictModelWrapper = _
-  setup()
+  val model: EasyPredictModelWrapper = loadModel(metadata)
 
-  private def setup(): Unit = {
-    val filesMap = scala.collection.mutable.Map[String, Array[Byte]]()
-    val zis = new ZipInputStream(new ByteArrayInputStream(metadata.modelBytes))
-    Stream.continually(zis.getNextEntry).takeWhile(_ != null).foreach { file =>
-      val buffer = new Array[Byte](1024)
-      val content = new ByteArrayOutputStream()
-      Stream.continually(zis.read(buffer)).takeWhile(_ != -1).foreach(content.write(buffer, 0, _))
-      filesMap += (file.getName -> content.toByteArray)
+  protected def loadModel(metadata: ModelMetadata): EasyPredictModelWrapper = try {
+    def info(msg: String): Unit = println(s"INFO: H2OModel.loadModel: $msg")
+
+    def loadModelFiles(metadata: ModelMetadata): MMap[String, Array[Byte]] = {
+      def loadFile(file: ZipEntry, zis: ZipInputStream): Array[Byte] = {
+        // info(s"  Reading file file from zip archive: $file") // 2 leading spaces...
+        val content = new ByteArrayOutputStream()
+        val buffer = new Array[Byte](1024)
+        Stream.continually(zis.read(buffer, 0, 1024))
+          .takeWhile(numRead => numRead != -1)
+          .foreach(numRead => content.write(buffer, 0, numRead))
+        content.toByteArray
+      }
+
+      info(s"Loading model zip file from metadata: $metadata ...")
+      val zis = new ZipInputStream(new ByteArrayInputStream(metadata.modelBytes))
+      val filesMap = MMap.empty[String, Array[Byte]]
+      Stream.continually(zis.getNextEntry).takeWhile(_ != null).foreach { file =>
+        filesMap += (file.getName -> loadFile(file, zis))
+      }
+      zis.close()
+      info(s"Finished: Found files ${filesMap.keySet.toSeq.mkString(", ")}")
+      filesMap
     }
 
+    import scala.collection.JavaConverters._
+
+    val filesMap = loadModelFiles(metadata)
     val backend = new InMemoryMojoReaderBackend(mapAsJavaMap(filesMap))
-    model = new EasyPredictModelWrapper(MojoModel.load(backend))
-    verifyModelType(model.getModelCategory) match {
-      case true =>
-      case false => throw new Exception("H2O unknown model type")
+    val m = new EasyPredictModelWrapper(MojoModel.load(backend))
+    val cat = m.getModelCategory
+    if (verifyModelType(cat) == false) {
+      throw new RuntimeException(s"Unknown H2O model category: $cat")
+    } else {
+      info(s"Successfully loaded H2O model, category = $cat")
     }
+    m
+  } catch {
+    case scala.util.control.NonFatal(th) => throw H2OModel.H2OModelLoadError(metadata, th)
   }
 
   /** Abstraction for cleaning up resources */
@@ -53,7 +78,7 @@ abstract class H2OModel[RECORD, RESULT](val metadata: ModelMetadata)
   //   val start = System.currentTimeMillis()
   //   metadata = input.readObject().asInstanceOf[ModelMetadata]
   //   try {
-  //     setup()
+  //     loadModel(metadata)
   //     println(s"H2O deserialization in ${System.currentTimeMillis() - start} ms")
   //   } catch {
   //     case t: Throwable ⇒
@@ -70,4 +95,7 @@ object H2OModel {
     modelType = ModelType.H2O.ordinal,
     modelBytes = Array.empty[Byte],
     location = None)
+
+  final case class H2OModelLoadError(metadata: ModelMetadata, cause: Throwable)
+    extends RuntimeException(s"H2OModel failed to load model from metadata $metadata", cause)
 }

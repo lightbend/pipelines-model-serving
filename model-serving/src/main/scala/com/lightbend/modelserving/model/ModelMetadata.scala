@@ -23,7 +23,12 @@ import java.io.{ ObjectInputStream, ObjectOutputStream }
  * is what it represents, is unfortunately necessary because otherwise you can't
  * use these objects in Spark UDFs; you get a Scala Reflection exception at runtime.
  * Hence, the integration values for modelType should match the known integer values
- * in the ModelType objects. See also protobufs/src/main/protobuf/modeldescriptor.proto
+ * in the ModelType objects. See also protobufs/src/main/protobuf/modeldescriptor.proto.
+ * @param name the name for this model
+ * @param description the description of it
+ * @param modelType the kind of model, used as a lookup key in some cases
+ * @param modelBytes the bytes used to create the model. Only reasonably small models should be used this way!
+ * @param location the location where the model came from, if applicable and if known.
  */
 final case class ModelMetadata(
   name: String,
@@ -37,7 +42,7 @@ final case class ModelMetadata(
     sb.append("ModelMetadata(name = ").append(name)
       .append(", description = ").append(description)
       .append(", modelType = ").append(modelType)
-      .append(", modelBytes = Array(...) of length ").append(modelBytes.length)
+      .append(", modelBytes = ").append(modelBytes.toString).append(" of length ").append(modelBytes.length)
       .append(", location = ").append(location)
       .append(")")
       .toString
