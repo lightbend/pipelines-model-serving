@@ -29,18 +29,19 @@ object ModelDescriptorUtil {
     implicit class RichModelDescriptor(descriptor: ModelDescriptor) {
 
       def toRichString: String = {
-          def bytesLen(): Int =
-            if (descriptor.modelBytes == None) 0
-            else descriptor.modelBytes.get.length
-
+        val (bytesStr, bytesLen) = descriptor.modelBytes match {
+          case None                       ⇒ ("[]", 0)
+          case Some(bs) if bs.length == 0 ⇒ ("[]", 0)
+          case Some(bs)                   ⇒ (bs.take(128).toString, bs.length)
+        }
         val sb = new StringBuilder
         sb.append("ModelDescriptor(name = ").append(descriptor.name)
           .append(", description = ").append(descriptor.description)
           .append(", modelType = ").append(descriptor.modelType)
           .append(", dataType = ").append(descriptor.dataType)
-          .append(", modelBytes = ").append(descriptor.modelBytes.slice(0, 128).toString)
-          .append(" of length ").append(bytesLen())
           .append(", modelSourceLocation = ").append(descriptor.modelSourceLocation)
+          .append(", modelBytes[").append(bytesLen)
+          .append("] = ").append(bytesStr)
           .append(")")
           .toString
       }

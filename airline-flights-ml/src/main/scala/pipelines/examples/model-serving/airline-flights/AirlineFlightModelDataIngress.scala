@@ -1,6 +1,5 @@
 package pipelines.examples.modelserving.airlineflights
 
-import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{ Source, Sink }
@@ -11,6 +10,7 @@ import pipelines.streamlets.StreamletShape
 import pipelinesx.config.ConfigUtil
 import pipelinesx.config.ConfigUtil.implicits._
 import com.lightbend.modelserving.model.{ ModelDescriptor, ModelType }
+import com.lightbend.modelserving.model.ModelDescriptorUtil.implicits._
 import scala.concurrent.duration._
 
 /**
@@ -32,9 +32,9 @@ final case object AirlineFlightModelDataIngress extends AkkaStreamlet {
 /** Encapsulate the logic of iterating through the models ad infinitum. */
 protected final class ModelDescriptorProvider() {
 
-  protected val sourcePaths: Array[String] =
+  val sourcePaths: Array[String] =
     AirlineFlightModelDataIngressUtil.modelSources.toArray
-  protected val sourceBytes: Array[Array[Byte]] = sourcePaths map { path ⇒
+  val sourceBytes: Array[Array[Byte]] = sourcePaths map { path ⇒
     val is = this.getClass.getClassLoader.getResourceAsStream(path)
     val mojo = new Array[Byte](is.available)
     is.read(mojo)
@@ -63,42 +63,61 @@ object AirlineFlightModelDataIngressUtil {
       "airline-flights.model-frequency-seconds")(120).seconds
   lazy val modelSources: Seq[String] =
     ConfigUtil.default.getOrElse[Seq[String]](
-      "airline-flights.from-classpath.paths")(Nil)
+      "airline-flights.model-sources.from-classpath.paths")(Nil)
 
   /** Helper method extracted from AirlineFlightModelDataIngress for easier unit testing. */
   def makeSource(
-      frequency: FiniteDuration = modelFrequencySeconds): Source[ModelDescriptor, NotUsed] = {
+      frequency: FiniteDuration = modelFrequencySeconds): Source[ModelDescriptor, _] = {
     val provider = new ModelDescriptorProvider()
-    Source.repeat(provider)
+    Source.tick(0.seconds, frequency, provider)
       .map(p ⇒ p.getModelDescriptor())
-      .throttle(1, frequency)
   }
 
-  /** For testing purposes. */
+  /**
+   * For testing purposes.
+   * At this time, Pipelines intercepts calls to sbt run and sbt runMain, so use
+   * the console instead:
+   * ```
+   * > console
+   * scala> import pipelines.examples.modelserving.airlineflights._
+   * scala> AirlineFlightModelDataIngressUtil.main(Array("-f", "15", "-n", "3"))
+   */
   def main(args: Array[String]): Unit = {
       def help() = println(s"""
-      |usage: AirlineFlightModelDataIngressUtil [-h|--help] [N]
+      |usage: AirlineFlightModelDataIngressUtil [-h|--help] [-n|--count N] [-f|--frequency F]
       |where:
-      |  -h | --help       print this message and exit
-      |  N                 N seconds between output model descriptions (default: $modelFrequencySeconds)
+      |  -h | --help         print this message and exit
+      |  -n | --count N      N total iterations before stopping (default: doesn't stop)
+      |  -f | --frequency F  F seconds between output model descriptions (default: $modelFrequencySeconds)
       |""".stripMargin)
 
-      def parseArgs(args2: Seq[String], freq: FiniteDuration): FiniteDuration = args2 match {
+      def parseArgs(args2: Seq[String], opts: (Long, FiniteDuration)): (Long, FiniteDuration) = args2 match {
         case ("-h" | "--help") +: _ ⇒
           help()
           sys.exit(0)
-        case Nil       ⇒ freq
-        case n +: tail ⇒ parseArgs(tail, n.toInt.seconds)
+        case Nil                                 ⇒ opts
+        case ("-n" | "--count") +: n +: tail     ⇒ parseArgs(tail, (n.toLong, opts._2))
+        case ("-f" | "--frequency") +: n +: tail ⇒ parseArgs(tail, (opts._1, n.toInt.seconds))
         case x +: _ ⇒
           println(s"ERROR: Unrecognized argument $x. All args: ${args.mkString(" ")}")
           help()
           sys.exit(1)
       }
-    val frequency = parseArgs(args, modelFrequencySeconds)
-    println(s"frequency (seconds): ${frequency}")
+
+    val (total, frequency) = parseArgs(args, (Long.MaxValue, modelFrequencySeconds))
+    println(s"# of iterations: ${if (total < Long.MaxValue) total.toString else "infinite"}")
+    println(s"Frequency (seconds): ${frequency}")
     implicit val system = ActorSystem("AirlineFlightModelDataIngress-Main")
     implicit val mat = ActorMaterializer()
-    makeSource(frequency).runWith(Sink.foreach(println))
+    val provider = new ModelDescriptorProvider()
+    println(s"Provider sourcePaths: ${provider.sourcePaths.mkString(", ")}")
+    println(s"Provider sourceBytes: ${provider.sourceBytes.take(64).mkString(" ")}")
+    println(s"next: ${provider.getModelDescriptor().toRichString}")
+    println(s"next: ${provider.getModelDescriptor().toRichString}")
+    makeSource(frequency).take(total).runWith(
+      Sink.foreach(md ⇒ println(md.toRichString)))
     println("Finished!")
+    println("\n\nCalling exit. If in sbt, ignore 'sbt.TrapExitSecurityException'...\n\n")
+    sys.exit(0)
   }
 }

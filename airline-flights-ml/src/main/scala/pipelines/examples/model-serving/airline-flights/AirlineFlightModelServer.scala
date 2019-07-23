@@ -4,6 +4,7 @@ import pipelines.examples.modelserving.airlineflights.data.{ AirlineFlightRecord
 import pipelines.examples.modelserving.airlineflights.models.{ AirlineFlightDataRecord, AirlineFlightFactoryResolver }
 import com.lightbend.modelserving.model.actor.{ ModelServingActor, ModelServingManager }
 import com.lightbend.modelserving.model.{ ModelDescriptor, ModelManager, ModelType, ServingActorResolver, ServingResult }
+import com.lightbend.modelserving.model.ModelDescriptorUtil.implicits._
 import akka.Done
 import akka.actor.ActorSystem
 import akka.pattern.ask
@@ -100,7 +101,7 @@ object AirlineFlightModelServerMain {
       modelBytes = Some(mojo),
       modelSourceLocation = Some("classpath:airlines/models/mojo/gbm_pojo_test.zip"))
 
-    println(s"Sending descriptor $descriptor to the scoring engine...\n")
+    println(s"Sending descriptor ${descriptor.toRichString} to the scoring engine...\n")
     val modelLoadResult = Await.result(modelserver.ask(descriptor), 5 seconds)
     println(s"Result from loading the model: $modelLoadResult\n")
 
@@ -108,12 +109,16 @@ object AirlineFlightModelServerMain {
     println("Sending record to the scoring engine...")
     val resultFuture = modelserver.ask(AirlineFlightDataRecord(record)).mapTo[ServingResult[AirlineFlightResult]]
     val data = Await.result(resultFuture, 2 seconds)
-    println(s"Received result: $data (${data.result.get})")
-    val r = data.result.get
-    r.modelname = data.name
-    r.dataType = data.dataType
-    r.duration = data.duration
-    println(s"full details: $r")
+    data.result match {
+      case None ⇒
+        println(s"Received NO results for $data: (${data.result})")
+      case Some(r) ⇒
+        println(s"Received results for $data: (${data.result})")
+        r.modelname = data.name
+        r.dataType = data.dataType
+        r.duration = data.duration
+        println(s"full details: $r")
+    }
     println("\n\nCalling exit. If in sbt, ignore 'sbt.TrapExitSecurityException'...\n\n")
     sys.exit(0)
   }

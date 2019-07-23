@@ -76,8 +76,6 @@ lazy val commonScalacOptions = Seq(
     "-target:jvm-1.8",
     "-Xlog-reflective-calls",
     "-Xlint:_",
-    "-Ywarn-unused",
-    "-Ywarn-unused-import",
     "-deprecation",
     "-feature",
     "-language:_",
@@ -97,16 +95,17 @@ lazy val scalacTestCompileOptions = commonScalacOptions ++ Seq(
     "-Ywarn-unused:privates",            // Warn if a private member is unused.
   )
 // Ywarn-value-discard is particularly hard to use in many tests,
-// because they error out intentionally in ways that are expected, so it's
+// because they error-out intentionally in ways that are expected, so it's
 // usually okay to discard values, where that's rarely true in regular code.
 lazy val scalacSrcCompileOptions = scalacTestCompileOptions ++ Seq(
   "-Ywarn-value-discard")
 
 lazy val commonSettings = Seq(
   scalaVersion := "2.12.8",
-  scalacOptions := scalacSrcCompileOptions,
+  scalacOptions in Compile := scalacSrcCompileOptions,
+  scalacOptions in Test := scalacTestCompileOptions,
   scalacOptions in (Compile, console) := commonScalacOptions,
-  scalacOptions in (Test) := scalacTestCompileOptions,
+  scalacOptions in (Test, console) := commonScalacOptions,
 
   scalariformPreferences := scalariformPreferences.value
     .setPreference(AlignParameters, true)

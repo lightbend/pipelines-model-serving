@@ -4,6 +4,7 @@ import akka.Done
 import akka.actor.{ Actor, Props }
 import akka.event.Logging
 import com.lightbend.modelserving.model._
+import com.lightbend.modelserving.model.ModelDescriptorUtil.implicits._
 
 /**
  * Router actor, which routes both model and data (records) to an appropriate actor.
@@ -16,12 +17,12 @@ class ModelServingManager(actorResolver: ServingActorResolver) extends Actor {
 
   override def receive: PartialFunction[Any, Unit] = {
     case descriptor: ModelDescriptor ⇒ // new model
-      actorResolver.getActor(descriptor.modelType.toString) match {
+      actorResolver.getActor(descriptor.modelType) match {
         case Some(modelServer) ⇒
           log.info(s"forwarding model descriptor $descriptor to $modelServer")
           modelServer forward descriptor
         case _ ⇒
-          log.error(s"no model server found for descriptor $descriptor. Skipping...")
+          log.error(s"no model server found for descriptor ${descriptor.toRichString}. Skipping...")
           sender() ! Done
       }
 

@@ -8,7 +8,7 @@ import akka.actor.ActorRef
  * @param default the optional default actor to call if none of the others match.
  */
 final case class ServingActorResolver(
-    actors:  Map[String, ActorRef],
+    actors:  Map[ModelType, ActorRef],
     default: Option[ActorRef]      = None) {
 
   // For faster runtime performance, precompute whether or not the default is available.
