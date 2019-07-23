@@ -8,15 +8,15 @@ import akka.actor.ActorRef
  * @param default the optional default actor to call if none of the others match.
  */
 final case class ServingActorResolver(
-  actors: Map[String, ActorRef],
-  default: Option[ActorRef] = None) {
+    actors:  Map[String, ActorRef],
+    default: Option[ActorRef]      = None) {
 
   // For faster runtime performance, precompute whether or not the default is available.
-  private val getActorOrDefault: String => Option[ActorRef] =
-    whichActor => Some(actors.getOrElse(whichActor, default.get))
-  private val getActorWithoutDefault: String => Option[ActorRef] =
-    whichActor => actors.get(whichActor)
-  private val get: String => Option[ActorRef] =
+  private val getActorOrDefault: String ⇒ Option[ActorRef] =
+    whichActor ⇒ Some(actors.getOrElse(whichActor, default.get))
+  private val getActorWithoutDefault: String ⇒ Option[ActorRef] =
+    whichActor ⇒ actors.get(whichActor)
+  private val get: String ⇒ Option[ActorRef] =
     if (default == None) getActorWithoutDefault else getActorOrDefault
 
   /**

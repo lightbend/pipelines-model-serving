@@ -26,6 +26,7 @@ lazy val wineModelServingPipeline = (project in file("./wine-quality-ml"))
     pipelinesDockerRegistry := dockerRegistry,
     libraryDependencies ++= Seq(influx, scalaTest)
   )
+  .settings(commonSettings)
   .dependsOn(pipelinesx, modelServing)
 
 lazy val recommenderModelServingPipeline = (project in file("./recommender-ml"))
@@ -37,6 +38,7 @@ lazy val recommenderModelServingPipeline = (project in file("./recommender-ml"))
     pipelinesDockerRegistry := dockerRegistry,
     libraryDependencies ++= Seq(scalaTest)
   )
+  .settings(commonSettings)
   .dependsOn(pipelinesx, modelServing)
 
 lazy val airlineFlightsModelServingPipeline = (project in file("./airline-flights-ml"))
@@ -48,6 +50,7 @@ lazy val airlineFlightsModelServingPipeline = (project in file("./airline-flight
     pipelinesDockerRegistry := dockerRegistry,
     libraryDependencies ++= Seq(influx, scalaTest)
   )
+  .settings(commonSettings)
   .dependsOn(pipelinesx, modelServing)
 
 lazy val pipelinesx = (project in file("./pipelinesx"))
@@ -57,6 +60,7 @@ lazy val pipelinesx = (project in file("./pipelinesx"))
     name := "pipelinesx",
     libraryDependencies ++= logging ++ Seq(/*alpakkaKafka,*/ bijection, json2avro, influx, scalaTest)
   )
+  .settings(commonSettings)
 
 lazy val modelServing = (project in file("./model-serving"))
   .enablePlugins(PipelinesAkkaStreamsLibraryPlugin)
@@ -64,11 +68,10 @@ lazy val modelServing = (project in file("./model-serving"))
     name := "model-serving",
     libraryDependencies ++= Seq(tensorflow, tensorflowProto, pmml, pmmlextensions, h2o, bijection, json2avro, gson, scalajHTTP, scalaTest)
   )
+  .settings(commonSettings)
   .dependsOn(pipelinesx)
 
-lazy val commonSettings = Seq(
-  scalaVersion := "2.12.8",
-  scalacOptions ++= Seq(
+lazy val commonScalacOptions = Seq(
     "-encoding", "UTF-8",
     "-target:jvm-1.8",
     "-Xlog-reflective-calls",
@@ -78,7 +81,10 @@ lazy val commonSettings = Seq(
     "-deprecation",
     "-feature",
     "-language:_",
-    "-unchecked",
+    "-unchecked"
+  )
+
+lazy val scalacTestCompileOptions = commonScalacOptions ++ Seq(
     "-Xfatal-warnings",
     "-Ywarn-dead-code",                  // Warn when dead code is identified.
     "-Ywarn-extra-implicit",             // Warn when more than one implicit parameter section is defined.
@@ -89,20 +95,31 @@ lazy val commonSettings = Seq(
     "-Ywarn-unused:params",              // Warn if a value parameter is unused.
     "-Ywarn-unused:patvars",             // Warn if a variable bound in a pattern is unused.
     "-Ywarn-unused:privates",            // Warn if a private member is unused.
-    "-Ywarn-value-discard"               // Warn when non-Unit expression results are unused.
-  ),
+  )
+// Ywarn-value-discard is particularly hard to use in many tests,
+// because they error out intentionally in ways that are expected, so it's
+// usually okay to discard values, where that's rarely true in regular code.
+lazy val scalacSrcCompileOptions = scalacTestCompileOptions ++ Seq(
+  "-Ywarn-value-discard")
 
-  scalacOptions in (Compile, console) --= Seq("-Ywarn-unused", "-Ywarn-unused-import"),
-  scalacOptions in (Test, console) := (scalacOptions in (Compile, console)).value,
+lazy val commonSettings = Seq(
+  scalaVersion := "2.12.8",
+  scalacOptions := scalacSrcCompileOptions,
+  scalacOptions in (Compile, console) := commonScalacOptions,
+  scalacOptions in (Test) := scalacTestCompileOptions,
 
   scalariformPreferences := scalariformPreferences.value
-    .setPreference(AlignParameters, false)
+    .setPreference(AlignParameters, true)
     .setPreference(AlignSingleLineCaseStatements, true)
     .setPreference(AlignSingleLineCaseStatements.MaxArrowIndent, 90)
     .setPreference(DoubleIndentConstructorArguments, true)
     .setPreference(DoubleIndentMethodDeclaration, true)
+    .setPreference(IndentLocalDefs, true)
+    .setPreference(IndentPackageBlocks, true)
     .setPreference(RewriteArrowSymbols, true)
     .setPreference(DanglingCloseParenthesis, Preserve)
     .setPreference(NewlineAtEndOfFile, true)
     .setPreference(AllowParamGroupsOnNewlines, true)
+    .setPreference(SpacesWithinPatternBinders, false) // otherwise case head +: tail@_ fails to compile!
+
 )

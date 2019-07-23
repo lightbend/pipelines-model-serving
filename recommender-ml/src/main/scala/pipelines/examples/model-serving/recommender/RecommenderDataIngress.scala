@@ -37,7 +37,7 @@ object RecommenderDataIngressUtil {
     ConfigUtil.default.getOrElse[Int]("recommender.data-frequency-milliseconds")(1).milliseconds
 
   def makeSource(
-    frequency: FiniteDuration = dataFrequencyMilliseconds): Source[RecommenderRecord, NotUsed] = {
+      frequency: FiniteDuration = dataFrequencyMilliseconds): Source[RecommenderRecord, NotUsed] = {
     Source.repeat(RecommenderRecordMaker)
       .map(maker ⇒ maker.make())
       .throttle(1, frequency)
@@ -62,5 +62,6 @@ object RecommenderDataIngressUtil {
     implicit val mat = ActorMaterializer()
     val source = makeSource(dataFrequencyMilliseconds)
     source.runWith(Sink.foreach(println))
+    println("Finished!")
   }
 }

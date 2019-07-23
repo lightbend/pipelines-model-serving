@@ -15,32 +15,32 @@ class ModelServingManager(actorResolver: ServingActorResolver) extends Actor {
   log.info(s"Creating model serving manager")
 
   override def receive: PartialFunction[Any, Unit] = {
-    case metadata: ModelMetadata => // new model
-      actorResolver.getActor(metadata.modelType.toString) match {
-        case Some(modelServer) =>
-          log.info(s"forwarding model metadata $metadata to $modelServer")
-          modelServer forward metadata
-        case _ =>
-          log.error(s"no model server found for metadata $metadata. Skipping...")
+    case descriptor: ModelDescriptor ⇒ // new model
+      actorResolver.getActor(descriptor.modelType.toString) match {
+        case Some(modelServer) ⇒
+          log.info(s"forwarding model descriptor $descriptor to $modelServer")
+          modelServer forward descriptor
+        case _ ⇒
+          log.error(s"no model server found for descriptor $descriptor. Skipping...")
           sender() ! Done
       }
 
-    case record: DataToServe[_] => // data to score with existing model(s)
+    case record: DataToServe[_] ⇒ // data to score with existing model(s)
       actorResolver.getActor(record.getType) match {
-        case Some(modelServer) =>
+        case Some(modelServer) ⇒
           //          log.info(s"forwarding data request to $modelServer")
           modelServer forward record
-        case _ =>
+        case _ ⇒
           log.error(s"no model server found for type ${record.getType}. Skipping...")
           sender() ! ServingResult("No model server available")
       }
 
-    case getState: GetState => actorResolver.getActor(getState.label) match {
-      case Some(server) => server forward getState
-      case _ => sender() ! ModelServingStats.unknown
+    case getState: GetState ⇒ actorResolver.getActor(getState.label) match {
+      case Some(server) ⇒ server forward getState
+      case _            ⇒ sender() ! ModelServingStats.unknown
     }
 
-    case _: GetModels => sender() ! GetModelsResult(actorResolver.getActors())
+    case _: GetModels ⇒ sender() ! GetModelsResult(actorResolver.getActors())
   }
 }
 

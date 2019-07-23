@@ -2,6 +2,7 @@
   "namespace": "com.lightbend.modelserving.model",
   "type": "record",
   "name": "ModelDescriptor",
+  "doc": "Messages for exchanging model data (bytes for deserializing, optionally) and metadata. Note that using a enum string, rather than an ordinal for modelType may cause problems for Spark usage of this library.",
   "fields":[
     {
       "name": "name",
@@ -16,17 +17,17 @@
       "type": "string"
     },
     {
-      "name": "modeltype",
+      "name": "modelType",
       "type" : {"type": "enum",
                 "name": "ModelType",
-                "symbols" : ["TENSORFLOW", "TENSORFLOWSAVED", "TENSORFLOWSERVING", "PMML", "H2O"]}
+                "symbols" : ["UNKNOWN", "TENSORFLOW", "TENSORFLOWSAVED", "TENSORFLOWSERVING", "PMML", "H2O"]}
     },
     {
-      "name": "modeldata",
+      "name": "modelBytes",
       "type": ["bytes","null"]
     },
     {
-      "name": "modeldatalocation",
+      "name": "modelSourceLocation",
       "type": ["string","null"]
     }
   ]

@@ -1,7 +1,7 @@
 package pipelines.examples.modelserving.airlineflights.models
 
 import pipelines.examples.modelserving.airlineflights.data.{ AirlineFlightRecord, AirlineFlightResult }
-import com.lightbend.modelserving.model.{ ModelFactory, ModelFactoryResolver, ModelType }
+import com.lightbend.modelserving.model.{ ModelDescriptor, ModelFactory, ModelFactoryResolver, ModelType }
 
 /**
  * Model factory resolver - requires specific factories
@@ -9,7 +9,8 @@ import com.lightbend.modelserving.model.{ ModelFactory, ModelFactoryResolver, Mo
 object AirlineFlightFactoryResolver extends ModelFactoryResolver[AirlineFlightRecord, AirlineFlightResult] {
 
   private val factories = Map(
-    ModelType.H2O.ordinal -> AirlineFlightH2OModel)
+    ModelType.H2O -> AirlineFlightH2OModel)
 
-  override def getFactory(whichFactory: Int): Option[ModelFactory[AirlineFlightRecord, AirlineFlightResult]] = factories.get(whichFactory)
+  override def getFactory(descriptor: ModelDescriptor): Option[ModelFactory[AirlineFlightRecord, AirlineFlightResult]] =
+    factories.get(descriptor.modelType)
 }

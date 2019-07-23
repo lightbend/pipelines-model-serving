@@ -1,15 +1,8 @@
 package pipelines.examples.modelserving.winequality
 
-import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.{ Source, Sink }
-import pipelines.examples.modelserving.winequality.data.WineRecord
-import pipelinesx.ingress.RecordsReader
-import pipelinesx.config.ConfigUtil
-import pipelinesx.config.ConfigUtil.implicits._
-import pipelinesx.logging.{ Logger, LoggingUtil }
-import scala.concurrent.duration._
+import akka.stream.scaladsl.Sink
 
 /**
  * Test program for [[WineDataIngressUtil]]; reads wine records and prints them.
@@ -36,6 +29,7 @@ object WineDataIngressMain {
         }
       }
     }
+    println("Should never get here...")
   }
 }
 

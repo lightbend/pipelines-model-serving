@@ -2,7 +2,7 @@ package pipelines.examples.modelserving.recommender
 
 import pipelines.examples.modelserving.recommender.data.{ ProductPrediction, RecommenderRecord, RecommendationResult }
 import com.lightbend.modelserving.model.actor.{ ModelServingActor, ModelServingManager }
-import com.lightbend.modelserving.model.{ ModelDescriptor, ModelManager, ModelType, ModelMetadata, ServingActorResolver, ServingResult }
+import com.lightbend.modelserving.model.{ ModelDescriptor, ModelManager, ModelType, ServingActorResolver, ServingResult }
 import akka.Done
 import akka.actor.ActorSystem
 import akka.pattern.ask
@@ -48,10 +48,8 @@ final case object RecommenderModelServer extends AkkaStreamlet {
         r ⇒ RecommendationResult(r.name, r.dataType, r.duration, r.result.get)
       }
     protected def modelFlow =
-      FlowWithPipelinesContext[ModelDescriptor].map {
-        descriptor ⇒ ModelMetadata(descriptor, None)
-      }.mapAsync(1) {
-        metadata ⇒ modelserver.ask(metadata).mapTo[Done]
+      FlowWithPipelinesContext[ModelDescriptor].mapAsync(1) {
+        descriptor ⇒ modelserver.ask(descriptor).mapTo[Done]
       }
   }
 }
@@ -71,13 +69,12 @@ object RecommenderModelServerMain {
       name = "Tensorflow Model",
       description = "For model Serving",
       dataType = dtype,
-      modeltype = ModelType.TENSORFLOWSERVING,
-      modeldata = null,
-      modeldatalocation = Some("http://recommender1-service-kubeflow.lightshift.lightbend.com/v1/models/recommender1/versions/1:predict"))
+      modelType = ModelType.TENSORFLOWSERVING,
+      modelBytes = None,
+      modelSourceLocation = Some("http://recommender1-service-kubeflow.lightshift.lightbend.com/v1/models/recommender1/versions/1:predict"))
 
-    val metadata = ModelMetadata(descriptor, None)
-    println(s"Sending metadata $metadata to the scoring engine...")
-    modelserver.ask(metadata)
+    println(s"Sending descriptor $descriptor to the scoring engine...")
+    modelserver.ask(descriptor)
     val record = new RecommenderRecord(10L, Seq(1L, 2L, 3L, 4L), dtype)
     Thread.sleep(1000)
     val result = modelserver.ask(RecommendationDataRecord(record)).mapTo[ServingResult[Seq[ProductPrediction]]]

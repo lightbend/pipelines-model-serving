@@ -35,14 +35,14 @@ trait OutputInterceptor {
     System.setErr(savesSystemErr)
   }
 
-  protected lazy val name = getClass().getName()
+  protected lazy val testClassName = getClass().getName()
 
   /**
    * Simply wrap a thunk to capture and ignore all stdout and stderr output,
    * _if_ the test passes, otherwise print the accumulated output.
    * @param test logic to execute.
    */
-  def ignoreOutput(test: ⇒ Unit) = doCheckOutput(false)(test) { (outLines, errLines) => () }
+  def ignoreOutput(test: ⇒ Unit) = doCheckOutput(false)(test) { (_, _) ⇒ () }
 
   /**
    * Wrap a thunk to capture all stdout output, then assert it has exactly
@@ -51,7 +51,7 @@ trait OutputInterceptor {
    * @param test logic to execute.
    */
   def expectOutput(expectedOutLines: Seq[String])(
-    test: ⇒ Unit) = doCheckOutput(false)(test)(defaultCheck(true, expectedOutLines, OutputInterceptor.empty))
+      test: ⇒ Unit) = doCheckOutput(false)(test)(defaultCheck(true, expectedOutLines, OutputInterceptor.empty))
 
   /**
    * Wrap a thunk to capture all stdout and stderr output, then assert they have
@@ -61,9 +61,9 @@ trait OutputInterceptor {
    * @param test logic to execute.
    */
   def expectOutput(
-    expectedOutLines: Seq[String],
-    expectedErrLines: Seq[String])(
-    test: ⇒ Unit) = doCheckOutput(false)(test)(defaultCheck(false, expectedOutLines, expectedErrLines))
+      expectedOutLines: Seq[String],
+      expectedErrLines: Seq[String])(
+      test: ⇒ Unit) = doCheckOutput(false)(test)(defaultCheck(false, expectedOutLines, expectedErrLines))
 
   /**
    * Wrap a thunk to capture all stdout output, then assert it has exactly the
@@ -73,8 +73,8 @@ trait OutputInterceptor {
    * @param test logic to execute.
    */
   def expectTrimmedOutput(
-    expectedOutLines: Seq[String])(
-    test: ⇒ Unit) = doCheckOutput(true)(test)(defaultCheck(true, expectedOutLines, OutputInterceptor.empty))
+      expectedOutLines: Seq[String])(
+      test: ⇒ Unit) = doCheckOutput(true)(test)(defaultCheck(true, expectedOutLines, OutputInterceptor.empty))
 
   /**
    * Wrap a thunk to capture all stdout and stderr output, then assert they have
@@ -86,9 +86,9 @@ trait OutputInterceptor {
    * @param test logic to execute.
    */
   def expectTrimmedOutput(
-    expectedOutLines: Seq[String],
-    expectedErrLines: Seq[String])(
-    test: ⇒ Unit) = doCheckOutput(true)(test)(defaultCheck(false, expectedOutLines, expectedErrLines))
+      expectedOutLines: Seq[String],
+      expectedErrLines: Seq[String])(
+      test: ⇒ Unit) = doCheckOutput(true)(test)(defaultCheck(false, expectedOutLines, expectedErrLines))
 
   /**
    * Wrap a test to capture and all stdout and stderr output, then apply the
@@ -100,7 +100,7 @@ trait OutputInterceptor {
    * @param test logic to execute.
    * @param checkActualOutErrLines function to validate the output is correct
    */
-  def checkOutput(test: ⇒ Unit)(checkActualOutErrLines: (Seq[String], Seq[String]) => Unit) =
+  def checkOutput(test: ⇒ Unit)(checkActualOutErrLines: (Seq[String], Seq[String]) ⇒ Unit) =
     doCheckOutput(false)(test)(checkActualOutErrLines)
 
   /**
@@ -114,10 +114,10 @@ trait OutputInterceptor {
    * @param test logic to execute.
    * @param checkActualOutErrLines function to validate the output is correct
    */
-  def checkTrimmedOutput(test: ⇒ Unit)(checkActualOutErrLines: (Seq[String], Seq[String]) => Unit) =
+  def checkTrimmedOutput(test: ⇒ Unit)(checkActualOutErrLines: (Seq[String], Seq[String]) ⇒ Unit) =
     doCheckOutput(true)(test)(checkActualOutErrLines)
 
-  protected def doCheckOutput(trim: Boolean)(test: ⇒ Unit)(checkActualOutErrLines: (Seq[String], Seq[String]) => Unit) {
+  protected def doCheckOutput(trim: Boolean)(test: ⇒ Unit)(checkActualOutErrLines: (Seq[String], Seq[String]) ⇒ Unit) {
 
     val outCapture = new ByteArrayOutputStream
     val errCapture = new ByteArrayOutputStream
@@ -145,8 +145,8 @@ trait OutputInterceptor {
     val errLines = if (trim) errLines1.map(_.trim).filter(_.size >= 0) else errLines1
     val trimMsg = if (trim) " (trimmed)" else ""
     if (dumpOutputStreams) {
-      println(outLines.mkString(s"$name - captured stdout$trimMsg:\n  ", "\n  ", "\n"))
-      println(errLines.mkString(s"$name - captured stderr$trimMsg:\n  ", "\n  ", "\n"))
+      println(outLines.mkString(s"$testClassName - captured stdout$trimMsg:\n  ", "\n  ", "\n"))
+      println(errLines.mkString(s"$testClassName - captured stderr$trimMsg:\n  ", "\n  ", "\n"))
     }
     outPrint.close()
     errPrint.close()
@@ -169,10 +169,10 @@ trait OutputInterceptor {
    * calling the function returned by this method.
    */
   protected def defaultCheck(
-    ignoreErrOutput: Boolean,
-    expectedOutLines: Seq[String],
-    expectedErrLines: Seq[String]): (Seq[String], Seq[String]) => Unit =
-    (outLines, errLines) => {
+      ignoreErrOutput:  Boolean,
+      expectedOutLines: Seq[String],
+      expectedErrLines: Seq[String]): (Seq[String], Seq[String]) ⇒ Unit =
+    (outLines, errLines) ⇒ {
       diffLines("out", outLines, expectedOutLines)
       if (ignoreErrOutput == false) {
         diffLines("err", errLines, expectedErrLines)
@@ -180,13 +180,13 @@ trait OutputInterceptor {
     }
 
   protected def diffLines(
-    label: String,
-    actual: Seq[String],
-    expected: Seq[String]): Unit = {
+      label:    String,
+      actual:   Seq[String],
+      expected: Seq[String]): Unit = {
     assert(
       actual.size == expected.size, sizeDiffString(label, actual, expected))
     actual.zip(expected).zipWithIndex.foreach {
-      case ((a, e), i) =>
+      case ((a, e), i) ⇒
         assert(a == e, notEqualDiffString(label, i, a, e, actual, expected))
     }
   }
@@ -195,20 +195,20 @@ trait OutputInterceptor {
     diffString(s"$label - size mismatch: ${actual.size} != ${expected.size}", actual, expected)
 
   private def notEqualDiffString(
-    label: String,
-    index: Int,
-    actualLine: String,
-    expectedLine: String,
-    actual: Seq[String],
-    expected: Seq[String]): String =
+      label:        String,
+      index:        Int,
+      actualLine:   String,
+      expectedLine: String,
+      actual:       Seq[String],
+      expected:     Seq[String]): String =
     diffString(s"$label - mismatch at line $index: $actualLine != $expectedLine", actual, expected)
 
   private def diffString(prefix: String, actual: Seq[String], expected: Seq[String]): String = {
     val sb = new StringBuilder()
-    sb.append(s"${name} - ${prefix}\n")
+    sb.append(s"${testClassName} - ${prefix}\n")
     sb.append("Actual =?= Expected (Note: Seq() looks empty, but could be Seq(\"\")):\n")
     actual.zip(expected).zipWithIndex.foreach {
-      case ((a, e), i) =>
+      case ((a, e), i) ⇒
         sb.append("%4d: %s =?= %s\n".format(i, a, e))
     }
     sb.toString

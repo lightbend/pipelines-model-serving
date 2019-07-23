@@ -8,7 +8,6 @@ import scala.io.Source
 import pipelines.akkastream.testkit._
 import pipelines.examples.modelserving.winequality.data.WineRecord
 import com.typesafe.config.ConfigFactory
-import com.lightbend.modelserving.model.ModelType
 import pipelinesx.test.OutputInterceptor
 
 class WineDataIngressTest extends FunSpec with BeforeAndAfterAll with OutputInterceptor {

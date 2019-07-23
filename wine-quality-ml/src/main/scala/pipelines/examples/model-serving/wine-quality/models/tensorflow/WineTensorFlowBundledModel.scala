@@ -1,15 +1,15 @@
 package pipelines.examples.modelserving.winequality.models.tensorflow
 
 import com.lightbend.modelserving.model.tensorflow.TensorFlowBundleModel
-import com.lightbend.modelserving.model.{ Model, ModelMetadata, ModelFactory }
-import com.lightbend.modelserving.model.ModelMetadata
+import com.lightbend.modelserving.model.{ Model, ModelDescriptor, ModelFactory }
+import com.lightbend.modelserving.model.ModelDescriptor
 import pipelines.examples.modelserving.winequality.data.WineRecord
 
 /**
  * Implementation of TensorFlow bundled model for Wine.
  */
-class WineTensorFlowBundledModel(metadata: ModelMetadata)
-  extends TensorFlowBundleModel[WineRecord, Double](metadata) {
+class WineTensorFlowBundledModel(descriptor: ModelDescriptor)
+  extends TensorFlowBundleModel[WineRecord, Double](descriptor) {
 
   override def score(input: WineRecord): Either[String, Double] = try {
     // Create input tensor
@@ -25,8 +25,8 @@ class WineTensorFlowBundledModel(metadata: ModelMetadata)
     result.copyTo(rMatrix)
     Right(rMatrix(0).indices.maxBy(rMatrix(0)).toDouble)
   } catch {
-    case scala.util.control.NonFatal(th) =>
-      Left("WineTensorFlowBundledModel.score failed: $th")
+    case scala.util.control.NonFatal(th) ⇒
+      Left(s"WineTensorFlowBundledModel.score failed: $th")
   }
 }
 
@@ -43,7 +43,7 @@ object WineTensorFlowBundledModel extends ModelFactory[WineRecord, Double] {
    * @param descriptor model to serve representation of TensorFlow bundled model.
    * @return model
    */
-  def make(metadata: ModelMetadata): Model[WineRecord, Double] =
-    new WineTensorFlowBundledModel(metadata)
+  def make(descriptor: ModelDescriptor): Model[WineRecord, Double] =
+    new WineTensorFlowBundledModel(descriptor)
 }
 

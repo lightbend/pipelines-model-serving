@@ -1,6 +1,5 @@
 package pipelines.examples.modelserving.airlineflights
 
-import pipelines.examples.modelserving.airlineflights.data._
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
@@ -35,7 +34,7 @@ protected final class ModelDescriptorProvider() {
 
   protected val sourcePaths: Array[String] =
     AirlineFlightModelDataIngressUtil.modelSources.toArray
-  protected val sourceBytes: Array[Array[Byte]] = sourcePaths map { path =>
+  protected val sourceBytes: Array[Array[Byte]] = sourcePaths map { path ⇒
     val is = this.getClass.getClassLoader.getResourceAsStream(path)
     val mojo = new Array[Byte](is.available)
     is.read(mojo)
@@ -50,10 +49,10 @@ protected final class ModelDescriptorProvider() {
     new ModelDescriptor(
       name = s"Airline flight Model $count (model #${index + 1})",
       description = "Airline H2O flight Model",
-      modeltype = ModelType.H2O,
-      modeldata = Some(sourceBytes(index)),
-      modeldatalocation = Some(sourcePaths(index)),
-      dataType = "airline")
+      dataType = "airline",
+      modelType = ModelType.H2O,
+      modelBytes = Some(sourceBytes(index)),
+      modelSourceLocation = Some(sourcePaths(index)))
   }
 }
 
@@ -68,7 +67,7 @@ object AirlineFlightModelDataIngressUtil {
 
   /** Helper method extracted from AirlineFlightModelDataIngress for easier unit testing. */
   def makeSource(
-    frequency: FiniteDuration = modelFrequencySeconds): Source[ModelDescriptor, NotUsed] = {
+      frequency: FiniteDuration = modelFrequencySeconds): Source[ModelDescriptor, NotUsed] = {
     val provider = new ModelDescriptorProvider()
     Source.repeat(provider)
       .map(p ⇒ p.getModelDescriptor())
@@ -77,29 +76,29 @@ object AirlineFlightModelDataIngressUtil {
 
   /** For testing purposes. */
   def main(args: Array[String]): Unit = {
-    def help() = println(s"""
+      def help() = println(s"""
       |usage: AirlineFlightModelDataIngressUtil [-h|--help] [N]
       |where:
       |  -h | --help       print this message and exit
       |  N                 N seconds between output model descriptions (default: $modelFrequencySeconds)
       |""".stripMargin)
 
-    def parseArgs(args2: Seq[String], freq: FiniteDuration): FiniteDuration = args2 match {
-      case ("-h" | "--help") +: _ ⇒
-        help()
-        sys.exit(0)
-      case Nil ⇒ freq
-      case n +: tail ⇒ parseArgs(tail, n.toInt.seconds)
-      case x +: _ ⇒
-        println(s"ERROR: Unrecognized argument $x. All args: ${args.mkString(" ")}")
-        help()
-        sys.exit(1)
-    }
+      def parseArgs(args2: Seq[String], freq: FiniteDuration): FiniteDuration = args2 match {
+        case ("-h" | "--help") +: _ ⇒
+          help()
+          sys.exit(0)
+        case Nil       ⇒ freq
+        case n +: tail ⇒ parseArgs(tail, n.toInt.seconds)
+        case x +: _ ⇒
+          println(s"ERROR: Unrecognized argument $x. All args: ${args.mkString(" ")}")
+          help()
+          sys.exit(1)
+      }
     val frequency = parseArgs(args, modelFrequencySeconds)
     println(s"frequency (seconds): ${frequency}")
     implicit val system = ActorSystem("AirlineFlightModelDataIngress-Main")
     implicit val mat = ActorMaterializer()
-    val source = makeSource(frequency)
-    source.runWith(Sink.foreach(println))
+    makeSource(frequency).runWith(Sink.foreach(println))
+    println("Finished!")
   }
 }

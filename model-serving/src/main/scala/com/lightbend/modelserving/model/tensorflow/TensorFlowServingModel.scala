@@ -1,9 +1,10 @@
 package com.lightbend.modelserving.model.tensorflow
 
-import com.lightbend.modelserving.model.{ Model, ModelMetadata, ModelType }
+import com.lightbend.modelserving.model.{ Model, ModelDescriptor }
+import com.lightbend.modelserving.model.ModelDescriptorUtil.implicits._
 
 import com.google.gson.Gson
-import scalaj.http.Http
+import scalaj.http.Http // TODO: Replace with a Lightbend library??
 
 /**
  * Abstract class for any TensorFlow serving model processing. It has to be extended by the user to
@@ -11,16 +12,16 @@ import scalaj.http.Http
  */
 
 abstract class TensorFlowServingModel[RECORD, RESULT, HTTPREQUEST, HTTPRESULT](
-  val metadata: ModelMetadata)
+    val descriptor: ModelDescriptor)
   extends Model[RECORD, RESULT] with Serializable {
+
+  assert(descriptor.modelBytes != None, s"Invalid descriptor ${descriptor.toRichString}")
 
   val gson = new Gson
   val clazz: Class[HTTPRESULT]
 
-  // Make sure data is not empty
-  if (metadata.modelBytes.length < 1) throw new Exception("Empty URL")
   // Convert input into file path
-  var path = new String(metadata.modelBytes)
+  var path = new String(descriptor.modelBytes.get)
 
   // Nothing to cleanup in this case
   override def cleanup(): Unit = {}
@@ -36,10 +37,10 @@ abstract class TensorFlowServingModel[RECORD, RESULT, HTTPREQUEST, HTTPRESULT](
     // Post request
     val result = Http(path).postData(gson.toJson(getHTTPRequest(input))).header("content-type", "application/json").asString
     result.code match {
-      case 200 => // Success
+      case 200 ⇒ // Success
         val prediction = gson.fromJson(result.body, clazz)
         getResult(prediction, input)
-      case _ => // Error
+      case _ ⇒ // Error
         Left(s"Error processing serving request - code ${result.code}, error ${result.body}")
     }
   }

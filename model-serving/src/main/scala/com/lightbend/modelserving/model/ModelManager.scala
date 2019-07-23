@@ -15,7 +15,7 @@
 
 package com.lightbend.modelserving.model
 
-import java.io.DataOutputStream
+import pipelinesx.logging.LoggingUtil
 
 /**
  * Used to construct new models, persist existing ones, and reconstitute persisted models.
@@ -24,47 +24,32 @@ final class ModelManager[RECORD, RESULT](resolver: ModelFactoryResolver[RECORD, 
 
   override def toString: String = super.toString
 
-  final case class CopyError(message: String, cause: Throwable = null) extends RuntimeException(message, cause)
-
-  /**
-   * Deep copy the model
-   * TODO: This should be a method on the Model case class itself.
-   * @deprecated
-   */
-  def copy(from: Option[Model[RECORD, RESULT]]): Option[Model[RECORD, RESULT]] =
-    from.map { model =>
-      create(model.metadata) match {
-        case Left(error) =>
-          throw CopyError(s"BUG: ModelMetadata.copy failed for model $model. $error")
-        case Right(modelCopy) => modelCopy
-      }
-    }
-
-  /** Create the model from ModelMetadata */
-  def create(metadata: ModelMetadata): Either[String, Model[RECORD, RESULT]] =
+  /** Create the model from ModelDescriptor */
+  def create(descriptor: ModelDescriptor): Either[String, Model[RECORD, RESULT]] =
     try {
-      getFactory(metadata).create(metadata)
+      getFactory(descriptor).create(descriptor)
     } catch {
-      case scala.util.control.NonFatal(th) => Left(errorMessage(metadata, th))
+      case scala.util.control.NonFatal(th) ⇒ Left(errorMessage(descriptor, th))
     }
 
-  private def errorMessage(metadata: ModelMetadata, th: Throwable) =
-    s"ModelMetadata.toModel(metadata = $metadata): failed with exception $th. ${formatStackTrace(th)}"
-  private def errorMessage(metadata: ModelMetadata, msg: String) =
-    s"ModelMetadata.toModel(metadata = $metadata): $msg."
+  private def errorMessage(descriptor: ModelDescriptor, th: Throwable) = {
+    val thStr = LoggingUtil.throwableToString(th)
+    s"ModelDescriptor.toModel(descriptor = $descriptor): failed with exception $thStr"
+  }
 
-  private def formatStackTrace(th: Throwable): String =
-    th.getStackTrace().mkString("\n  ", "\n  ", "\n")
+  private def errorMessage(descriptor: ModelDescriptor, msg: String) =
+    s"ModelDescriptor.toModel(descriptor = $descriptor): $msg."
 
-  final case class MisconfiguredFactoryException(
-    message: String, cause: Throwable = null) extends RuntimeException(message, cause)
-
-  private def getFactory(metadata: ModelMetadata): ModelFactory[RECORD, RESULT] =
-    resolver.getFactory(metadata) match {
-      case Some(factory) => factory
-      case None =>
-        throw MisconfiguredFactoryException(
-          errorMessage(metadata, "No factory found for metadata"))
+  private def getFactory(descriptor: ModelDescriptor): ModelFactory[RECORD, RESULT] =
+    resolver.getFactory(descriptor) match {
+      case Some(factory) ⇒ factory
+      case None ⇒
+        throw ModelManager.MisconfiguredFactoryException(
+          errorMessage(descriptor, "No factory found for descriptor"))
     }
 }
 
+object ModelManager {
+  final case class MisconfiguredFactoryException(
+      message: String, cause: Throwable = null) extends RuntimeException(message, cause)
+}

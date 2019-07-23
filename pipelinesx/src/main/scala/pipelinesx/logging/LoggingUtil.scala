@@ -1,9 +1,8 @@
 package pipelinesx.logging
 
-import org.slf4j.{ Logger => SLogger, LoggerFactory => SLoggerFactory }
+import org.slf4j.{ Logger ⇒ SLogger, LoggerFactory ⇒ SLoggerFactory }
 import akka.actor.ActorSystem
-import akka.event.{ Logging => ALogging }
-import akka.event.Logging.{ LogLevel => ALogLevel, InfoLevel => AInfoLevel }
+import akka.event.Logging.{ LogLevel ⇒ ALogLevel, InfoLevel ⇒ AInfoLevel }
 import java.io.PrintStream
 
 /**
@@ -19,6 +18,9 @@ trait Logger {
   def info(msg: String): Unit
   def warn(msg: String): Unit
   def error(msg: String): Unit
+  /** Convenience method to log a Throwable. */
+  def throwable(msg: String, th: Throwable): Unit =
+    LoggingUtil.logThrowable(msg + ". Failed with exception: ", th)(line ⇒ error(line))
 }
 
 final class MutableLogger(var logger: Logger) extends Logger {
@@ -40,9 +42,13 @@ final case class SLF4JLogger(logger: SLogger) extends Logger {
   def error(msg: String): Unit = logger.error(msg)
 }
 
-final case class AkkaLogger(system: ActorSystem, level: ALogLevel) extends Logger {
-  /** Uses the LogLevel passed in as a constructor argument. */
-  def log(msg: String): Unit = system.log.log(level, msg)
+/**
+ * Akka Logger wrapper.
+ * @param system the ActorSystem for Akka
+ * @param defaultLevel the LogLevel value used if you call the "log(...)" method.
+ */
+final case class AkkaLogger(system: ActorSystem, defaultLevel: ALogLevel = AInfoLevel) extends Logger {
+  def log(msg: String): Unit = system.log.log(defaultLevel, msg)
   def debug(msg: String): Unit = system.log.debug(msg)
   def info(msg: String): Unit = system.log.info(msg)
   def warn(msg: String): Unit = system.log.warning(msg)
@@ -82,4 +88,44 @@ object LoggingUtil {
     if (useSLF4J) new MutableLogger(SLF4JLogger(SLoggerFactory.getLogger(clazz)))
     else new MutableLogger(StdoutStderrLogger(clazz))
   }
+
+  /**
+   * Helper that nicely formats and logs an exception, including its stack trace
+   * and all the causes and their stack traces!
+   */
+  def logThrowable(msg: String, th: Throwable)(perLineLogger: String ⇒ Unit): Unit = {
+    perLineLogger(msg)
+    throwableToStrings(th).foreach(perLineLogger)
+  }
+
+  /**
+   * Helper that nicely formats an exception, its stack trace and all the causes
+   * and their stack traces! calls {@link throwableToStrings} to construct an
+   * array, which this method concatenates separated by the supplied delimiter.
+   * @param th the Throwable
+   * @param delimiter insert between each line.
+   */
+  def throwableToString(th: Throwable, delimiter: String = "\n"): String =
+    throwableToStrings(th).mkString(delimiter)
+
+  /**
+   * Helper that nicely formats and logs an exception, including its stack trace
+   * and all the causes and their stack traces!
+   */
+  def throwableToStrings(th: Throwable): Vector[String] = {
+    var vect = Vector.empty[String]
+    var throwable = th
+    vect = vect :+ (s"$throwable: " + formatStackTrace(throwable))
+    throwable = throwable.getCause()
+    while (throwable != null) {
+      vect = vect :+ "\nCaused by: "
+      vect = vect :+ (s"$throwable: " + formatStackTrace(throwable))
+      throwable = throwable.getCause()
+    }
+    vect
+  }
+
+  private def formatStackTrace(th: Throwable): String =
+    th.getStackTrace().mkString("\n  ", "\n  ", "\n")
+
 }

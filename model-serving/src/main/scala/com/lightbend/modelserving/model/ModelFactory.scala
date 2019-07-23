@@ -14,6 +14,7 @@
  */
 
 package com.lightbend.modelserving.model
+import pipelinesx.logging.LoggingUtil
 
 /**
  * Generic definition of a model factory
@@ -24,15 +25,14 @@ trait ModelFactory[RECORD, RESULT] {
    * Define this method for concrete subclasses.
    * It's protected; end users call "create", while implementers define "make".
    */
-  protected def make(metadata: ModelMetadata): Model[RECORD, RESULT]
+  protected def make(descriptor: ModelDescriptor): Model[RECORD, RESULT]
 
-  def create(metadata: ModelMetadata): Either[String, Model[RECORD, RESULT]] =
+  def create(descriptor: ModelDescriptor): Either[String, Model[RECORD, RESULT]] =
     try {
-      Right(make(metadata))
+      Right(make(descriptor))
     } catch {
       case scala.util.control.NonFatal(th) ⇒
-        Left(s"Model factory failed to create a model from metadata $metadata and a byte array. $th. ${formatStackTrace(th)}")
+        val thMsg = LoggingUtil.throwableToStrings(th).mkString("\n")
+        Left(s"Model factory failed to create a model from descriptor $descriptor. $thMsg")
     }
-
-  private def formatStackTrace(th: Throwable): String = th.getStackTrace().mkString("\n  ", "\n  ", "\n")
 }

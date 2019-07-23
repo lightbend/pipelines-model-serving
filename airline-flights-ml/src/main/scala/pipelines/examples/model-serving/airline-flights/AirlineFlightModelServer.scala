@@ -3,18 +3,18 @@ package pipelines.examples.modelserving.airlineflights
 import pipelines.examples.modelserving.airlineflights.data.{ AirlineFlightRecord, AirlineFlightResult }
 import pipelines.examples.modelserving.airlineflights.models.{ AirlineFlightDataRecord, AirlineFlightFactoryResolver }
 import com.lightbend.modelserving.model.actor.{ ModelServingActor, ModelServingManager }
-import com.lightbend.modelserving.model.{ ModelDescriptor, ModelManager, ModelType, ModelMetadata, ServingActorResolver, ServingResult }
+import com.lightbend.modelserving.model.{ ModelDescriptor, ModelManager, ModelType, ServingActorResolver, ServingResult }
 import akka.Done
 import akka.actor.ActorSystem
 import akka.pattern.ask
 import akka.stream.scaladsl.Sink
 import akka.util.Timeout
+import scala.concurrent.Await
+import scala.concurrent.duration._
 import pipelines.akkastream.AkkaStreamlet
 import pipelines.akkastream.scaladsl.{ FlowWithPipelinesContext, RunnableGraphStreamletLogic }
 import pipelines.streamlets.StreamletShape
 import pipelines.streamlets.avro.{ AvroInlet, AvroOutlet }
-
-import scala.concurrent.duration._
 
 final case object AirlineFlightModelServer extends AkkaStreamlet {
 
@@ -42,13 +42,13 @@ final case object AirlineFlightModelServer extends AkkaStreamlet {
 
     protected def dataFlow =
       FlowWithPipelinesContext[AirlineFlightRecord].mapAsync(1) {
-        data =>
+        data ⇒
           modelserver.ask(AirlineFlightDataRecord(data))
             .mapTo[ServingResult[AirlineFlightResult]]
       }.filter {
-        r => r.result != None
+        r ⇒ r.result != None
       }.map {
-        r =>
+        r ⇒
           val result = r.result.get
           result.modelname = r.name
           result.dataType = r.dataType
@@ -56,10 +56,8 @@ final case object AirlineFlightModelServer extends AkkaStreamlet {
           result
       }
     protected def modelFlow =
-      FlowWithPipelinesContext[ModelDescriptor].map {
-        descriptor ⇒ ModelMetadata(descriptor, None)
-      }.mapAsync(1) {
-        metadata ⇒ modelserver.ask(metadata).mapTo[Done]
+      FlowWithPipelinesContext[ModelDescriptor].mapAsync(1) {
+        descriptor ⇒ modelserver.ask(descriptor).mapTo[Done]
       }
   }
 }
@@ -79,7 +77,7 @@ object AirlineFlightModelServerMain {
     println("Starting...")
     val dtype = "airline"
     implicit val system: ActorSystem = ActorSystem("ModelServing")
-    implicit val executor = system.getDispatcher
+    // implicit val executor = system.getDispatcher
     implicit val askTimeout: Timeout = Timeout(30.seconds)
 
     println("Making model manager and model serving actor...")
@@ -98,25 +96,25 @@ object AirlineFlightModelServerMain {
       name = "Airline model",
       description = "Mojo airline model",
       dataType = dtype,
-      modeltype = ModelType.H2O,
-      modeldata = Some(mojo),
-      modeldatalocation = None)
+      modelType = ModelType.H2O,
+      modelBytes = Some(mojo),
+      modelSourceLocation = Some("classpath:airlines/models/mojo/gbm_pojo_test.zip"))
 
-    val metadata = ModelMetadata(descriptor, None)
-    println(s"Sending metadata $metadata to the scoring engine...")
-    modelserver.ask()
+    println(s"Sending descriptor $descriptor to the scoring engine...\n")
+    val modelLoadResult = Await.result(modelserver.ask(descriptor), 5 seconds)
+    println(s"Result from loading the model: $modelLoadResult\n")
+
     val record = AirlineFlightRecord(1990, 1, 3, 3, 1707, 1630, 1755, 1723, "US", 29, 0, 48, 53, 0, 32, 37, "CMH", "IND", 182, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, dtype)
-    Thread.sleep(1000)
     println("Sending record to the scoring engine...")
-    val result = modelserver.ask(AirlineFlightDataRecord(record)).mapTo[ServingResult[AirlineFlightResult]]
-    println(s"Received result: $result")
-    result.map(data => {
-      val r = data.result.get
-      r.modelname = data.name
-      r.dataType = data.dataType
-      r.duration = data.duration
-      println(s"full details: $r")
-    })
+    val resultFuture = modelserver.ask(AirlineFlightDataRecord(record)).mapTo[ServingResult[AirlineFlightResult]]
+    val data = Await.result(resultFuture, 2 seconds)
+    println(s"Received result: $data (${data.result.get})")
+    val r = data.result.get
+    r.modelname = data.name
+    r.dataType = data.dataType
+    r.duration = data.duration
+    println(s"full details: $r")
+    println("\n\nCalling exit. If in sbt, ignore 'sbt.TrapExitSecurityException'...\n\n")
     sys.exit(0)
   }
 }

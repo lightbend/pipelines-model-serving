@@ -29,7 +29,7 @@ class RecordsReaderTest extends FunSpec with BeforeAndAfterAll with OutputInterc
       case Array(i, s) =>
         try { Right(i.toInt -> s) }
         catch { case scala.util.control.NonFatal(e) => Left(e.toString) }
-      case ary => Left(r)
+      case _ => Left(r)
     }
   def nonEmptyIntArrayCSVParse(separator: String = ","): String => Either[String,Array[Int]] =
     (r: String) => {
@@ -319,7 +319,7 @@ class RecordsReaderTest extends FunSpec with BeforeAndAfterAll with OutputInterc
     def formatInitOutput[T](
       resourcePaths: Array[T],
       kind: RecordsReader.SourceKind.Value,
-      repeat: Int = 1): Seq[String] = {
+      repeat: Int): Seq[String] = {
 
       val outMsgs =
         resourcePaths.zipWithIndex.map {

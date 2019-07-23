@@ -1,24 +1,23 @@
 package com.lightbend.modelserving.model.tensorflow
 
-import java.io.{ ObjectInputStream, ObjectOutputStream }
+import com.lightbend.modelserving.model.{ Model, ModelDescriptor }
+import com.lightbend.modelserving.model.ModelDescriptorUtil.implicits._
 
-import com.lightbend.modelserving.model.{ Model, ModelMetadata }
 import org.tensorflow.{ Graph, Session }
-import com.lightbend.modelserving.model.ModelType
 
 /**
  * Abstract class for any TensorFlow (optimized export) model processing. It has to be extended by the user
  * implement score method, based on his own model. Serializability here is required for Spark.
  */
-abstract class TensorFlowModel[RECORD, RESULT](val metadata: ModelMetadata)
+abstract class TensorFlowModel[RECORD, RESULT](val descriptor: ModelDescriptor)
   extends Model[RECORD, RESULT] with Serializable {
 
+  assert(descriptor.modelBytes != None, s"Invalid descriptor ${descriptor.toRichString}")
+
   private def setup(): (Graph, Session) = {
-    // Make sure data is not empty
-    if (metadata.modelBytes.length == 0) throw new RuntimeException("Empty graph data")
     // Model graph
     val graph = new Graph
-    graph.importGraphDef(metadata.modelBytes)
+    graph.importGraphDef(descriptor.modelBytes.get)
     // Create TensorFlow session
     val session = new Session(graph)
     (graph, session)
@@ -39,16 +38,16 @@ abstract class TensorFlowModel[RECORD, RESULT](val metadata: ModelMetadata)
   }
 
   // TODO: Verify if these methods are actually needed, since they have only one field,
-  // the metadata, which has these methods:
+  // the descriptor, which has these methods:
   // private def writeObject(output: ObjectOutputStream): Unit = {
   //   val start = System.currentTimeMillis()
-  //   output.writeObject(metadata)
+  //   output.writeObject(descriptor)
   //   println(s"TensorFlow optimized serialization in ${System.currentTimeMillis() - start} ms")
   // }
 
   // private def readObject(input: ObjectInputStream): Unit = {
   //   val start = System.currentTimeMillis()
-  //   metadata = input.readObject().asInstanceOf[ModelMetadata]
+  //   descriptor = input.readObject().asInstanceOf[ModelDescriptor]
   //   try {
   //     val (graph, session) = setup()
   //     println(s"TensorFlow model deserialization in ${System.currentTimeMillis() - start} ms")

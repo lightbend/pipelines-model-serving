@@ -1,11 +1,12 @@
 package pipelines.examples.modelserving.airlineflights.models
 
-import com.lightbend.modelserving.model.{ Model, ModelManager, ModelMetadata, ModelType }
+import com.lightbend.modelserving.model.{ Model, ModelDescriptor, ModelManager, ModelType }
 import com.lightbend.modelserving.model.persistence.FilePersistence
 import org.scalatest.FlatSpec
 import pipelines.examples.modelserving.airlineflights.data.{ AirlineFlightRecord, AirlineFlightResult }
+import pipelinesx.test.OutputInterceptor
 
-class AirlineH2OProcessorTest extends FlatSpec {
+class AirlineH2OProcessorTest extends FlatSpec with OutputInterceptor {
 
   val filePath = "airlines/models/mojo/gbm_pojo_test.zip"
   val savePath = "airline-model-state.dat"
@@ -18,14 +19,15 @@ class AirlineH2OProcessorTest extends FlatSpec {
   val fp = FilePersistence[AirlineFlightRecord, AirlineFlightResult](modelManager)
 
   "Loading a valid model for the first time" should "succeed" in {
-
-    val model = createModel("airline") match {
-      case Right(m) => m
-      case Left(error) => fail(error)
-    }
-    model.score(input) match {
-      case Left(error) => fail(error)
-      case Right(result) => assert("YES" == result.delayPredictionLabel)
+    ignoreOutput {
+      val model = createModel("airline") match {
+        case Right(m)    ⇒ m
+        case Left(error) ⇒ fail(error)
+      }
+      model.score(input) match {
+        case Left(error)   ⇒ fail(error)
+        case Right(result) ⇒ assert("YES" == result.delayPredictionLabel)
+      }
     }
   }
 
@@ -34,33 +36,37 @@ class AirlineH2OProcessorTest extends FlatSpec {
   }
 
   "FilePersistence.stateExists" should "return true if the model has been saved to the file system" in {
-    val original = createModel("airline") match {
-      case Right(m) => m
-      case Left(error) => fail(error)
-    }
+    ignoreOutput {
+      val original = createModel("airline") match {
+        case Right(m)    ⇒ m
+        case Left(error) ⇒ fail(error)
+      }
 
-    assert(Right(true) == fp.saveState(original, savePath))
-    assert(fp.stateExists("airline") == true)
+      assert(Right(true) == fp.saveState(original, savePath))
+      assert(fp.stateExists("airline") == true)
+    }
   }
 
   "FilePersistence.saveState/restoreState" should "should save/restore the model using the file system" in {
-    val original = createModel("airline") match {
-      case Right(m) => m
-      case Left(error) => fail(error)
-    }
-
-    assert(Right(true) == fp.saveState(original, savePath))
-    val restoredModel = fp.restoreState(savePath) match {
-      case Left(error) => fail(error)
-      case Right(m) => m match {
-        case m2: Model[AirlineFlightRecord, AirlineFlightResult] => m2
-        case _ => fail(s"Unexpected model kind: $m")
+    ignoreOutput {
+      val original = createModel("airline") match {
+        case Right(m)    ⇒ m
+        case Left(error) ⇒ fail(error)
       }
-    }
-    assert(original.metadata == restoredModel.metadata)
-    restoredModel.score(input) match {
-      case Left(error) => fail(error)
-      case Right(result) => assert("YES" == result.delayPredictionLabel)
+
+      assert(Right(true) == fp.saveState(original, savePath))
+      val restoredModel = fp.restoreState(savePath) match {
+        case Left(error) ⇒ fail(error)
+        case Right(m) ⇒ m match {
+          case m2: Model[AirlineFlightRecord, AirlineFlightResult] ⇒ m2
+          case _                                                   ⇒ fail(s"Unexpected model kind: $m")
+        }
+      }
+      assert(original.descriptor == restoredModel.descriptor)
+      restoredModel.score(input) match {
+        case Left(error)   ⇒ fail(error)
+        case Right(result) ⇒ assert("YES" == result.delayPredictionLabel)
+      }
     }
   }
 
@@ -68,12 +74,13 @@ class AirlineH2OProcessorTest extends FlatSpec {
     val is = this.getClass.getClassLoader.getResourceAsStream(filePath)
     val mojo = new Array[Byte](is.available)
     is.read(mojo)
-    val metadata = ModelMetadata(
+    val descriptor = ModelDescriptor(
       name = name,
       description = "airline H2O model",
-      modelType = ModelType.H2O.ordinal(),
-      modelBytes = mojo,
-      location = Some(filePath))
-    AirlineFlightH2OModel.create(metadata)
+      dataType = "airline",
+      modelType = ModelType.H2O,
+      modelBytes = Some(mojo),
+      modelSourceLocation = Some(filePath))
+    AirlineFlightH2OModel.create(descriptor)
   }
 }

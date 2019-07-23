@@ -1,8 +1,5 @@
 package pipelines.examples.modelserving.airlineflights
 
-import pipelines.examples.modelserving.airlineflights.data.{ AirlineFlightRecord, AirlineFlightResult }
-import pipelinesx.ingress.RecordsReader
-
 /**
  * For testing the logic outside of Pipelines. Try -h or --help for information
  */
@@ -12,23 +9,23 @@ object AirlineFlightsMain {
   case class Options(count: Int)
 
   def main(args: Array[String]): Unit = {
-    def parseArgs(args2: Seq[String], options: Options): Options = args2 match {
-      case Nil => options
-      case ("-h" | "--help") +: tail =>
-        help()
-        sys.exit(0)
-      case ("-n" | "--count") +: x +: tail => toInt(x) match {
-        case Some(n) => parseArgs(tail, options.copy(count = n))
-        case _ =>
+      def parseArgs(args2: Seq[String], options: Options): Options = args2 match {
+        case Nil ⇒ options
+        case ("-h" | "--help") +: _ ⇒
+          help()
+          sys.exit(0)
+        case ("-n" | "--count") +: x +: tail ⇒ toInt(x) match {
+          case Some(n) ⇒ parseArgs(tail, options.copy(count = n))
+          case _ ⇒
+            println(s"ERROR: Invalid argument $x. (args = ${args.mkString(" ")}")
+            help()
+            sys.exit(1)
+        }
+        case x +: _ ⇒
           println(s"ERROR: Invalid argument $x. (args = ${args.mkString(" ")}")
           help()
           sys.exit(1)
       }
-      case x +: tail =>
-        println(s"ERROR: Invalid argument $x. (args = ${args.mkString(" ")}")
-        help()
-        sys.exit(1)
-    }
 
     val options = parseArgs(args, Options(defaultN))
     println("AirlineFlightsMain: Running airlines test application.")
@@ -64,6 +61,6 @@ object AirlineFlightsMain {
     try {
       Some(n.toInt)
     } catch {
-      case _: java.lang.NumberFormatException => None
+      case _: java.lang.NumberFormatException ⇒ None
     }
 }

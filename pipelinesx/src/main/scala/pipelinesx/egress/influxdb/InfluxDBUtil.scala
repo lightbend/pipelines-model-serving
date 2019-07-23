@@ -11,8 +11,10 @@ object InfluxDBUtil {
   trait Writer[R] {
     def write(record: R, measurement: String, database: String, influxDB: InfluxDB): Unit = {
       val time = new Date().getTime
-      val point = Point.measurement(measurement).time(time, TimeUnit.MILLISECONDS)
-      addFields(point, record)
+      val point = {
+        val p = Point.measurement(measurement).time(time, TimeUnit.MILLISECONDS)
+        addFields(p, record)
+      }
       doWrite(point.build(), database, influxDB)
     }
 
@@ -24,7 +26,7 @@ object InfluxDBUtil {
         case scala.util.control.NonFatal(th) ⇒ println(s"Exception writing to InfluxDB database $database: $th")
       }
 
-    def addFields(point: Point.Builder, record: R): Unit
+    def addFields(point: Point.Builder, record: R): Point.Builder
   }
 
   def getInfluxDB(hostname: String, port: Int) = {

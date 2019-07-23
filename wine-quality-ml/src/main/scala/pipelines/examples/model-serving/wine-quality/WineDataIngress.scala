@@ -38,8 +38,8 @@ object WineDataIngressUtil {
       .getOrElse[Int](rootConfigKey + ".data-frequency-milliseconds")(1).milliseconds
 
   def makeSource(
-    configRoot: String = rootConfigKey,
-    frequency: FiniteDuration = dataFrequencyMilliseconds): Source[WineRecord, NotUsed] = {
+      configRoot: String         = rootConfigKey,
+      frequency:  FiniteDuration = dataFrequencyMilliseconds): Source[WineRecord, NotUsed] = {
     val reader = makeRecordsReader(configRoot)
     Source.repeat(reader)
       .map(reader ⇒ reader.next()._2) // Only keep the record part of the tuple

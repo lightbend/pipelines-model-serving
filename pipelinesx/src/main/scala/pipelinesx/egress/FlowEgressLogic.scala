@@ -3,7 +3,6 @@ package pipelinesx.egress
 import pipelines.streamlets._
 import pipelines.akkastream._
 import pipelines.akkastream.scaladsl._
-import org.apache.avro.specific.SpecificRecordBase
 import akka.stream.scaladsl.Sink
 
 /**
@@ -14,9 +13,9 @@ import akka.stream.scaladsl.Sink
  * at-least once is needed, e.g., writing data to a database.
  */
 abstract class FlowEgressLogic[IN](
-  val inlet: CodecInlet[IN])(
-  implicit
-  context: StreamletContext)
+    val inlet: CodecInlet[IN])(
+    implicit
+    context: StreamletContext)
   extends RunnableGraphStreamletLogic {
   /**
    * Logic to process the data, such as writing to a database.

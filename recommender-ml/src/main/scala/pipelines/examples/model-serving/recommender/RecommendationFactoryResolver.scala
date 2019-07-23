@@ -1,6 +1,6 @@
 package pipelines.examples.modelserving.recommender
 
-import com.lightbend.modelserving.model.{ ModelType, ModelFactory, ModelFactoryResolver }
+import com.lightbend.modelserving.model.{ ModelDescriptor, ModelType, ModelFactory, ModelFactoryResolver }
 import pipelines.examples.modelserving.recommender.data.{ ProductPrediction, RecommenderRecord }
 import pipelines.examples.modelserving.recommender.models.tensorflow.RecommenderTensorFlowServingModel
 
@@ -10,7 +10,8 @@ import pipelines.examples.modelserving.recommender.models.tensorflow.Recommender
 object RecommendationFactoryResolver extends ModelFactoryResolver[RecommenderRecord, Seq[ProductPrediction]] {
 
   private val factories = Map(
-    ModelType.TENSORFLOWSERVING.ordinal -> RecommenderTensorFlowServingModel)
+    ModelType.TENSORFLOWSERVING -> RecommenderTensorFlowServingModel)
 
-  override def getFactory(whichFactory: Int): Option[ModelFactory[RecommenderRecord, Seq[ProductPrediction]]] = factories.get(whichFactory)
+  override def getFactory(descriptor: ModelDescriptor): Option[ModelFactory[RecommenderRecord, Seq[ProductPrediction]]] =
+    factories.get(descriptor.modelType)
 }

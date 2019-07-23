@@ -1,12 +1,9 @@
 package pipelinesx.egress.influxdb
 
-import pipelinesx.egress.FlowEgressLogic
 import pipelines.streamlets.CodecInlet
 import pipelines.akkastream.StreamletContext
 import pipelines.akkastream.scaladsl._
 import akka.actor.ActorSystem
-import scala.reflect.ClassTag
-import org.apache.avro.specific.SpecificRecordBase
 
 /**
  * Egress logic abstraction for writing data to InfluxDB.
@@ -17,13 +14,13 @@ import org.apache.avro.specific.SpecificRecordBase
  * @param configKeys The configuration keys used to retrieve the database host, port, and table name from the configuration, relative to the configKeyRoot.
  */
 final case class InfluxDBEgressLogic[IN](
-  in: CodecInlet[IN],
-  measurement: String,
-  writer: InfluxDBUtil.Writer[IN],
-  configKeyRoot: String,
-  configKeys: InfluxDBEgressLogic.ConfigKeys = InfluxDBEgressLogic.ConfigKeys())(
-  implicit
-  context: StreamletContext)
+    in:            CodecInlet[IN],
+    measurement:   String,
+    writer:        InfluxDBUtil.Writer[IN],
+    configKeyRoot: String,
+    configKeys:    InfluxDBEgressLogic.ConfigKeys = InfluxDBEgressLogic.ConfigKeys())(
+    implicit
+    context: StreamletContext)
   extends RunnableGraphStreamletLogic {
 
   def runnableGraph =
@@ -39,7 +36,7 @@ final case class InfluxDBEgressLogic[IN](
     val portInt =
       try { port.toInt }
       catch {
-        case scala.util.control.NonFatal(th) =>
+        case scala.util.control.NonFatal(th) ⇒
           throw InfluxDBEgressLogic.InvalidConfigValue(configKeyRoot + "." + configKeys.influxPort, port, th)
       }
 
@@ -57,7 +54,7 @@ final case class InfluxDBEgressLogic[IN](
     if (value == null || value == "") throw InfluxDBEgressLogic.ConfigKeyNotFound(key, null)
     else value
   } catch {
-    case scala.util.control.NonFatal(th) =>
+    case scala.util.control.NonFatal(th) ⇒
       throw InfluxDBEgressLogic.ConfigKeyNotFound(key, th)
   }
 }
@@ -65,9 +62,9 @@ final case class InfluxDBEgressLogic[IN](
 object InfluxDBEgressLogic {
 
   final case class ConfigKeys(
-    val influxHost: String = "influxdb.host",
-    val influxPort: String = "influxdb.port",
-    val influxDatabase: String = "influxdb.database")
+      val influxHost:     String = "influxdb.host",
+      val influxPort:     String = "influxdb.port",
+      val influxDatabase: String = "influxdb.database")
 
   final case class ConfigKeyNotFound(key: String, cause: Throwable) extends RuntimeException(
     s"The InfluxDB key $key was not found. Please check your configuration, e.g., application.conf", cause)

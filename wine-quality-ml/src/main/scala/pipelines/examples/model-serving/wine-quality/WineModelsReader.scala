@@ -1,6 +1,5 @@
 package pipelines.examples.modelserving.winequality
 
-import pipelines.examples.modelserving.winequality.data._
 import pipelinesx.ingress.ByteArrayReader
 import com.lightbend.modelserving.model.{ ModelDescriptor, ModelType }
 
@@ -28,8 +27,11 @@ final case class WineModelsReader(resourceNames: Map[ModelType, Seq[String]]) {
       currentIndex += 1
       new ModelDescriptor(
         name = s"Tensorflow Model - $resourceName",
-        description = "generated from TensorFlow", modeltype = ModelType.TENSORFLOW, modeldata = Some(barray),
-        modeldatalocation = None, dataType = "wine")
+        description = "generated from TensorFlow",
+        dataType = "wine",
+        modelType = ModelType.TENSORFLOW,
+        modelBytes = Some(barray),
+        modelSourceLocation = None)
 
     case ModelType.PMML if finished(ModelType.PMML, currentIndex) ⇒
       init(ModelType.TENSORFLOW)
@@ -41,8 +43,11 @@ final case class WineModelsReader(resourceNames: Map[ModelType, Seq[String]]) {
       currentIndex += 1
       new ModelDescriptor(
         name = resourceName.dropRight(5),
-        description = "generated from Spark", modeltype = ModelType.PMML, modeldata = Some(barray),
-        modeldatalocation = None, dataType = "wine")
+        description = "generated from Spark",
+        dataType = "wine",
+        modelType = ModelType.PMML,
+        modelBytes = Some(barray),
+        modelSourceLocation = None)
 
     case ModelType.TENSORFLOWSERVING | ModelType.TENSORFLOWSAVED ⇒
       Console.err.println(
@@ -60,9 +65,9 @@ final case class WineModelsReader(resourceNames: Map[ModelType, Seq[String]]) {
 
   protected def finished(modelType: ModelType, currentIndex: Int): Boolean =
     resourceNames.get(modelType) match {
-      case None ⇒ true
+      case None                                      ⇒ true
       case Some(names) if currentIndex >= names.size ⇒ true
-      case _ ⇒ false
+      case _                                         ⇒ false
     }
 
   protected def init(whichType: ModelType): Unit = {

@@ -8,7 +8,7 @@ import akka.stream.scaladsl.Sink
 import akka.pattern.ask
 import akka.util.Timeout
 import com.lightbend.modelserving.model.actor.{ ModelServingActor, ModelServingManager }
-import com.lightbend.modelserving.model.{ ModelDescriptor, ModelManager, ModelType, ModelMetadata, ServingActorResolver, ServingResult }
+import com.lightbend.modelserving.model.{ ModelDescriptor, ModelManager, ModelType, ServingActorResolver, ServingResult }
 import pipelines.akkastream.AkkaStreamlet
 import pipelines.akkastream.scaladsl.{ FlowWithPipelinesContext, RunnableGraphStreamletLogic }
 import pipelines.streamlets.StreamletShape
@@ -48,10 +48,8 @@ final case object WineModelServer extends AkkaStreamlet {
         r ⇒ WineResult(r.name, r.dataType, r.duration, r.result.get)
       }
     protected def modelFlow =
-      FlowWithPipelinesContext[ModelDescriptor].map {
-        descriptor ⇒ ModelMetadata(descriptor, None)
-      }.mapAsync(1) {
-        metadata ⇒ modelserver.ask(metadata).mapTo[Done]
+      FlowWithPipelinesContext[ModelDescriptor].mapAsync(1) {
+        descriptor ⇒ modelserver.ask(descriptor).mapTo[Done]
       }
   }
 }
@@ -73,16 +71,20 @@ object WineModelServerMain {
     val is = this.getClass.getClassLoader.getResourceAsStream(path)
     val pmml = new Array[Byte](is.available)
     is.read(pmml)
-    val descriptor = new ModelDescriptor(name = "Wine Model", description = "winequalityDecisionTreeClassification",
-      dataType = dtype, modeltype = ModelType.PMML, modeldata = Some(pmml), modeldatalocation = None)
+    val descriptor = new ModelDescriptor(
+      name = "Wine Model",
+      description = "winequalityDecisionTreeClassification",
+      dataType = dtype,
+      modelType = ModelType.PMML,
+      modelBytes = Some(pmml),
+      modelSourceLocation = None)
 
-    val metadata = ModelMetadata(descriptor, Some(path))
-    modelserver.ask(metadata)
+    modelserver.ask(descriptor)
     Thread.sleep(100)
 
     val record = WineRecord(.0, .0, .0, .0, .0, .0, .0, .0, .0, .0, .0, dtype)
     val result = modelserver.ask(WineDataRecord(record)).mapTo[ServingResult[Double]]
-    result.map(data => {
+    result.foreach(data ⇒ {
       println(s"Result ${data.result.get}, model ${data.name}, data type ${data.dataType}, duration ${data.duration}")
     })
   }

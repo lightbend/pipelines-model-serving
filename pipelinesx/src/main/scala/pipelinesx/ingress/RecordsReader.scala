@@ -3,11 +3,10 @@ package pipelinesx.ingress
 import pipelinesx.config.ConfigUtil
 import pipelinesx.config.ConfigUtil.implicits._
 import pipelinesx.logging.{ LoggingUtil, MutableLogger }
-import scala.io.{ BufferedSource, Source }
+import scala.io.BufferedSource
 import java.io.{ File, FilenameFilter, FileInputStream, FileOutputStream, InputStream }
 import java.util.zip.{ GZIPInputStream, ZipInputStream }
 import java.net.URL
-import scala.collection.JavaConverters._
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream
 
 /**
@@ -69,11 +68,11 @@ trait RecordsReader[R] {
 }
 
 final class RecordsReaderImpl[R, S] protected[ingress] (
-  val resourcePaths: Seq[S],
-  val origin: RecordsReader.SourceKind.Value,
-  dropFirstN: Int,
-  getSource: S => BufferedSource,
-  parse: String => Either[String, R]) extends RecordsReader[R] {
+    val resourcePaths: Seq[S],
+    val origin:        RecordsReader.SourceKind.Value,
+    dropFirstN:        Int,
+    getSource:         S ⇒ BufferedSource,
+    parse:             String ⇒ Either[String, R]) extends RecordsReader[R] {
 
   if (resourcePaths.size == 0) throw RecordsReader.NoResourcesSpecified
 
@@ -152,13 +151,13 @@ object RecordsReader {
    * @param parse function that parses each line into a record, return an error as a `Left(String)`.
    */
   def fromFileSystem[R](
-    resourcePaths: Seq[File],
-    dropFirstN: Int = 0,
-    failIfMissing: Boolean = true)(
-    parse: String => Either[String, R]): RecordsReader[R] = {
+      resourcePaths: Seq[File],
+      dropFirstN:    Int       = 0,
+      failIfMissing: Boolean   = true)(
+      parse: String ⇒ Either[String, R]): RecordsReader[R] = {
 
     logger.info(s"Reading resources from the file system: ${seqToString(resourcePaths)}")
-    val goodPaths = loadResources(resourcePaths, failIfMissing, FileSystem) { (path: File) =>
+    val goodPaths = loadResources(resourcePaths, failIfMissing, FileSystem) { (path: File) ⇒
       if (path.exists()) Right(path)
       else Left(path.getCanonicalPath)
     }
@@ -167,7 +166,7 @@ object RecordsReader {
       goodPaths,
       FileSystem,
       dropFirstN,
-      path => getSource(path.getCanonicalPath, fromFile(path)),
+      path ⇒ getSource(path.getCanonicalPath, fromFile(path)),
       parse)
   }
 
@@ -179,13 +178,13 @@ object RecordsReader {
    * @param parse function that parses each line into a record, return an error as a `Left(String)`.
    */
   def fromClasspath[R](
-    resourcePaths: Seq[String],
-    dropFirstN: Int = 0,
-    failIfMissing: Boolean = true)(
-    parse: String => Either[String, R]): RecordsReader[R] = {
+      resourcePaths: Seq[String],
+      dropFirstN:    Int         = 0,
+      failIfMissing: Boolean     = true)(
+      parse: String ⇒ Either[String, R]): RecordsReader[R] = {
 
     logger.info(s"Reading resources from the CLASSPATH: ${seqToString(resourcePaths)}")
-    val goodPaths = loadResources(resourcePaths, failIfMissing, CLASSPATH) { (path: String) =>
+    val goodPaths = loadResources(resourcePaths, failIfMissing, CLASSPATH) { (path: String) ⇒
       val classloader = Thread.currentThread().getContextClassLoader()
       if (classloader.getResource(path) == null) Left(path) else Right(path)
     }
@@ -194,7 +193,7 @@ object RecordsReader {
       goodPaths,
       CLASSPATH,
       dropFirstN,
-      name => getSource(name, fromResource(name)),
+      name ⇒ getSource(name, fromResource(name)),
       parse)
   }
 
@@ -209,10 +208,10 @@ object RecordsReader {
    * @param parse function that parses each line into a record, return an error as a `Left(String)`.
    */
   def fromURLs[R](
-    resourceURLs: Seq[URL],
-    dropFirstN: Int = 0,
-    failIfMissing: Boolean = true)(
-    parse: String => Either[String, R]): RecordsReader[R] = {
+      resourceURLs:  Seq[URL],
+      dropFirstN:    Int      = 0,
+      failIfMissing: Boolean  = true)(
+      parse: String ⇒ Either[String, R]): RecordsReader[R] = {
 
     logger.info(s"Reading resources from URLs: ${seqToString(resourceURLs)}")
     val goodPaths = loadResources(resourceURLs, failIfMissing, URLs)(downloadURL)
@@ -222,7 +221,7 @@ object RecordsReader {
       goodPaths,
       URLs,
       dropFirstN,
-      path => getSource(path.getCanonicalPath(), fromFile(path)),
+      path ⇒ getSource(path.getCanonicalPath(), fromFile(path)),
       parse)
   }
 
@@ -238,20 +237,20 @@ object RecordsReader {
    * @param parse function that parses each line into a record, return an error as a `Left(String)`.
    */
   def fromConfiguration[R](
-    configurationKeyRoot: String,
-    dropFirstN: Int = 0,
-    failIfMissing: Boolean = true)(
-    parse: String => Either[String, R]): RecordsReader[R] = {
+      configurationKeyRoot: String,
+      dropFirstN:           Int     = 0,
+      failIfMissing:        Boolean = true)(
+      parse: String ⇒ Either[String, R]): RecordsReader[R] = {
 
     logger.info(s"Determining where to find resources from the configuration at key: $configurationKeyRoot")
     determineSource(configurationKeyRoot) match {
-      case FileSystem =>
+      case FileSystem ⇒
         val paths = determineFilesFromConfiguration(configurationKeyRoot)
         fromFileSystem(paths, dropFirstN, failIfMissing)(parse)
-      case CLASSPATH =>
+      case CLASSPATH ⇒
         val paths = determineClasspathResourcesFromConfiguration(configurationKeyRoot)
         fromClasspath(paths, dropFirstN, failIfMissing)(parse)
-      case URLs =>
+      case URLs ⇒
         val urls = determineURLsFromConfiguration(configurationKeyRoot)
         fromURLs(urls, dropFirstN, failIfMissing)(parse)
     }
@@ -261,18 +260,18 @@ object RecordsReader {
     configKeyRoot + ".data-sources.which-source"
 
   protected def loadResources[IN, OUT](
-    resources: Seq[IN],
-    failIfMissing: Boolean,
-    kind: SourceKind.Value)(
-    find: IN => Either[String, OUT]): Seq[OUT] = {
+      resources:     Seq[IN],
+      failIfMissing: Boolean,
+      kind:          SourceKind.Value)(
+      find: IN ⇒ Either[String, OUT]): Seq[OUT] = {
 
     if (resources.size == 0) {
       logger.error(s"No resources were specified in call to method from$kind!")
       if (failIfMissing) throw FailedToLoadResources(resources, kind)
       Nil
     } else loadResources2(resources)(find) match {
-      case (Nil, good) => good
-      case (bad, good) =>
+      case (Nil, good) ⇒ good
+      case (bad, good) ⇒
         logger.error(s"Some resources were not found: ${seqToString(bad)} in the list ${seqToString(resources)}")
         if (failIfMissing) throw FailedToLoadResources(bad, kind)
         good
@@ -280,14 +279,14 @@ object RecordsReader {
   }
 
   protected def loadResources2[IN, OUT](
-    resources: Seq[IN])(
-    find: IN => Either[String, OUT]): (Seq[String], Seq[OUT]) = {
+      resources: Seq[IN])(
+      find: IN ⇒ Either[String, OUT]): (Seq[String], Seq[OUT]) = {
 
     resources.foldLeft((Vector.empty[String], Vector.empty[OUT])) {
-      case ((bad, good), resource) =>
+      case ((bad, good), resource) ⇒
         find(resource) match {
-          case Left(error) => (bad :+ error, good)
-          case Right(out) => (bad, good :+ out)
+          case Left(error) ⇒ (bad :+ error, good)
+          case Right(out)  ⇒ (bad, good :+ out)
         }
     }
   }
@@ -299,13 +298,13 @@ object RecordsReader {
   def determineSource(configKeyRoot: String): SourceKind = {
     val source = whichSource(configKeyRoot)
     config.get[String](source) match {
-      case Some(flag) =>
+      case Some(flag) ⇒
         val f = flag.toLowerCase
         if (f.startsWith("file")) SourceKind.FileSystem
         else if (f.startsWith("url")) SourceKind.URLs
         else if (f.startsWith("class")) SourceKind.CLASSPATH
         else throw InvalidConfiguration(config, Seq(source), s"The value $flag is not a valid kind of record source.")
-      case _ => throw InvalidConfiguration(config, Seq(source))
+      case _ ⇒ throw InvalidConfiguration(config, Seq(source))
     }
   }
 
@@ -315,8 +314,8 @@ object RecordsReader {
   protected def fromResource(path: String): InputStream = {
     val classloader = Thread.currentThread().getContextClassLoader()
     classloader.getResourceAsStream(path) match {
-      case null => throw FailedToLoadResources(Seq(path), CLASSPATH)
-      case is => is
+      case null ⇒ throw FailedToLoadResources(Seq(path), CLASSPATH)
+      case is   ⇒ is
     }
   }
 
@@ -324,7 +323,7 @@ object RecordsReader {
    * Determine if a URL exists and also download the file to a local location.
    * @return Right(local_path) if successful, Left(error) if not.
    */
-  protected val downloadURL: URL => Either[String, File] = url => {
+  protected val downloadURL: URL ⇒ Either[String, File] = url ⇒ {
     val fileNameParts = url.toString.split("/").last.split("\\.")
     val (prefix1, suffix1) = fileNameParts.splitAt(fileNameParts.length - 1)
     val prefix = if (prefix1.size > 0) prefix1 else Array("file") // hack
@@ -335,7 +334,7 @@ object RecordsReader {
   // Copied some of this logic from ByteArrayReader. TODO: Merge??
   // Don't download if it appears we already have it!
   protected def downloadURL2(
-    url: URL, prefix: String, suffix: String): Either[String, File] = try {
+      url: URL, prefix: String, suffix: String): Either[String, File] = try {
     val target = makeLocalFile(url.toString, prefix, suffix)
     if (target.exists) {
       logger.info(s"Already downloaded $url to local file $target")
@@ -357,7 +356,7 @@ object RecordsReader {
       Right(target)
     }
   } catch {
-    case scala.util.control.NonFatal(th) => Left(s"$url (failure cause: $th)")
+    case scala.util.control.NonFatal(th) ⇒ Left(s"$url (failure cause: $th)")
   }
 
   protected def makeLocalFile(seed: String, prefix: String, suffix: String): File = {
@@ -374,40 +373,40 @@ object RecordsReader {
   }
 
   protected def determineFilesFromConfiguration(configKeyRoot: String): Seq[File] = {
-    // Works correctly even if the string is empty.
-    def makeFilenameFilter(regexString: String): FilenameFilter =
-      if (regexString.trim.size == 0) defaultFilenameFilter
-      else new FilenameFilter {
-        val re = new scala.util.matching.Regex(regexString)
-        def accept(dir: File, name: String): Boolean = re.findAllIn(name).size > 0
-      }
+      // Works correctly even if the string is empty.
+      def makeFilenameFilter(regexString: String): FilenameFilter =
+        if (regexString.trim.size == 0) defaultFilenameFilter
+        else new FilenameFilter {
+          val re = new scala.util.matching.Regex(regexString)
+          def accept(dir: File, name: String): Boolean = re.findAllIn(name).size > 0
+        }
 
-    def addFiles(root: String, regexString: String, filter: FilenameFilter): Vector[File] = {
-      val dir = new File(root)
-      if (dir.exists) {
-        val files = dir.listFiles(filter).toVector
-        if (files.size == 0) logger.warn(s"No file found in $root for regex $regexString!")
-        files
-      } else {
-        logger.warn(s"Directory $root doesn't exist or couldn't be read!")
-        Vector.empty
+      def addFiles(root: String, regexString: String, filter: FilenameFilter): Vector[File] = {
+        val dir = new File(root)
+        if (dir.exists) {
+          val files = dir.listFiles(filter).toVector
+          if (files.size == 0) logger.warn(s"No file found in $root for regex $regexString!")
+          files
+        } else {
+          logger.warn(s"Directory $root doesn't exist or couldn't be read!")
+          Vector.empty
+        }
       }
-    }
 
     val fsp = configKeyRoot + ".data-sources.from-file-system.paths"
     val fsdp = configKeyRoot + ".data-sources.from-file-system.dir-paths"
     val fsfnr = configKeyRoot + ".data-sources.from-file-system.file-name-regex"
     config.get[Seq[String]](fsp) match {
-      case Some(list) if list.size > 0 => list.map(p => new File(p))
-      case _ =>
+      case Some(list) if list.size > 0 ⇒ list.map(p ⇒ new File(p))
+      case _ ⇒
         val regexString = config.getOrElse[String](fsfnr)("")
         config.get[Seq[String]](fsdp) match {
-          case Some(dirs) if dirs.size > 0 =>
+          case Some(dirs) if dirs.size > 0 ⇒
             val filter = makeFilenameFilter(regexString)
             dirs.foldLeft(Vector.empty[File]) {
-              case (v, d) => v ++ addFiles(d, regexString, filter)
+              case (v, d) ⇒ v ++ addFiles(d, regexString, filter)
             }
-          case _ => throw InvalidConfiguration(config, Seq(fsdp))
+          case _ ⇒ throw InvalidConfiguration(config, Seq(fsdp))
         }
     }
   }
@@ -415,38 +414,38 @@ object RecordsReader {
   protected def determineClasspathResourcesFromConfiguration(configKeyRoot: String): Seq[String] = {
     val cpp = configKeyRoot + ".data-sources.from-classpath.paths"
     config.get[Seq[String]](cpp) match {
-      case Some(list) if list.size > 0 => list
-      case _ => throw InvalidConfiguration(config, Seq(cpp))
+      case Some(list) if list.size > 0 ⇒ list
+      case _                           ⇒ throw InvalidConfiguration(config, Seq(cpp))
     }
   }
 
   protected def determineURLsFromConfiguration(configKeyRoot: String): Seq[URL] = {
-    def combine(urls: Seq[String], files: Seq[String]): Seq[URL] =
-      urls.foldLeft(Vector.empty[URL]) {
-        case (v, url) =>
-          val url2 = if (url.endsWith("/")) url else url + "/"
-          val fullURLs = files.map(f => new URL(url2 + f))
-          v ++ fullURLs
-      }
+      def combine(urls: Seq[String], files: Seq[String]): Seq[URL] =
+        urls.foldLeft(Vector.empty[URL]) {
+          case (v, url) ⇒
+            val url2 = if (url.endsWith("/")) url else url + "/"
+            val fullURLs = files.map(f ⇒ new URL(url2 + f))
+            v ++ fullURLs
+        }
 
     val bu = configKeyRoot + ".data-sources.from-urls.base-urls"
     val f = configKeyRoot + ".data-sources.from-urls.files"
     val bu2 = config.get[Seq[String]](bu)
     val f2 = config.get[Seq[String]](f)
     (bu2, f2) match {
-      case (Some(urls), Some(files)) if urls.size > 0 =>
-        if (files.size > 0) combine(urls, files) else urls.map(url => new URL(url))
-      case _ => throw InvalidConfiguration(config, Seq(bu, f))
+      case (Some(urls), Some(files)) if urls.size > 0 ⇒
+        if (files.size > 0) combine(urls, files) else urls.map(url ⇒ new URL(url))
+      case _ ⇒ throw InvalidConfiguration(config, Seq(bu, f))
     }
   }
 
   protected def getSource(name: String, is: InputStream): BufferedSource = {
     val extensionRE = raw"""^.*\.([^.]+)$$""".r
     val is2 = name match {
-      case extensionRE("gz") | extensionRE("gzip") ⇒ new GZIPInputStream(is)
-      case extensionRE("zip") ⇒ new ZipInputStream(is)
+      case extensionRE("gz") | extensionRE("gzip")   ⇒ new GZIPInputStream(is)
+      case extensionRE("zip")                        ⇒ new ZipInputStream(is)
       case extensionRE("bz2") | extensionRE("bzip2") ⇒ new BZip2CompressorInputStream(is)
-      case _ ⇒ is
+      case _                                         ⇒ is
     }
     scala.io.Source.fromInputStream(is2)
   }
@@ -490,8 +489,8 @@ object RecordsReader {
 object RecordsReaderMain {
 
   def main(args: Array[String]): Unit = {
-    def help(): Nothing = {
-      println("""
+      def help(): Nothing = {
+        println("""
       |scala pipelines.ingress.RecordsRecorder [-h|--help] [-n | --n N] resource1 [... resources]
       |where:
       |  -h | --help        print this message and exit
@@ -501,37 +500,37 @@ object RecordsReaderMain {
       |  -u | --urls        treat the specified resources as URLs
       |  resource1 [...]    one or more paths to resources
       """.stripMargin)
-      sys.exit(0)
-    }
+        sys.exit(0)
+      }
 
     import RecordsReader.SourceKind
     import RecordsReader.SourceKind._
 
     final case class Options(
-      resourcePaths: Vector[String] = Vector.empty,
-      kind: SourceKind.Value = FileSystem,
-      maxRecords: Int = 100000)
+        resourcePaths: Vector[String]   = Vector.empty,
+        kind:          SourceKind.Value = FileSystem,
+        maxRecords:    Int              = 100000)
 
-    def fa(args2: Seq[String], options: Options): Options = args2 match {
-      case Nil => options
-      case ("-h" | "--help") +: tail => help()
-      case ("-n" | "--n") +: nStr +: tail => fa(tail, options.copy(maxRecords = nStr.toInt))
-      case ("-f" | "--files") +: tail => fa(tail, options.copy(kind = FileSystem))
-      case ("-c" | "--classpath") +: tail => fa(tail, options.copy(kind = CLASSPATH))
-      case ("-u" | "--urls") +: tail => fa(tail, options.copy(kind = URLs))
-      case res +: tail => fa(tail, options.copy(resourcePaths = options.resourcePaths :+ res))
-    }
+      def fa(args2: Seq[String], options: Options): Options = args2 match {
+        case Nil                            ⇒ options
+        case ("-h" | "--help") +: _         ⇒ help()
+        case ("-n" | "--n") +: nStr +: tail ⇒ fa(tail, options.copy(maxRecords = nStr.toInt))
+        case ("-f" | "--files") +: tail     ⇒ fa(tail, options.copy(kind = FileSystem))
+        case ("-c" | "--classpath") +: tail ⇒ fa(tail, options.copy(kind = CLASSPATH))
+        case ("-u" | "--urls") +: tail      ⇒ fa(tail, options.copy(kind = URLs))
+        case res +: tail                    ⇒ fa(tail, options.copy(resourcePaths = options.resourcePaths :+ res))
+      }
     val options = fa(args, Options())
 
     val reader = options.kind match {
-      case FileSystem =>
-        val paths = options.resourcePaths.map(p => new File(p))
-        RecordsReader.fromFileSystem(paths)(s => Right(s))
-      case CLASSPATH =>
-        RecordsReader.fromClasspath(options.resourcePaths)(s => Right(s))
-      case URLs =>
-        val urls = options.resourcePaths.map(p => new URL(p))
-        RecordsReader.fromURLs(urls)(s => Right(s))
+      case FileSystem ⇒
+        val paths = options.resourcePaths.map(p ⇒ new File(p))
+        RecordsReader.fromFileSystem(paths)(s ⇒ Right(s))
+      case CLASSPATH ⇒
+        RecordsReader.fromClasspath(options.resourcePaths)(s ⇒ Right(s))
+      case URLs ⇒
+        val urls = options.resourcePaths.map(p ⇒ new URL(p))
+        RecordsReader.fromURLs(urls)(s ⇒ Right(s))
     }
 
     (1 to options.maxRecords).foreach { n ⇒

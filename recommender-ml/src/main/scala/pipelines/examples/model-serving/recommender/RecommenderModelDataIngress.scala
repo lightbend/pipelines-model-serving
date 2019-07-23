@@ -8,7 +8,6 @@ import pipelines.akkastream.AkkaStreamlet
 import pipelines.akkastream.scaladsl.{ RunnableGraphStreamletLogic }
 import pipelines.streamlets.avro.AvroOutlet
 import pipelines.streamlets.StreamletShape
-import pipelines.examples.modelserving.recommender.data._
 import pipelinesx.config.ConfigUtil
 import pipelinesx.config.ConfigUtil.implicits._
 import scala.concurrent.duration._
@@ -33,16 +32,19 @@ final case object RecommenderModelDataIngress extends AkkaStreamlet {
 
 /** Encapsulate the logic of iterating through the models ad infinitum. */
 protected final class ModelDescriptorFinder(
-  initialServerIndex: Int,
-  serverLocations: Vector[String]) {
+    initialServerIndex: Int,
+    serverLocations:    Vector[String]) {
 
   def getModelDescriptor(): ModelDescriptor = {
     val i = nextServerIndex()
     val location = serverLocations(i)
     new ModelDescriptor(
-      name = "Tensorflow Model", description = "For model Serving",
-      modeltype = ModelType.TENSORFLOWSERVING, modeldata = None,
-      modeldatalocation = Some(location), dataType = "recommender")
+      name = "Tensorflow Model",
+      description = "For model Serving",
+      dataType = "recommender",
+      modelType = ModelType.TENSORFLOWSERVING,
+      modelBytes = None,
+      modelSourceLocation = Some(location))
   }
 
   // will be between 0 and serverLocations.size-1
@@ -66,8 +68,8 @@ object RecommenderModelDataIngressUtil {
 
   /** Helper method extracted from RecommenderModelDataIngress for easier unit testing. */
   def makeSource(
-    serverLocations: Vector[String] = recommenderServerLocations,
-    frequency: FiniteDuration = modelFrequencySeconds): Source[ModelDescriptor, NotUsed] = {
+      serverLocations: Vector[String] = recommenderServerLocations,
+      frequency:       FiniteDuration = modelFrequencySeconds): Source[ModelDescriptor, NotUsed] = {
     val modelFinder = new ModelDescriptorFinder(0, serverLocations)
     Source.repeat(modelFinder)
       .map(finder ⇒ finder.getModelDescriptor())
@@ -76,24 +78,24 @@ object RecommenderModelDataIngressUtil {
 
   /** For testing purposes. */
   def main(args: Array[String]): Unit = {
-    def help() = println(s"""
+      def help() = println(s"""
       |usage: RecommenderModelDataIngressUtil [-h|--help] [N]
       |where:
       |  -h | --help       print this message and exit
       |  N                 N seconds between output model descriptions (default: $modelFrequencySeconds)
       |""".stripMargin)
 
-    def parseArgs(args2: Seq[String], freq: FiniteDuration): FiniteDuration = args2 match {
-      case ("-h" | "--help") +: _ ⇒
-        help()
-        sys.exit(0)
-      case Nil ⇒ freq
-      case n +: tail ⇒ parseArgs(tail, n.toInt.seconds)
-      case x +: _ ⇒
-        println(s"ERROR: Unrecognized argument $x. All args: ${args.mkString(" ")}")
-        help()
-        sys.exit(1)
-    }
+      def parseArgs(args2: Seq[String], freq: FiniteDuration): FiniteDuration = args2 match {
+        case ("-h" | "--help") +: _ ⇒
+          help()
+          sys.exit(0)
+        case Nil       ⇒ freq
+        case n +: tail ⇒ parseArgs(tail, n.toInt.seconds)
+        case x +: _ ⇒
+          println(s"ERROR: Unrecognized argument $x. All args: ${args.mkString(" ")}")
+          help()
+          sys.exit(1)
+      }
     val frequency = parseArgs(args, modelFrequencySeconds)
     println(s"frequency (seconds): ${frequency}")
     println(s"server URLs:         ${recommenderServerLocations}")
@@ -101,5 +103,6 @@ object RecommenderModelDataIngressUtil {
     implicit val mat = ActorMaterializer()
     val source = makeSource(recommenderServerLocations, frequency)
     source.runWith(Sink.foreach(println))
+    println("Finished!")
   }
 }

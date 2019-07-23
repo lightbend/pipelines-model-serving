@@ -1,13 +1,13 @@
 package pipelines.examples.modelserving.airlineflights.models
 
 import pipelines.examples.modelserving.airlineflights.data.{ AirlineFlightRecord, AirlineFlightResult }
-import com.lightbend.modelserving.model.{ Model, ModelFactory, ModelMetadata }
+import com.lightbend.modelserving.model.{ Model, ModelDescriptor, ModelFactory }
 import com.lightbend.modelserving.model.h2o.H2OModel
 import hex.genmodel.easy.RowData
 import hex.genmodel.easy.prediction.BinomialModelPrediction
 
-class AirlineFlightH2OModel(metadata: ModelMetadata)
-  extends H2OModel[AirlineFlightRecord, AirlineFlightResult](metadata) {
+class AirlineFlightH2OModel(descriptor: ModelDescriptor)
+  extends H2OModel[AirlineFlightRecord, AirlineFlightResult](descriptor) {
 
   // Convert input record to raw data for serving
   def toRow(record: AirlineFlightRecord): RowData = {
@@ -62,6 +62,6 @@ class AirlineFlightH2OModel(metadata: ModelMetadata)
  */
 object AirlineFlightH2OModel extends ModelFactory[AirlineFlightRecord, AirlineFlightResult] {
 
-  protected def make(metadata: ModelMetadata): Model[AirlineFlightRecord, AirlineFlightResult] =
-    new AirlineFlightH2OModel(metadata)
+  protected def make(descriptor: ModelDescriptor): Model[AirlineFlightRecord, AirlineFlightResult] =
+    new AirlineFlightH2OModel(descriptor)
 }

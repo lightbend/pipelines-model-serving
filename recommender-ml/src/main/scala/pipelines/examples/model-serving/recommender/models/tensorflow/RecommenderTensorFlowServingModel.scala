@@ -1,12 +1,12 @@
 package pipelines.examples.modelserving.recommender.models.tensorflow
 
 import pipelines.examples.modelserving.recommender.data.{ ProductPrediction, RecommenderRecord }
-import com.lightbend.modelserving.model.{ Model, ModelFactory, ModelMetadata }
+import com.lightbend.modelserving.model.{ Model, ModelFactory, ModelDescriptor, ModelDescriptorUtil }
 import com.lightbend.modelserving.model.tensorflow.TensorFlowServingModel
 import com.google.gson.Gson
 
-class RecommenderTensorFlowServingModel(metadata: ModelMetadata)
-  extends TensorFlowServingModel[RecommenderRecord, Seq[ProductPrediction], TFRequest, TFPredictionResult](metadata) {
+class RecommenderTensorFlowServingModel(descriptor: ModelDescriptor)
+  extends TensorFlowServingModel[RecommenderRecord, Seq[ProductPrediction], TFRequest, TFPredictionResult](descriptor) {
 
   override val clazz: Class[TFPredictionResult] = classOf[TFPredictionResult]
 
@@ -17,8 +17,8 @@ class RecommenderTensorFlowServingModel(metadata: ModelMetadata)
   }
 
   override def getResult(
-    result: TFPredictionResult,
-    input: RecommenderRecord): Either[String, Seq[ProductPrediction]] = {
+      result: TFPredictionResult,
+      input:  RecommenderRecord): Either[String, Seq[ProductPrediction]] = {
     // is it possible we'll get error results??
     val predictions = result.outputs.recommendations.map(_(0))
       .zip(input.products).map(r ⇒ ProductPrediction(r._2, r._1))
@@ -49,16 +49,16 @@ object RecommenderTensorFlowServingModel extends ModelFactory[RecommenderRecord,
    * @param descriptor model to serve representation of TensorFlow serving model.
    * @return model
    */
-  def make(metadata: ModelMetadata): Model[RecommenderRecord, Seq[ProductPrediction]] =
-    new RecommenderTensorFlowServingModel(metadata)
+  def make(descriptor: ModelDescriptor): Model[RecommenderRecord, Seq[ProductPrediction]] =
+    new RecommenderTensorFlowServingModel(descriptor)
 
   // Testing transformation
   def main(args: Array[String]): Unit = {
 
     val gson = new Gson
 
-    val metadata = ModelMetadata.unknown
-    val model = new RecommenderTensorFlowServingModel(metadata)
+    val descriptor = ModelDescriptorUtil.unknown
+    val model = new RecommenderTensorFlowServingModel(descriptor)
     val record = new RecommenderRecord(10L, Seq(1L, 2L, 3L, 4L), "recommender")
     val httpRes = gson.toJson(new TFPredictionResult(new RecommendationOutputs(
       Seq(1, 2, 3).toArray,

@@ -13,6 +13,6 @@ trait Model[RECORD, RESULT] {
   /** Abstraction for cleaning up resources */
   def cleanup(): Unit
 
-  /** The metadata about the model including the model type. */
-  val metadata: ModelMetadata
+  /** The descriptor about the model. */
+  val descriptor: ModelDescriptor
 }

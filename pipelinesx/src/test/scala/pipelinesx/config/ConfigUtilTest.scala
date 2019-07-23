@@ -1,7 +1,6 @@
 package pipelinesx.config
 
 import org.scalatest.FunSpec
-import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigException.WrongType
 
 class ConfigUtilTest extends FunSpec {
@@ -24,20 +23,20 @@ class ConfigUtilTest extends FunSpec {
       }
     }
 
-    def good_get() = {
-      val config = ConfigUtil.default
-      assert(config.get[Boolean]("config-util-test.good.boolean-item") == Some(false))
-      assert(config.get[Int]("config-util-test.good.int-item") == Some(123))
-      assert(config.get[Long]("config-util-test.good.long-item") == Some(123456))
-      assert(config.get[Double]("config-util-test.good.double-item") == Some(3.14))
-      assert(config.get[String]("config-util-test.good.string-item") == Some("a string"))
+      def good_get() = {
+        val config = ConfigUtil.default
+        assert(config.get[Boolean]("config-util-test.good.boolean-item") == Some(false))
+        assert(config.get[Int]("config-util-test.good.int-item") == Some(123))
+        assert(config.get[Long]("config-util-test.good.long-item") == Some(123456))
+        assert(config.get[Double]("config-util-test.good.double-item") == Some(3.14))
+        assert(config.get[String]("config-util-test.good.string-item") == Some("a string"))
 
-      assert(config.get[Seq[Boolean]]("config-util-test.good.boolean-list") == Some(Seq(false, true)))
-      assert(config.get[Seq[Int]]("config-util-test.good.int-list") == Some(Seq(1, 2, 3)))
-      assert(config.get[Seq[Long]]("config-util-test.good.long-list") == Some(Seq(100, 200, 300)))
-      assert(config.get[Seq[Double]]("config-util-test.good.double-list") == Some(Seq(1.1, 2.2, 3.14)))
-      assert(config.get[Seq[String]]("config-util-test.good.string-list") == Some(Seq("one", "two", "three")))
-    }
+        assert(config.get[Seq[Boolean]]("config-util-test.good.boolean-list") == Some(Seq(false, true)))
+        assert(config.get[Seq[Int]]("config-util-test.good.int-list") == Some(Seq(1, 2, 3)))
+        assert(config.get[Seq[Long]]("config-util-test.good.long-list") == Some(Seq(100, 200, 300)))
+        assert(config.get[Seq[Double]]("config-util-test.good.double-list") == Some(Seq(1.1, 2.2, 3.14)))
+        assert(config.get[Seq[String]]("config-util-test.good.string-list") == Some(Seq("one", "two", "three")))
+      }
 
     describe("get") {
       it("returns a value of the correct type") {
@@ -88,20 +87,20 @@ class ConfigUtilTest extends FunSpec {
       }
     }
 
-    def good_getOrElse() = {
-      val config = ConfigUtil.default
-      assert(config.getOrElse[Boolean]("config-util-test.good.boolean-item")(true) == false)
-      assert(config.getOrElse[Int]("config-util-test.good.int-item")(321) == 123)
-      assert(config.getOrElse[Long]("config-util-test.good.long-item")(654321) == 123456)
-      assert(config.getOrElse[Double]("config-util-test.good.double-item")(2.17) == 3.14)
-      assert(config.getOrElse[String]("config-util-test.good.string-item")("unknown") == "a string")
+      def good_getOrElse() = {
+        val config = ConfigUtil.default
+        assert(config.getOrElse[Boolean]("config-util-test.good.boolean-item")(true) == false)
+        assert(config.getOrElse[Int]("config-util-test.good.int-item")(321) == 123)
+        assert(config.getOrElse[Long]("config-util-test.good.long-item")(654321) == 123456)
+        assert(config.getOrElse[Double]("config-util-test.good.double-item")(2.17) == 3.14)
+        assert(config.getOrElse[String]("config-util-test.good.string-item")("unknown") == "a string")
 
-      assert(config.getOrElse[Seq[Boolean]]("config-util-test.good.boolean-list")(Seq(true, true)) == Seq(false, true))
-      assert(config.getOrElse[Seq[Int]]("config-util-test.good.int-list")(Seq(321, 456)) == Seq(1, 2, 3))
-      assert(config.getOrElse[Seq[Long]]("config-util-test.good.long-list")(Seq(654321, 1)) == Seq(100, 200, 300))
-      assert(config.getOrElse[Seq[Double]]("config-util-test.good.double-list")(Seq(2.17, 1.1)) == Seq(1.1, 2.2, 3.14))
-      assert(config.getOrElse[Seq[String]]("config-util-test.good.string-list")(Seq("unknown", "known")) == Seq("one", "two", "three"))
-    }
+        assert(config.getOrElse[Seq[Boolean]]("config-util-test.good.boolean-list")(Seq(true, true)) == Seq(false, true))
+        assert(config.getOrElse[Seq[Int]]("config-util-test.good.int-list")(Seq(321, 456)) == Seq(1, 2, 3))
+        assert(config.getOrElse[Seq[Long]]("config-util-test.good.long-list")(Seq(654321, 1)) == Seq(100, 200, 300))
+        assert(config.getOrElse[Seq[Double]]("config-util-test.good.double-list")(Seq(2.17, 1.1)) == Seq(1.1, 2.2, 3.14))
+        assert(config.getOrElse[Seq[String]]("config-util-test.good.string-list")(Seq("unknown", "known")) == Seq("one", "two", "three"))
+      }
 
     describe("getOrElse") {
       it("returns a value of the correct type") {
@@ -152,20 +151,20 @@ class ConfigUtilTest extends FunSpec {
       }
     }
 
-    def good_getOrFail() = {
-      val config = ConfigUtil.default
-      assert(config.getOrFail[Boolean]("config-util-test.good.boolean-item") == false)
-      assert(config.getOrFail[Int]("config-util-test.good.int-item") == 123)
-      assert(config.getOrFail[Long]("config-util-test.good.long-item") == 123456)
-      assert(config.getOrFail[Double]("config-util-test.good.double-item") == 3.14)
-      assert(config.getOrFail[String]("config-util-test.good.string-item") == "a string")
+      def good_getOrFail() = {
+        val config = ConfigUtil.default
+        assert(config.getOrFail[Boolean]("config-util-test.good.boolean-item") == false)
+        assert(config.getOrFail[Int]("config-util-test.good.int-item") == 123)
+        assert(config.getOrFail[Long]("config-util-test.good.long-item") == 123456)
+        assert(config.getOrFail[Double]("config-util-test.good.double-item") == 3.14)
+        assert(config.getOrFail[String]("config-util-test.good.string-item") == "a string")
 
-      assert(config.getOrFail[Seq[Boolean]]("config-util-test.good.boolean-list") == Seq(false, true))
-      assert(config.getOrFail[Seq[Int]]("config-util-test.good.int-list") == Seq(1, 2, 3))
-      assert(config.getOrFail[Seq[Long]]("config-util-test.good.long-list") == Seq(100, 200, 300))
-      assert(config.getOrFail[Seq[Double]]("config-util-test.good.double-list") == Seq(1.1, 2.2, 3.14))
-      assert(config.getOrFail[Seq[String]]("config-util-test.good.string-list") == Seq("one", "two", "three"))
-    }
+        assert(config.getOrFail[Seq[Boolean]]("config-util-test.good.boolean-list") == Seq(false, true))
+        assert(config.getOrFail[Seq[Int]]("config-util-test.good.int-list") == Seq(1, 2, 3))
+        assert(config.getOrFail[Seq[Long]]("config-util-test.good.long-list") == Seq(100, 200, 300))
+        assert(config.getOrFail[Seq[Double]]("config-util-test.good.double-list") == Seq(1.1, 2.2, 3.14))
+        assert(config.getOrFail[Seq[String]]("config-util-test.good.string-list") == Seq("one", "two", "three"))
+      }
 
     describe("getOrFail") {
       it("returns a value of the correct type") {

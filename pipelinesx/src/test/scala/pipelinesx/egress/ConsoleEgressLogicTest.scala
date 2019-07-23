@@ -1,7 +1,6 @@
 package pipelinesx.egress
 
 import pipelinesx.test.{ OutputInterceptor, TestData }
-import pipelinesx.logging.StdoutStderrLogger
 import org.scalatest.{ FunSpec, BeforeAndAfterAll }
 import akka.testkit._
 import akka.actor._

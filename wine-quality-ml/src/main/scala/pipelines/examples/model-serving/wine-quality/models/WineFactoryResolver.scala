@@ -1,6 +1,6 @@
 package pipelines.examples.modelserving.winequality.models
 
-import com.lightbend.modelserving.model.{ ModelType, ModelFactory, ModelFactoryResolver }
+import com.lightbend.modelserving.model.{ ModelDescriptor, ModelType, ModelFactory, ModelFactoryResolver }
 import pipelines.examples.modelserving.winequality.data.WineRecord
 import pipelines.examples.modelserving.winequality.models.pmml.WinePMMLModel
 import pipelines.examples.modelserving.winequality.models.tensorflow.{ WineTensorFlowBundledModel, WineTensorFlowModel }
@@ -11,9 +11,10 @@ import pipelines.examples.modelserving.winequality.models.tensorflow.{ WineTenso
 object WineFactoryResolver extends ModelFactoryResolver[WineRecord, Double] {
 
   private val factories = Map(
-    ModelType.PMML.ordinal -> WinePMMLModel,
-    ModelType.TENSORFLOW.ordinal -> WineTensorFlowModel,
-    ModelType.TENSORFLOWSAVED.ordinal -> WineTensorFlowBundledModel)
+    ModelType.PMML -> WinePMMLModel,
+    ModelType.TENSORFLOW -> WineTensorFlowModel,
+    ModelType.TENSORFLOWSAVED -> WineTensorFlowBundledModel)
 
-  override def getFactory(whichFactory: Int): Option[ModelFactory[WineRecord, Double]] = factories.get(whichFactory)
+  override def getFactory(descriptor: ModelDescriptor): Option[ModelFactory[WineRecord, Double]] =
+    factories.get(descriptor.modelType)
 }

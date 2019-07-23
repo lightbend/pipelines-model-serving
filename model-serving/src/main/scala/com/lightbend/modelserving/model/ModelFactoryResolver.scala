@@ -17,17 +17,10 @@ package com.lightbend.modelserving.model
 
 /**
  * Base interface for ModelFactories resolver. The implementation of this trait should return the model factory
- * base on a model type. Currently the following types are defined:
- *        TENSORFLOW
- *        TENSORFLOWSAVED
- *        PMML
- * Additional types can be defined as required.
+ * base on a model type, an enumeration defined in ModelDescription.avsc.
  */
 trait ModelFactoryResolver[RECORD, RESULT] {
-  /** Retrieve a model using an Int corresponding to the ModelType.value field. */
-  def getFactory(modelTypeOrdinal: Int): Option[ModelFactory[RECORD, RESULT]]
 
   /** Retrieve a model using metadata for it. */
-  def getFactory(modelMetadata: ModelMetadata): Option[ModelFactory[RECORD, RESULT]] =
-    getFactory(modelMetadata.modelType)
+  def getFactory(descriptor: ModelDescriptor): Option[ModelFactory[RECORD, RESULT]]
 }

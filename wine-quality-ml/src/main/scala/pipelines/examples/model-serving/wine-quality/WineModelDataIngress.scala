@@ -8,7 +8,6 @@ import pipelines.streamlets.avro.AvroOutlet
 import pipelines.streamlets.StreamletShape
 import pipelines.akkastream.AkkaStreamlet
 import pipelines.akkastream.scaladsl.{ RunnableGraphStreamletLogic }
-import pipelines.examples.modelserving.winequality.data._
 import pipelinesx.config.ConfigUtil
 import pipelinesx.config.ConfigUtil.implicits._
 import scala.concurrent.duration._
@@ -45,15 +44,15 @@ object WineModelDataIngressUtil {
           case (map, e) ⇒
             val modelType = ModelType.valueOf(e.getKey.toUpperCase)
             val list = e.getValue.valueType.toString match {
-              case "LIST" ⇒ e.getValue.unwrapped.asInstanceOf[java.util.ArrayList[String]].toArray.map(_.toString)
+              case "LIST"   ⇒ e.getValue.unwrapped.asInstanceOf[java.util.ArrayList[String]].toArray.map(_.toString)
               case "STRING" ⇒ Array(e.getValue.unwrapped.toString)
             }
             map + (modelType -> list)
         }
 
   def makeSource(
-    modelsResources: Map[ModelType, Seq[String]] = wineModelsResources,
-    frequency: FiniteDuration = modelFrequencySeconds): Source[ModelDescriptor, NotUsed] = {
+      modelsResources: Map[ModelType, Seq[String]] = wineModelsResources,
+      frequency:       FiniteDuration              = modelFrequencySeconds): Source[ModelDescriptor, NotUsed] = {
     val recordsReader = WineModelsReader(modelsResources)
     Source.repeat(recordsReader)
       .map(reader ⇒ reader.next())
@@ -68,5 +67,6 @@ object WineModelDataIngressUtil {
     implicit val mat = ActorMaterializer()
     val source = makeSource(wineModelsResources, modelFrequencySeconds)
     source.runWith(Sink.foreach(println))
+    println("Finished!")
   }
 }

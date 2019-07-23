@@ -36,8 +36,8 @@ object AirlineFlightRecordsIngressUtil {
       .getOrElse[Int](rootConfigKey + ".data-frequency-milliseconds")(1).milliseconds
 
   def makeSource(
-    configRoot: String = rootConfigKey,
-    frequency: FiniteDuration = dataFrequencyMilliseconds): Source[AirlineFlightRecord, NotUsed] = {
+      configRoot: String         = rootConfigKey,
+      frequency:  FiniteDuration = dataFrequencyMilliseconds): Source[AirlineFlightRecord, NotUsed] = {
     val reader = makeRecordsReader(configRoot)
     Source.repeat(NotUsed)
       .map(_ ⇒ reader.next()._2) // Only keep the record part of the tuple

@@ -1,23 +1,23 @@
 package pipelines.examples.modelserving.winequality.models.tensorflow
 
 import com.lightbend.modelserving.model.tensorflow.TensorFlowModel
-import com.lightbend.modelserving.model.{ Model, ModelFactory, ModelMetadata }
+import com.lightbend.modelserving.model.{ Model, ModelDescriptor, ModelFactory }
 import org.tensorflow.Tensor
 import pipelines.examples.modelserving.winequality.data.WineRecord
 
 /**
  * TensorFlow model implementation for wine data
  */
-class WineTensorFlowModel(metadata: ModelMetadata)
+class WineTensorFlowModel(metadata: ModelDescriptor)
   extends TensorFlowModel[WineRecord, Double](metadata) {
 
   import WineTensorFlowModel._
 
   /** Score a wine record with the model */
-  override def score(input: WineRecord): Either[String, Double] = try {
+  override def score(descriptor: WineRecord): Either[String, Double] = try {
 
-    // Create input tensor
-    val modelInput = toTensor(input)
+    // Create descriptor tensor
+    val modelInput = toTensor(descriptor)
     // Serve model using TensorFlow APIs
     val result = session.runner.feed("dense_1_input", modelInput).fetch("dense_3/Sigmoid").run().get(0)
     // Get result shape
@@ -28,8 +28,8 @@ class WineTensorFlowModel(metadata: ModelMetadata)
     // Get result
     Right(rMatrix(0).indices.maxBy(rMatrix(0)).toDouble)
   } catch {
-    case scala.util.control.NonFatal(th) =>
-      Left("WineTensorFlowModel.score failed: $th")
+    case scala.util.control.NonFatal(th) ⇒
+      Left(s"WineTensorFlowModel.score failed: $th")
   }
 }
 
@@ -54,6 +54,6 @@ object WineTensorFlowModel extends ModelFactory[WineRecord, Double] {
 
   val modelName = "WineTensorFlowModel"
 
-  def make(input: ModelMetadata): Model[WineRecord, Double] =
-    new WineTensorFlowModel(input)
+  def make(descriptor: ModelDescriptor): Model[WineRecord, Double] =
+    new WineTensorFlowModel(descriptor)
 }
