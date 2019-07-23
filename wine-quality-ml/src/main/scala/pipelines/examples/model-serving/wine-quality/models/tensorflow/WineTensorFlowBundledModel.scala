@@ -35,15 +35,7 @@ class WineTensorFlowBundledModel(descriptor: ModelDescriptor)
  */
 object WineTensorFlowBundledModel extends ModelFactory[WineRecord, Double] {
 
-  val modelName = "WineTensorFlowBundledModel"
-
-  /**
-   * Creates a new TensorFlow bundled model.
-   *
-   * @param descriptor model to serve representation of TensorFlow bundled model.
-   * @return model
-   */
-  def make(descriptor: ModelDescriptor): Model[WineRecord, Double] =
-    new WineTensorFlowBundledModel(descriptor)
+  def make(descriptor: ModelDescriptor): Either[String, Model[WineRecord, Double]] =
+    Right(new WineTensorFlowBundledModel(descriptor))
 }
 

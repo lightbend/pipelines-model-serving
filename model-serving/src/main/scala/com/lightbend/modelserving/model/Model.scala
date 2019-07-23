@@ -1,7 +1,8 @@
 package com.lightbend.modelserving.model
 
 /**
- * Generic definition of a machine learning model
+ * Generic definition of an operational machine learning model in memory, which
+ * was constructed using the [[ModelDescriptor]] field.
  */
 trait Model[RECORD, RESULT] {
   /**

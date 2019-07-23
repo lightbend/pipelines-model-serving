@@ -17,15 +17,15 @@ import scala.concurrent.duration._
  * Ingress of model updates. In this case, every two minutes we load and
  * send downstream a model. Because we have only one model we are resending it
  */
-final case object AirlineFlightModelDataIngress extends AkkaStreamlet {
+final case object AirlineFlightModelIngress extends AkkaStreamlet {
 
-  val out = AvroOutlet[ModelDescriptor]("out", _.dataType)
+  val out = AvroOutlet[ModelDescriptor]("out", _.name)
 
   final override val shape = StreamletShape.withOutlets(out)
 
   override def createLogic = new RunnableGraphStreamletLogic() {
     def runnableGraph =
-      AirlineFlightModelDataIngressUtil.makeSource().to(atMostOnceSink(out))
+      AirlineFlightModelIngressUtil.makeSource().to(atMostOnceSink(out))
   }
 }
 
@@ -33,7 +33,7 @@ final case object AirlineFlightModelDataIngress extends AkkaStreamlet {
 protected final class ModelDescriptorProvider() {
 
   val sourcePaths: Array[String] =
-    AirlineFlightModelDataIngressUtil.modelSources.toArray
+    AirlineFlightModelIngressUtil.modelSources.toArray
   val sourceBytes: Array[Array[Byte]] = sourcePaths map { path ⇒
     val is = this.getClass.getClassLoader.getResourceAsStream(path)
     val mojo = new Array[Byte](is.available)
@@ -49,14 +49,13 @@ protected final class ModelDescriptorProvider() {
     new ModelDescriptor(
       name = s"Airline flight Model $count (model #${index + 1})",
       description = "Airline H2O flight Model",
-      dataType = "airline",
       modelType = ModelType.H2O,
       modelBytes = Some(sourceBytes(index)),
       modelSourceLocation = Some(sourcePaths(index)))
   }
 }
 
-object AirlineFlightModelDataIngressUtil {
+object AirlineFlightModelIngressUtil {
 
   lazy val modelFrequencySeconds: FiniteDuration =
     ConfigUtil.default.getOrElse[Int](
@@ -65,7 +64,7 @@ object AirlineFlightModelDataIngressUtil {
     ConfigUtil.default.getOrElse[Seq[String]](
       "airline-flights.model-sources.from-classpath.paths")(Nil)
 
-  /** Helper method extracted from AirlineFlightModelDataIngress for easier unit testing. */
+  /** Helper method extracted from AirlineFlightModelIngress for easier unit testing. */
   def makeSource(
       frequency: FiniteDuration = modelFrequencySeconds): Source[ModelDescriptor, _] = {
     val provider = new ModelDescriptorProvider()
@@ -80,11 +79,11 @@ object AirlineFlightModelDataIngressUtil {
    * ```
    * > console
    * scala> import pipelines.examples.modelserving.airlineflights._
-   * scala> AirlineFlightModelDataIngressUtil.main(Array("-f", "15", "-n", "3"))
+   * scala> AirlineFlightModelIngressUtil.main(Array("-f", "15", "-n", "3"))
    */
   def main(args: Array[String]): Unit = {
       def help() = println(s"""
-      |usage: AirlineFlightModelDataIngressUtil [-h|--help] [-n|--count N] [-f|--frequency F]
+      |usage: AirlineFlightModelIngressUtil [-h|--help] [-n|--count N] [-f|--frequency F]
       |where:
       |  -h | --help         print this message and exit
       |  -n | --count N      N total iterations before stopping (default: doesn't stop)
@@ -107,7 +106,7 @@ object AirlineFlightModelDataIngressUtil {
     val (total, frequency) = parseArgs(args, (Long.MaxValue, modelFrequencySeconds))
     println(s"# of iterations: ${if (total < Long.MaxValue) total.toString else "infinite"}")
     println(s"Frequency (seconds): ${frequency}")
-    implicit val system = ActorSystem("AirlineFlightModelDataIngress-Main")
+    implicit val system = ActorSystem("AirlineFlightModelIngress-Main")
     implicit val mat = ActorMaterializer()
     val provider = new ModelDescriptorProvider()
     println(s"Provider sourcePaths: ${provider.sourcePaths.mkString(", ")}")

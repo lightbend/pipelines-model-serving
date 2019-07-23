@@ -19,7 +19,7 @@ package com.lightbend.modelserving.model
  * Model serving result definition.
  */
 case class ServingResult[RESULT](
-    name:     String,
-    dataType: String         = "",
-    duration: Long           = 0,
-    result:   Option[RESULT] = None)
+    name:      String,
+    modelType: ModelType      = ModelType.UNKNOWN,
+    duration:  Long           = 0,
+    result:    Option[RESULT] = None)

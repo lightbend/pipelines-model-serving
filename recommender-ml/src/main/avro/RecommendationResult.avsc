@@ -7,9 +7,6 @@
       "name": "name",
       "type": "string"
     },{
-      "name": "dataType",
-      "type": "string"
-    },{
       "name": "duration",
       "type": "long"
     },{

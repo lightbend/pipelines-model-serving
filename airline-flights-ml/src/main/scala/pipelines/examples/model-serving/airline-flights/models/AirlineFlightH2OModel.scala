@@ -1,13 +1,15 @@
 package pipelines.examples.modelserving.airlineflights.models
 
 import pipelines.examples.modelserving.airlineflights.data.{ AirlineFlightRecord, AirlineFlightResult }
-import com.lightbend.modelserving.model.{ Model, ModelDescriptor, ModelFactory }
+import com.lightbend.modelserving.model.{ Model, ModelDescriptor, ModelFactory, ModelType }
 import com.lightbend.modelserving.model.h2o.H2OModel
 import hex.genmodel.easy.RowData
 import hex.genmodel.easy.prediction.BinomialModelPrediction
 
 class AirlineFlightH2OModel(descriptor: ModelDescriptor)
   extends H2OModel[AirlineFlightRecord, AirlineFlightResult](descriptor) {
+
+  val modelName = "AirlineFlightH2OModel"
 
   // Convert input record to raw data for serving
   def toRow(record: AirlineFlightRecord): RowData = {
@@ -43,8 +45,8 @@ class AirlineFlightH2OModel(descriptor: ModelDescriptor)
       destination = record.destination,
       delayPredictionLabel = prediction.label,
       delayPredictionProbability = probability,
-      modelname = "",
-      dataType = "",
+      modelType = ModelType.H2O.toString,
+      modelName = modelName,
       duration = 0)
     Right(afr)
   }
@@ -60,8 +62,8 @@ class AirlineFlightH2OModel(descriptor: ModelDescriptor)
 /**
  * Factory for airline flight H2O model
  */
-object AirlineFlightH2OModel extends ModelFactory[AirlineFlightRecord, AirlineFlightResult] {
+object AirlineFlightH2OModelFactory extends ModelFactory[AirlineFlightRecord, AirlineFlightResult] {
 
-  protected def make(descriptor: ModelDescriptor): Model[AirlineFlightRecord, AirlineFlightResult] =
-    new AirlineFlightH2OModel(descriptor)
+  protected def make(descriptor: ModelDescriptor): Either[String, Model[AirlineFlightRecord, AirlineFlightResult]] =
+    Right(new AirlineFlightH2OModel(descriptor))
 }

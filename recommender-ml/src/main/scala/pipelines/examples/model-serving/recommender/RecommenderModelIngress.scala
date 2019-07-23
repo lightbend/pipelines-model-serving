@@ -18,15 +18,15 @@ import com.lightbend.modelserving.model.{ ModelDescriptor, ModelType }
  * send downstream a model from the previously-trained models that are
  * found in the "datamodel" subproject.
  */
-final case object RecommenderModelDataIngress extends AkkaStreamlet {
+final case object RecommenderModelIngress extends AkkaStreamlet {
 
-  val out = AvroOutlet[ModelDescriptor]("out", _.dataType)
+  val out = AvroOutlet[ModelDescriptor]("out", _.modelType)
 
   final override val shape = StreamletShape.withOutlets(out)
 
   override def createLogic = new RunnableGraphStreamletLogic() {
     def runnableGraph =
-      RecommenderModelDataIngressUtil.makeSource().to(atMostOnceSink(out))
+      RecommenderModelIngressUtil.makeSource().to(atMostOnceSink(out))
   }
 }
 
@@ -41,7 +41,6 @@ protected final class ModelDescriptorFinder(
     new ModelDescriptor(
       name = "Tensorflow Model",
       description = "For model Serving",
-      dataType = "recommender",
       modelType = ModelType.TENSORFLOWSERVING,
       modelBytes = None,
       modelSourceLocation = Some(location))
@@ -59,14 +58,14 @@ protected final class ModelDescriptorFinder(
   }
 }
 
-object RecommenderModelDataIngressUtil {
+object RecommenderModelIngressUtil {
 
   lazy val recommenderServerLocations: Vector[String] =
     ConfigUtil.default.getOrFail[Seq[String]]("recommender.service-urls").toVector
   lazy val modelFrequencySeconds: FiniteDuration =
     ConfigUtil.default.getOrElse[Int]("recommender.model-frequency-seconds")(120).seconds
 
-  /** Helper method extracted from RecommenderModelDataIngress for easier unit testing. */
+  /** Helper method extracted from RecommenderModelIngress for easier unit testing. */
   def makeSource(
       serverLocations: Vector[String] = recommenderServerLocations,
       frequency:       FiniteDuration = modelFrequencySeconds): Source[ModelDescriptor, NotUsed] = {
@@ -79,7 +78,7 @@ object RecommenderModelDataIngressUtil {
   /** For testing purposes. */
   def main(args: Array[String]): Unit = {
       def help() = println(s"""
-      |usage: RecommenderModelDataIngressUtil [-h|--help] [N]
+      |usage: RecommenderModelIngressUtil [-h|--help] [N]
       |where:
       |  -h | --help       print this message and exit
       |  N                 N seconds between output model descriptions (default: $modelFrequencySeconds)
@@ -99,7 +98,7 @@ object RecommenderModelDataIngressUtil {
     val frequency = parseArgs(args, modelFrequencySeconds)
     println(s"frequency (seconds): ${frequency}")
     println(s"server URLs:         ${recommenderServerLocations}")
-    implicit val system = ActorSystem("RecommenderModelDataIngress-Main")
+    implicit val system = ActorSystem("RecommenderModelIngress-Main")
     implicit val mat = ActorMaterializer()
     val source = makeSource(recommenderServerLocations, frequency)
     source.runWith(Sink.foreach(println))

@@ -17,7 +17,7 @@ import scala.concurrent.duration._
  */
 final case object AirlineFlightRecordsIngress extends AkkaStreamlet {
 
-  val out = AvroOutlet[AirlineFlightRecord]("out", _.dataType)
+  val out = AvroOutlet[AirlineFlightRecord]("out", _.uniqueCarrier)
 
   final override val shape = StreamletShape(out)
 
@@ -87,8 +87,7 @@ object AirlineFlightRecordsIngressUtil {
         weatherDelay = dtokens(25).toInt,
         nASDelay = dtokens(26).toInt,
         securityDelay = dtokens(27).toInt,
-        lateAircraftDelay = dtokens(28).toInt,
-        dataType = "airline"))
+        lateAircraftDelay = dtokens(28).toInt))
     } catch {
       case scala.util.control.NonFatal(nf) ⇒
         Left(

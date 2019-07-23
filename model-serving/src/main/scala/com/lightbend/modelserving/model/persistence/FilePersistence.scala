@@ -3,7 +3,8 @@ package com.lightbend.modelserving.model.persistence
 import java.io.{ File, FileInputStream, FileOutputStream, ObjectInputStream, ObjectOutputStream }
 import java.nio.channels.{ FileChannel, FileLock }
 
-import com.lightbend.modelserving.model.{ Model, ModelDescriptorUtil, ModelManager }
+import com.lightbend.modelserving.model.{ Model, ModelDescriptorUtil, ModelFactory }
+import com.lightbend.modelserving.model.ModelDescriptorUtil.implicits._
 import pipelinesx.logging.LoggingUtil
 
 /**
@@ -12,7 +13,7 @@ import pipelinesx.logging.LoggingUtil
  * @param baseDirPath where to write the persistent models.
  */
 final case class FilePersistence[RECORD, RESULT](
-    modelManager: ModelManager[RECORD, RESULT],
+    modelFactory: ModelFactory[RECORD, RESULT],
     baseDirPath:  String                       = "persistence") {
 
   private def getLock(fileChannel: FileChannel, shared: Boolean): (FileLock, Boolean) = {
@@ -94,10 +95,10 @@ final case class FilePersistence[RECORD, RESULT](
       case Right((is, fis)) ⇒
         try {
           val descriptor = ModelDescriptorUtil.read(is)
-          modelManager.create(descriptor) match {
+          modelFactory.create(descriptor) match {
             case Right(model) ⇒ Right(model)
             case Left(error) ⇒
-              Left(s"Could not restore the state for source $fileName (descriptor = $descriptor). $error")
+              Left(s"Could not restore the state for source $fileName (descriptor = ${descriptor.toRichString}). $error")
           }
         } catch {
           case t: Throwable ⇒

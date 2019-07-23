@@ -71,32 +71,12 @@ abstract class H2OModel[RECORD, RESULT](val descriptor: ModelDescriptor)
     case ModelCategory.Unknown ⇒ false
     case _                     ⇒ true
   }
-
-  // private def writeObject(output: ObjectOutputStream): Unit = {
-  //   val start = System.currentTimeMillis()
-  //   output.writeObject(descriptor)
-  //   println(s"H2O serialization in ${System.currentTimeMillis() - start} ms")
-  // }
-
-  // private def readObject(input: ObjectInputStream): Unit = {
-  //   val start = System.currentTimeMillis()
-  //   descriptor = input.readObject().asInstanceOf[ModelDescriptor]
-  //   try {
-  //     loadModel(descriptor)
-  //     println(s"H2O deserialization in ${System.currentTimeMillis() - start} ms")
-  //   } catch {
-  //     case t: Throwable ⇒
-  //       throw new RuntimeException(
-  //         s"H2OModel deserialization failed in ${System.currentTimeMillis() - start} ms", t)
-  //   }
-  // }
 }
 
 object H2OModel {
   def defaultDescriptor: ModelDescriptor = ModelDescriptor(
     name = "H2O Model",
     description = "",
-    dataType = "",
     modelType = ModelType.H2O,
     modelBytes = None,
     modelSourceLocation = None)

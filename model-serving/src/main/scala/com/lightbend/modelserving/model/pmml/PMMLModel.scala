@@ -28,8 +28,6 @@ abstract class PMMLModel[RECORD, RESULT](val descriptor: ModelDescriptor)
   var target: TargetField = _
   var tname: FieldName = _
 
-  setup()
-
   private def setup(): Unit = {
     arguments = mutable.Map[FieldName, FieldValue]()
     // Marshall PMML
@@ -46,28 +44,9 @@ abstract class PMMLModel[RECORD, RESULT](val descriptor: ModelDescriptor)
     tname = target.getName
   }
 
+  setup()
+
   override def cleanup(): Unit = {}
-
-  // TODO: Verify if these methods are actually needed, since they have only one field,
-  // the descriptor, which has these methods:
-  // private def writeObject(output: ObjectOutputStream): Unit = {
-  //   val start = System.currentTimeMillis()
-  //   output.writeObject(descriptor)
-  //   println(s"H2O serialization in ${System.currentTimeMillis() - start} ms")
-  // }
-
-  // private def readObject(input: ObjectInputStream): Unit = {
-  //   val start = System.currentTimeMillis()
-  //   descriptor = input.readObject().asInstanceOf[ModelDescriptor]
-  //   try {
-  //     setup()
-  //     println(s"PMML deserialization in ${System.currentTimeMillis() - start} ms")
-  //   } catch {
-  //     case t: Throwable ⇒
-  //       throw new RuntimeException(
-  //         s"PMML deserialization failed in ${System.currentTimeMillis() - start} ms", t)
-  //   }
-  // }
 }
 
 object PMMLModelBase {

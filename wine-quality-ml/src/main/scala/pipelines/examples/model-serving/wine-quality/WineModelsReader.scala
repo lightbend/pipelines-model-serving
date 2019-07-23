@@ -28,7 +28,6 @@ final case class WineModelsReader(resourceNames: Map[ModelType, Seq[String]]) {
       new ModelDescriptor(
         name = s"Tensorflow Model - $resourceName",
         description = "generated from TensorFlow",
-        dataType = "wine",
         modelType = ModelType.TENSORFLOW,
         modelBytes = Some(barray),
         modelSourceLocation = None)
@@ -44,7 +43,6 @@ final case class WineModelsReader(resourceNames: Map[ModelType, Seq[String]]) {
       new ModelDescriptor(
         name = resourceName.dropRight(5),
         description = "generated from Spark",
-        dataType = "wine",
         modelType = ModelType.PMML,
         modelBytes = Some(barray),
         modelSourceLocation = None)
@@ -84,7 +82,7 @@ object WineModelsReader {
   def main(args: Array[String]): Unit = {
     val count = if (args.length > 0) args(0).toInt else 100000
 
-    val reader = new WineModelsReader(WineModelDataIngressUtil.wineModelsResources)
+    val reader = new WineModelsReader(WineModelIngressUtil.wineModelsResources)
     (1 to count).foreach { n ⇒
       val model = reader.next()
       println("%7d: %s".format(n, model))

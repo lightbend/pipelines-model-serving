@@ -1,22 +1,52 @@
 package pipelines.examples.modelserving.airlineflights.models
 
-import com.lightbend.modelserving.model.{ Model, ModelDescriptor, ModelManager, ModelType }
+import com.lightbend.modelserving.model.{ Model, ModelDescriptor, ModelType }
 import com.lightbend.modelserving.model.persistence.FilePersistence
 import org.scalatest.FlatSpec
 import pipelines.examples.modelserving.airlineflights.data.{ AirlineFlightRecord, AirlineFlightResult }
 import pipelinesx.test.OutputInterceptor
 
+// TODO: Most of this logic is really about FilePersistence, so move this logic to
+// that project...
 class AirlineH2OProcessorTest extends FlatSpec with OutputInterceptor {
 
   val filePath = "airlines/models/mojo/gbm_pojo_test.zip"
   val savePath = "airline-model-state.dat"
   val name = "test name"
   val description = "test description"
-  val input = AirlineFlightRecord(1990, 1, 3, 3, 1707, 1630, 1755, 1723, "US", 29, 0, 48, 53, 0, 32, 37, "CMH", "IND", 182, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, savePath)
+  val input = AirlineFlightRecord(
+    year = 1990,
+    month = 1,
+    dayOfMonth = 3,
+    dayOfWeek = 3,
+    depTime = 1707,
+    crsDepTime = 1630,
+    arrTime = 1755,
+    crsArrTime = 1723,
+    uniqueCarrier = "US",
+    flightNum = 29,
+    tailNum = 0,
+    actualElapsedTime = 48,
+    crsElapsedTime = 53,
+    airTime = 0,
+    arrDelay = 32,
+    depDelay = 37,
+    origin = "CMH",
+    destination = "IND",
+    distance = 182,
+    taxiIn = 0,
+    taxiOut = 0,
+    canceled = 0,
+    cancellationCode = 0,
+    diverted = 0,
+    carrierDelay = 0,
+    weatherDelay = 0,
+    nASDelay = 0,
+    securityDelay = 0,
+    lateAircraftDelay = 0)
 
-  val modelManager =
-    new ModelManager[AirlineFlightRecord, AirlineFlightResult](AirlineFlightFactoryResolver)
-  val fp = FilePersistence[AirlineFlightRecord, AirlineFlightResult](modelManager)
+  val fp = FilePersistence[AirlineFlightRecord, AirlineFlightResult](
+    AirlineFlightH2OModelFactory, "test-persistence")
 
   "Loading a valid model for the first time" should "succeed" in {
     ignoreOutput {
@@ -77,10 +107,9 @@ class AirlineH2OProcessorTest extends FlatSpec with OutputInterceptor {
     val descriptor = ModelDescriptor(
       name = name,
       description = "airline H2O model",
-      dataType = "airline",
       modelType = ModelType.H2O,
       modelBytes = Some(mojo),
       modelSourceLocation = Some(filePath))
-    AirlineFlightH2OModel.create(descriptor)
+    AirlineFlightH2OModelFactory.create(descriptor)
   }
 }

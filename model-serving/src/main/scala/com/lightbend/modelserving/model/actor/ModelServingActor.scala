@@ -6,17 +6,21 @@ import akka.event.Logging
 import com.lightbend.modelserving.model._
 import com.lightbend.modelserving.model.persistence.FilePersistence
 import com.lightbend.modelserving.model.ModelDescriptorUtil.implicits._
+import org.apache.avro.specific.SpecificRecordBase
 
 /**
  * Actor that handles messages to update a model and to score records using the current model.
- * @param label used as a key to determine when to use this model and also as part of a file name for persistence of it.
+ * @param label used for identifying the app, e.g., as part of a file name for persistence of the current model.
+ * @param modelFactory is used to create new models on demand, based on input [[ModelDescriptor]] instances.
  */
-class ModelServingActor[RECORD, RESULT](label: String, modelManager: ModelManager[RECORD, RESULT]) extends Actor {
+class ModelServingActor[RECORD, RESULT](
+    label:        String,
+    modelFactory: ModelFactory[RECORD, RESULT]) extends Actor {
 
   val log = Logging(context.system, this)
   log.info(s"Creating ModelServingActor for $label")
 
-  private val filePersistence = FilePersistence[RECORD, RESULT](modelManager)
+  private val filePersistence = FilePersistence[RECORD, RESULT](modelFactory)
 
   private var currentModel: Option[Model[RECORD, RESULT]] = None
   var currentState: Option[ModelServingStats] = None
@@ -42,9 +46,9 @@ class ModelServingActor[RECORD, RESULT](label: String, modelManager: ModelManage
 
   override def receive: PartialFunction[Any, Unit] = {
     case descriptor: ModelDescriptor ⇒
-      log.info(s"Received new model from descriptor: $descriptor")
+      log.info(s"Received new model from descriptor: ${descriptor.toRichString}")
 
-      modelManager.create(descriptor) match {
+      modelFactory.create(descriptor) match {
         case Right(newModel) ⇒
           // close current model first
           currentModel.foreach(_.cleanup())
@@ -62,18 +66,22 @@ class ModelServingActor[RECORD, RESULT](label: String, modelManager: ModelManage
       }
       sender() ! Done
 
-    case record: DataToServe[RECORD] ⇒
+    // The typing in the these two lines is a hack. If we just have `case r: RECORD`
+    // the compiler complains that it can't check the type of RECORD (it could be
+    // a Seq[_] for all it knows, and hence eliminated by erasure).
+    case recordBase: SpecificRecordBase ⇒
+      val record = recordBase.asInstanceOf[RECORD]
       currentModel match {
         case Some(model) ⇒
           val start = System.currentTimeMillis()
-          val prediction = model.score(record.record)
+          val prediction = model.score(record)
           val duration = System.currentTimeMillis() - start
           currentState = currentState.map(_.incrementUsage(duration))
           log.info(s"Processed data in $duration ms with result $prediction")
-          sender() ! ServingResult(currentState.get.name, record.getType, duration, Some(prediction))
+          sender() ! ServingResult(currentState.get.name, currentState.get.modelType, duration, Some(prediction))
 
         case None ⇒
-          log.warning(s"no model skipping")
+          log.warning(s"No model available for scoring. Skipping...")
           sender() ! ServingResult("No model available")
       }
 
@@ -86,10 +94,11 @@ class ModelServingActor[RECORD, RESULT](label: String, modelManager: ModelManage
 }
 
 object ModelServingActor {
+
   def props[RECORD, RESULT](
       label:        String,
-      modelManager: ModelManager[RECORD, RESULT]): Props =
-    Props(new ModelServingActor[RECORD, RESULT](label, modelManager))
+      modelFactory: ModelFactory[RECORD, RESULT]): Props =
+    Props(new ModelServingActor[RECORD, RESULT](label, modelFactory))
 }
 
 /** Used as an Actor message. */

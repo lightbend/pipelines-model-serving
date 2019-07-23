@@ -10,10 +10,6 @@
       {
         "name": "products",
         "type": {"type": "array", "items": "long"}
-      },
-      {
-        "name": "dataType",
-        "type": "string"
       }
     ]
 }

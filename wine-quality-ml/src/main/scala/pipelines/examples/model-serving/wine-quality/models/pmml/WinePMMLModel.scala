@@ -41,6 +41,6 @@ object WinePMMLModel extends ModelFactory[WineRecord, Double] {
 
   val modelName = "WinePMMLModel"
 
-  def make(descriptor: ModelDescriptor): Model[WineRecord, Double] =
-    new WinePMMLModel(descriptor)
+  def make(descriptor: ModelDescriptor): Either[String, Model[WineRecord, Double]] =
+    Right(new WinePMMLModel(descriptor))
 }

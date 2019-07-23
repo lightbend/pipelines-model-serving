@@ -19,7 +19,7 @@ import scala.concurrent.duration._
  */
 final case object WineDataIngress extends AkkaStreamlet {
 
-  val out = AvroOutlet[WineRecord]("out", _.dataType)
+  val out = AvroOutlet[WineRecord]("out", _.log_id)
 
   final override val shape = StreamletShape(out)
 
@@ -60,6 +60,7 @@ object WineDataIngressUtil {
     } else try {
       val dtokens = tokens.map(_.trim.toDouble)
       Right(WineRecord(
+        lot_id = "wine quality sample data",
         fixed_acidity = dtokens(0),
         volatile_acidity = dtokens(1),
         citric_acid = dtokens(2),
@@ -70,8 +71,7 @@ object WineDataIngressUtil {
         density = dtokens(7),
         pH = dtokens(8),
         sulphates = dtokens(9),
-        alcohol = dtokens(10),
-        dataType = "wine"))
+        alcohol = dtokens(10)))
     } catch {
       case scala.util.control.NonFatal(nf) ⇒
         Left(

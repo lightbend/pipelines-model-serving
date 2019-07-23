@@ -36,25 +36,4 @@ abstract class TensorFlowModel[RECORD, RESULT](val descriptor: ModelDescriptor)
       case _: Throwable ⇒ // Swallow
     }
   }
-
-  // TODO: Verify if these methods are actually needed, since they have only one field,
-  // the descriptor, which has these methods:
-  // private def writeObject(output: ObjectOutputStream): Unit = {
-  //   val start = System.currentTimeMillis()
-  //   output.writeObject(descriptor)
-  //   println(s"TensorFlow optimized serialization in ${System.currentTimeMillis() - start} ms")
-  // }
-
-  // private def readObject(input: ObjectInputStream): Unit = {
-  //   val start = System.currentTimeMillis()
-  //   descriptor = input.readObject().asInstanceOf[ModelDescriptor]
-  //   try {
-  //     val (graph, session) = setup()
-  //     println(s"TensorFlow model deserialization in ${System.currentTimeMillis() - start} ms")
-  //   } catch {
-  //     case t: Throwable ⇒
-  //       throw new RuntimeException(
-  //         s"TensorFlow model deserialization failed in ${System.currentTimeMillis() - start} ms", t)
-  //   }
-  // }
 }

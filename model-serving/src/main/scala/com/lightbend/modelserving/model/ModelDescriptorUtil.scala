@@ -38,7 +38,6 @@ object ModelDescriptorUtil {
         sb.append("ModelDescriptor(name = ").append(descriptor.name)
           .append(", description = ").append(descriptor.description)
           .append(", modelType = ").append(descriptor.modelType)
-          .append(", dataType = ").append(descriptor.dataType)
           .append(", modelSourceLocation = ").append(descriptor.modelSourceLocation)
           .append(", modelBytes[").append(bytesLen)
           .append("] = ").append(bytesStr)
@@ -52,7 +51,6 @@ object ModelDescriptorUtil {
             descriptor.name == md.name &&
               descriptor.description == md.description &&
               descriptor.modelType == md.modelType &&
-              descriptor.dataType == md.dataType &&
               descriptor.modelSourceLocation == md.modelSourceLocation &&
               arrayEquals(descriptor.modelBytes, md.modelBytes)
           case _ ⇒ false
@@ -88,33 +86,6 @@ object ModelDescriptorUtil {
             f.getName
         }
       }
-
-      // private def writeObject(output: ObjectOutputStream): Unit = {
-      //   val start = System.currentTimeMillis()
-      //   output.writeUTF(name)
-      //   output.writeUTF(description)
-      //   output.writeInt(modelType)
-      //   output.writeObject(modelBytes)
-      //   output.writeUTF(modelSourceLocation.getOrElse(""))
-      //   println(s"ModelDescriptorUtil serialization in ${System.currentTimeMillis() - start} ms")
-      // }
-
-      // private def readObject(input: ObjectInputStream): Unit = {
-      //   val start = System.currentTimeMillis()
-      //   name = input.readUTF()
-      //   description = input.readUTF()
-      //   modelType = input.readInt()
-      //   bytes = input.readObject().asInstanceOf[Array[Byte]]
-      //   val locationString = input.readUTF()
-      //   modelSourceLocation = if (locationString.length == 0) None else Some(locationString)
-      //   try {
-      //     println(s"ModelDescriptorUtil deserialization in ${System.currentTimeMillis() - start} ms")
-      //   } catch {
-      //     case t: Throwable ⇒
-      //       throw new RuntimeException(
-      //         s"ModelDescriptorUtil deserialization failed in ${System.currentTimeMillis() - start} ms", t)
-      //   }
-      // }
     }
   }
 
@@ -122,7 +93,6 @@ object ModelDescriptorUtil {
     name = "unknown",
     description = "unknown description",
     modelType = ModelType.PMML, // arbitrary
-    dataType = "",
     modelBytes = None,
     modelSourceLocation = None)
 
@@ -133,7 +103,6 @@ object ModelDescriptorUtil {
     output.writeUTF(descriptor.name)
     output.writeUTF(descriptor.description)
     output.writeObject(descriptor.modelType)
-    output.writeUTF(descriptor.dataType)
     output.writeObject(
       if (descriptor.modelBytes == None) Array.empty[Byte] else descriptor.modelBytes.get)
     output.writeUTF(descriptor.modelSourceLocation.getOrElse(""))
@@ -154,9 +123,8 @@ object ModelDescriptorUtil {
     val name = input.readUTF()
     val description = input.readUTF()
     val modelType = input.readObject().asInstanceOf[ModelType]
-    val dataType = input.readUTF()
     val modelBytes = bytes()
     val location = loc()
-    ModelDescriptor(name, description, dataType, modelType, modelBytes, location)
+    ModelDescriptor(name, description, modelType, modelBytes, location)
   }
 }

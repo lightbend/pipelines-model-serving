@@ -4,6 +4,10 @@
     "name": "WineRecord",
     "fields":[
       {
+          "name": "lot_id",  // identifies where this wine came from
+          "type": "string"
+      },
+      {
           "name": "fixed_acidity",
           "type": "double"
       },
@@ -46,10 +50,6 @@
       {
         "name": "alcohol",
         "type": "double"
-      },
-      {
-        "name": "dataType",
-        "type": "string"
       }
     ]
 }

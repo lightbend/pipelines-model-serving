@@ -13,10 +13,6 @@
       "type": "string"
     },
     {
-      "name": "dataType",
-      "type": "string"
-    },
-    {
       "name": "modelType",
       "type" : {"type": "enum",
                 "name": "ModelType",

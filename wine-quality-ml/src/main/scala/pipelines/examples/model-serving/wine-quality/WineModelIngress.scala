@@ -12,25 +12,25 @@ import pipelinesx.config.ConfigUtil
 import pipelinesx.config.ConfigUtil.implicits._
 import scala.concurrent.duration._
 import scala.collection.JavaConverters._
-import com.lightbend.modelserving.model.{ ModelDescriptor, ModelType }
+import com.lightbend.modelserving.model.{ ModelDescriptor, ModelType, Record }
 
 /**
  * One at a time every two minutes, loads a PMML or TensorFlow model and
  * sends it downstream.
  */
-final case object WineModelDataIngress extends AkkaStreamlet {
+final case object WineModelIngress extends AkkaStreamlet {
 
-  val out = AvroOutlet[ModelDescriptor]("out", _.dataType)
+  val out = AvroOutlet[ModelDescriptor]("out", _.modelType)
 
   final override val shape = StreamletShape(out)
 
   override def createLogic = new RunnableGraphStreamletLogic() {
     def runnableGraph =
-      WineModelDataIngressUtil.makeSource().to(atMostOnceSink(out))
+      WineModelIngressUtil.makeSource().to(atMostOnceSink(out))
   }
 }
 
-object WineModelDataIngressUtil {
+object WineModelIngressUtil {
 
   lazy val modelFrequencySeconds: FiniteDuration =
     ConfigUtil.default
@@ -55,7 +55,7 @@ object WineModelDataIngressUtil {
       frequency:       FiniteDuration              = modelFrequencySeconds): Source[ModelDescriptor, NotUsed] = {
     val recordsReader = WineModelsReader(modelsResources)
     Source.repeat(recordsReader)
-      .map(reader ⇒ reader.next())
+      .map(reader ⇒ Record(reader.next()))
       .throttle(1, frequency)
   }
 
@@ -63,7 +63,7 @@ object WineModelDataIngressUtil {
   def main(args: Array[String]): Unit = {
     println(s"frequency (seconds): ${modelFrequencySeconds}")
     println(s"records sources:     ${wineModelsResources}")
-    implicit val system = ActorSystem("WineModelDataIngress-Main")
+    implicit val system = ActorSystem("WineModelIngress-Main")
     implicit val mat = ActorMaterializer()
     val source = makeSource(wineModelsResources, modelFrequencySeconds)
     source.runWith(Sink.foreach(println))

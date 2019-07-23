@@ -60,12 +60,14 @@
         "type": "double"
       },
       {
-        "name": "modelname",
+        "name": "modelType",
         "type": "string"
-      },{
-        "name": "dataType",
+      },
+      {
+        "name": "modelName",
         "type": "string"
-      },{
+      },
+      {
         "name": "duration",
         "type": "long"
       }

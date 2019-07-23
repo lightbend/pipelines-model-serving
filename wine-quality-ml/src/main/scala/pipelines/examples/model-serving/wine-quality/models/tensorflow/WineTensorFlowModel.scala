@@ -54,6 +54,6 @@ object WineTensorFlowModel extends ModelFactory[WineRecord, Double] {
 
   val modelName = "WineTensorFlowModel"
 
-  def make(descriptor: ModelDescriptor): Model[WineRecord, Double] =
-    new WineTensorFlowModel(descriptor)
+  def make(descriptor: ModelDescriptor): Either[String, Model[WineRecord, Double]] =
+    Right(new WineTensorFlowModel(descriptor))
 }

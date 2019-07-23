@@ -39,9 +39,7 @@ class RecommenderTensorFlowServingModel(descriptor: ModelDescriptor)
 /**
  * Implementation of TensorFlow serving model factory.
  */
-object RecommenderTensorFlowServingModel extends ModelFactory[RecommenderRecord, Seq[ProductPrediction]] {
-
-  val modelName = "RecommenderTensorFlowServingModel"
+object RecommenderTensorFlowServingModelFactory extends ModelFactory[RecommenderRecord, Seq[ProductPrediction]] {
 
   /**
    * Creates a new TensorFlow serving model.
@@ -49,16 +47,18 @@ object RecommenderTensorFlowServingModel extends ModelFactory[RecommenderRecord,
    * @param descriptor model to serve representation of TensorFlow serving model.
    * @return model
    */
-  def make(descriptor: ModelDescriptor): Model[RecommenderRecord, Seq[ProductPrediction]] =
-    new RecommenderTensorFlowServingModel(descriptor)
+  def make(descriptor: ModelDescriptor): Either[String, Model[RecommenderRecord, Seq[ProductPrediction]]] =
+    Right(new RecommenderTensorFlowServingModel(descriptor))
+}
 
+object RecommenderTensorFlowServingModelMain {
   // Testing transformation
   def main(args: Array[String]): Unit = {
 
     val gson = new Gson
 
     val descriptor = ModelDescriptorUtil.unknown
-    val model = new RecommenderTensorFlowServingModel(descriptor)
+    val model = RecommenderTensorFlowServingModel.create(descriptor).right.get
     val record = new RecommenderRecord(10L, Seq(1L, 2L, 3L, 4L), "recommender")
     val httpRes = gson.toJson(new TFPredictionResult(new RecommendationOutputs(
       Seq(1, 2, 3).toArray,

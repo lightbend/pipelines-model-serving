@@ -1,10 +1,19 @@
 package pipelines.examples.modelserving.airlineflights
 
+import pipelines.examples.modelserving.airlineflights.data.{ AirlineFlightRecord, AirlineFlightResult }
+import pipelinesx.ingress.RecordsReader
+import com.lightbend.modelserving.model.ServingResult
+import scala.concurrent.Await
+import scala.concurrent.duration._
+import akka.pattern.ask
+import akka.util.Timeout
+
 /**
  * For testing the logic outside of Pipelines. Try -h or --help for information
  */
 object AirlineFlightsMain {
   val defaultN = 100
+  implicit val askTimeout: Timeout = Timeout(30.seconds)
 
   case class Options(count: Int)
 
@@ -31,18 +40,21 @@ object AirlineFlightsMain {
     println("AirlineFlightsMain: Running airlines test application.")
     println(s"Printing a maximum of ${options.count} flight records")
 
-    // TODO
-    // val server = new AirlineFlightModelServerUtil()
-    // val reader = RecordsReader.fromConfiguration[AirlineFlightRecord](
-    //   configurationKeyRoot = AirlineFlightRecordsIngressUtil.rootConfigKey,
-    //   dropFirstN = 1)(
-    //   AirlineFlightRecordsIngressUtil.parse)
-    // (1 to options.count).foreach { n ⇒
-    //   val (_, record) = reader.next()
-    //   val result = server.score(record)
-    //   println("%7d: %s".format(n, result))
-    //   Thread.sleep(100)
-    // }
+    val modelServer = AirlineFlightModelServer.makeModelServer()
+    val reader = RecordsReader.fromConfiguration[AirlineFlightRecord](
+      configurationKeyRoot = AirlineFlightRecordsIngressUtil.rootConfigKey,
+      dropFirstN = 1)(
+      AirlineFlightRecordsIngressUtil.parse)
+    (1 to options.count).foreach { n ⇒
+      val (_, record) = reader.next()
+      val resultFuture = modelServer.ask(record).mapTo[ServingResult[AirlineFlightResult]]
+      val result = Await.result(resultFuture, 2 seconds)
+      result.result match {
+        case None    ⇒ println(s"$n: Received a None in the result: $result")
+        case Some(r) ⇒ println(s"$n: Received result: $r")
+      }
+      Thread.sleep(100)
+    }
 
     sys.exit(0)
   }
