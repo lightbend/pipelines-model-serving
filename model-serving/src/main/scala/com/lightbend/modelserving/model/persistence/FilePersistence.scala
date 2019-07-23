@@ -40,17 +40,17 @@ final case class FilePersistence[RECORD, RESULT](
       case _ ⇒ null
     }
 
-  protected def fullPath(path: String): String = baseDirPath + "/" + path
+  def statePath(path: String): String = baseDirPath + "/" + path
 
   def stateExists(path: String): Boolean = {
-    val file = new File(fullPath(path))
+    val file = new File(statePath(path))
     file.exists()
   }
 
   // Gets an exclusive lock on the file
   // Both are returned so we can close the channels for the file...
   private def getInputStream(fileName: String): Either[String, (ObjectInputStream, FileInputStream)] = try {
-    val file = new File(baseDirPath + "/" + fileName)
+    val file = new File(statePath(fileName))
     val fis = new FileInputStream(file)
     val lock = obtainLock(fis.getChannel(), true)
     lock match {
@@ -61,7 +61,7 @@ final case class FilePersistence[RECORD, RESULT](
     }
   } catch {
     case scala.util.control.NonFatal(th) ⇒
-      Left(s"getInputStream failed: Does input ${fullPath(fileName)} exist? $th")
+      Left(s"getInputStream failed: Does input ${statePath(fileName)} exist? $th")
   }
 
   // Both are returned so we can close the channels for the file...
@@ -81,7 +81,7 @@ final case class FilePersistence[RECORD, RESULT](
     }
   } catch {
     case scala.util.control.NonFatal(th) ⇒
-      Left(s"getOutputStream failed: Is the ${fullPath(fileName)} location writable? $th")
+      Left(s"getOutputStream failed: Is the ${statePath(fileName)} location writable? $th")
   }
   /**
    * Restore the state from a file system. Use [[stateExists]] first to determine

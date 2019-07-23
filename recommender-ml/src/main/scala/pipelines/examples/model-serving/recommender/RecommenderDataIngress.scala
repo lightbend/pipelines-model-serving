@@ -14,7 +14,6 @@ import scala.util.Random
 import scala.concurrent.duration._
 import pipelinesx.config.ConfigUtil
 import pipelinesx.config.ConfigUtil.implicits._
-import com.lightbend.modelserving.model.Record
 
 /**
  * Ingress of data for recommendations. In this case, every second we
@@ -22,7 +21,7 @@ import com.lightbend.modelserving.model.Record
  */
 final case object RecommenderDataIngress extends AkkaStreamlet {
 
-  val out = AvroOutlet[RecommenderRecord]("out", _.user)
+  val out = AvroOutlet[RecommenderRecord]("out", _.user.toString)
 
   final override val shape = StreamletShape.withOutlets(out)
 
@@ -40,7 +39,7 @@ object RecommenderDataIngressUtil {
   def makeSource(
       frequency: FiniteDuration = dataFrequencyMilliseconds): Source[RecommenderRecord, NotUsed] = {
     Source.repeat(RecommenderRecordMaker)
-      .map(maker ⇒ Record(maker.make()))
+      .map(maker ⇒ maker.make())
       .throttle(1, frequency)
   }
 
@@ -52,7 +51,7 @@ object RecommenderDataIngressUtil {
       val nprods = generator.nextInt(30)
       val products = new ListBuffer[Long]()
       0 to nprods foreach { _ ⇒ products += generator.nextInt(300).toLong }
-      new RecommenderRecord(user, products, "recommender")
+      new RecommenderRecord(user, products)
     }
   }
 

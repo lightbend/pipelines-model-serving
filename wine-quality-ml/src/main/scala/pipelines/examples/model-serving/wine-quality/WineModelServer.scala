@@ -1,13 +1,15 @@
 package pipelines.examples.modelserving.winequality
 
-import pipelines.examples.modelserving.winequality.models.WineDataRecord
-import pipelines.examples.modelserving.winequality.data.{ WineRecord, WineResult }
+import data.{ WineRecord, WineResult }
+import models.pmml.WinePMMLModelFactory
+import models.tensorflow.{ WineTensorFlowModelFactory, WineTensorFlowBundledModelFactory }
+
 import akka.Done
 import akka.actor.ActorSystem
 import akka.stream.scaladsl.Sink
 import akka.pattern.ask
 import akka.util.Timeout
-import com.lightbend.modelserving.model.actor.{ ModelServingActor, ModelServingManager }
+import com.lightbend.modelserving.model.actor.ModelServingActor
 import com.lightbend.modelserving.model.{ ModelDescriptor, ModelType, MultiModelFactory, ServingResult }
 import pipelines.akkastream.AkkaStreamlet
 import pipelines.akkastream.scaladsl.{ FlowWithPipelinesContext, RunnableGraphStreamletLogic }
@@ -25,19 +27,16 @@ final case object WineModelServer extends AkkaStreamlet {
 
   val modelFactory = MultiModelFactory(
     Map(
-      ModelType.PMML -> WinePMMLModel,
-      ModelType.TENSORFLOW -> WineTensorFlowModel,
-      ModelType.TENSORFLOWSAVED -> WineTensorFlowBundledModel))
+      ModelType.PMML -> WinePMMLModelFactory,
+      ModelType.TENSORFLOW -> WineTensorFlowModelFactory,
+      ModelType.TENSORFLOWSAVED -> WineTensorFlowBundledModelFactory))
 
   override final def createLogic = new RunnableGraphStreamletLogic() {
 
+    implicit val askTimeout: Timeout = Timeout(30.seconds)
+
     val modelserver = context.system.actorOf(
       ModelServingActor.props[WineRecord, Double]("wine", modelFactory))
-
-    // val resolver = new ServingActorResolver(Map("wine" -> actor), Some(actor))
-    // val modelserver = context.system.actorOf(ModelServingManager.props(resolver))
-
-    implicit val askTimeout: Timeout = Timeout(30.seconds)
 
     def runnableGraph() = {
       atLeastOnceSource(in1).via(modelFlow).runWith(Sink.ignore)
@@ -45,7 +44,7 @@ final case object WineModelServer extends AkkaStreamlet {
     }
     protected def dataFlow =
       FlowWithPipelinesContext[WineRecord].mapAsync(1) {
-        data ⇒ modelserver.ask(WineDataRecord(data)).mapTo[ServingResult[Double]]
+        data ⇒ modelserver.ask(data).mapTo[ServingResult[Double]]
       }.filter {
         r ⇒ r.result != None
       }.map {
@@ -68,8 +67,6 @@ object WineModelServerMain {
     val modelserver = system.actorOf(
       ModelServingActor.props[WineRecord, Double]("wine", WineModelServer.modelFactory))
 
-    // val modelserver = system.actorOf(ModelServingManager.props(new ServingActorResolver(actors)))
-
     val path = "wine/models/winequalityDecisionTreeClassification.pmml"
     val is = this.getClass.getClassLoader.getResourceAsStream(path)
     val pmml = new Array[Byte](is.available)
@@ -87,7 +84,7 @@ object WineModelServerMain {
     val record = WineRecord(
       "wine quality sample data",
       .0, .0, .0, .0, .0, .0, .0, .0, .0, .0, .0)
-    val result = modelserver.ask(WineDataRecord(record)).mapTo[ServingResult[Double]]
+    val result = modelserver.ask(record).mapTo[ServingResult[Double]]
     result.foreach(data ⇒ {
       println(s"Result ${data.result.get}, model ${data.name}, duration ${data.duration}")
     })

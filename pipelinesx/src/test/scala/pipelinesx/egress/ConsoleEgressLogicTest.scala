@@ -1,6 +1,6 @@
 package pipelinesx.egress
 
-import pipelinesx.test.{ OutputInterceptor, TestData }
+import pipelinesx.test.TestData
 import org.scalatest.{ FunSpec, BeforeAndAfterAll }
 import akka.testkit._
 import akka.actor._
@@ -11,14 +11,14 @@ import pipelines.streamlets.avro.AvroInlet
 import pipelines.akkastream.AkkaStreamlet
 import pipelines.akkastream.testkit._
 import com.typesafe.config.ConfigFactory
+import java.io.{ ByteArrayOutputStream, PrintStream }
 
-class ConsoleEgressLogicTest extends FunSpec with BeforeAndAfterAll with OutputInterceptor {
+class ConsoleEgressLogicTest extends FunSpec with BeforeAndAfterAll {
 
   private implicit val system = ActorSystem("ConsoleEgressLogic")
   private implicit val mat = ActorMaterializer()
 
   override def afterAll: Unit = {
-    resetOutputs()
     TestKit.shutdownActorSystem(system)
   }
 
@@ -26,27 +26,35 @@ class ConsoleEgressLogicTest extends FunSpec with BeforeAndAfterAll with OutputI
     val inlet = AvroInlet[TestData]("in")
     final override val shape = StreamletShape.withInlets(inlet)
 
+    val bytesOS = new ByteArrayOutputStream
+    val bytesPS = new PrintStream(bytesOS, true)
     override def createLogic = ConsoleEgressLogic[TestData](
       in = inlet,
-      prefix = "TestPrefix")
+      prefix = "TestPrefix",
+      out = bytesPS)
   }
 
+  def toString(expected: TestData) = s"""TestPrefix{"id": ${expected.id}, "name": ${expected.name}}"""
+
   describe("LogEgress") {
-    // I would prefer to test the output, but the output isn't captured, even with
-    // the logger logic above that replaces the Akka logger with the "stdout/stderr"
-    // logger. I suspect it's because the code is actually run by Akka on a different thread.
-    it("Writes output to stdout - DOESN'T CURRENTLY TEST ANYTHING!!") {
+    // Currently ignored because this test simply doesn't work! No output is
+    // captured in the byte array!
+    // Investigate whether or not FlowEgressLogic should be implemented with
+    // RunnableGraphStreamletLogic. Could that be the issue??
+    ignore("Writes output to the user-specified output stream, stdout by default") {
       val data = Vector(TestData(1, "one"), TestData(2, "two"), TestData(3, "three"))
-      // val expectedOut = data.map(_.toString)
-      // expectOutput(expectedOut) {
-      ignoreOutput {
-        val testEgress = new TestEgress()
-        val testkit = AkkaStreamletTestKit(system, mat, ConfigFactory.load())
-        val source = Source(data)
-        val in = testkit.inletFromSource(testEgress.inlet, source)
-        testkit.run(testEgress, in, Nil, () ⇒ {})
-      }
-      Thread.sleep(1000) // give it time to write stdout before shutting down!
+      val testEgress = new TestEgress()
+      val testkit = AkkaStreamletTestKit(system, mat, ConfigFactory.load())
+      val source = Source(data)
+      val in = testkit.inletFromSource(testEgress.inlet, source)
+      testkit.run(testEgress, in, Nil, () ⇒ {
+        val lines = testEgress.bytesOS.toString.split("\n").toVector
+        assert(lines.size == data.size, s"lines: $lines")
+        lines.zip(data).foreach {
+          case (actual, expected) ⇒
+            assert(actual == toString(expected))
+        }
+      })
     }
   }
 }

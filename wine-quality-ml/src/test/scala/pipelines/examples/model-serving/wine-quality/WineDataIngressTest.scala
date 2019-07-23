@@ -28,7 +28,7 @@ class WineDataIngressTest extends FunSpec with BeforeAndAfterAll with OutputInte
 
   def toKeyedWineRecord(s: String): (String, WineRecord) = {
     val rec = WineDataIngressUtil.parse(s).right.get
-    (rec.log_id, rec)
+    (rec.lot_id, rec)
   }
 
   def expected(sources: Seq[String]): Vector[(String, WineRecord)] = {

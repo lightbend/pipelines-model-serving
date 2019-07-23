@@ -73,7 +73,7 @@ class AirlineH2OProcessorTest extends FlatSpec with OutputInterceptor {
       }
 
       assert(Right(true) == fp.saveState(original, savePath))
-      assert(fp.stateExists("airline") == true)
+      assert(fp.stateExists(savePath) == true, s"${fp.statePath("airline")} should exist, but doesn't!")
     }
   }
 

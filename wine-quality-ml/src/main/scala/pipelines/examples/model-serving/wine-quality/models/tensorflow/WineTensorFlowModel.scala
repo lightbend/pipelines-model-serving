@@ -33,8 +33,7 @@ class WineTensorFlowModel(metadata: ModelDescriptor)
   }
 }
 
-/** Factory for wine data PMML model */
-object WineTensorFlowModel extends ModelFactory[WineRecord, Double] {
+object WineTensorFlowModel {
 
   def toTensor(record: WineRecord): Tensor[_] = {
     val data = Array(
@@ -51,8 +50,10 @@ object WineTensorFlowModel extends ModelFactory[WineRecord, Double] {
       record.alcohol.toFloat)
     Tensor.create(Array(data))
   }
+}
 
-  val modelName = "WineTensorFlowModel"
+/** Factory for wine data PMML model */
+object WineTensorFlowModelFactory extends ModelFactory[WineRecord, Double] {
 
   def make(descriptor: ModelDescriptor): Either[String, Model[WineRecord, Double]] =
     Right(new WineTensorFlowModel(descriptor))

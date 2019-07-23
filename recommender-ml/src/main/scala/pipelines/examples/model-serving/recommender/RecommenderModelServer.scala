@@ -1,8 +1,9 @@
 package pipelines.examples.modelserving.recommender
 
 import pipelines.examples.modelserving.recommender.data.{ ProductPrediction, RecommenderRecord, RecommendationResult }
+import pipelines.examples.modelserving.recommender.models.tensorflow.RecommenderTensorFlowServingModelFactory
 import com.lightbend.modelserving.model.actor.ModelServingActor
-import com.lightbend.modelserving.model.{ ModelDescriptor, ModelFactory, ModelType, ServingResult }
+import com.lightbend.modelserving.model.{ ModelDescriptor, ModelType, ServingResult }
 import com.lightbend.modelserving.model.ModelDescriptorUtil.implicits._
 
 import akka.Done
@@ -26,14 +27,11 @@ final case object RecommenderModelServer extends AkkaStreamlet {
 
   override final def createLogic = new RunnableGraphStreamletLogic() {
 
+    implicit val askTimeout: Timeout = Timeout(30.seconds)
+
     val modelserver = context.system.actorOf(
       ModelServingActor.props[RecommenderRecord, Seq[ProductPrediction]](
         "recommender", RecommenderTensorFlowServingModelFactory))
-
-    // val resolver = new ServingActorResolver(Map(dtype -> actor), Some(actor))
-    // val modelserver = context.system.actorOf(ModelServingManager.props(resolver))
-
-    implicit val askTimeout: Timeout = Timeout(30.seconds)
 
     def runnableGraph() = {
       atLeastOnceSource(in1).via(modelFlow).runWith(Sink.ignore)
@@ -59,15 +57,13 @@ final case object RecommenderModelServer extends AkkaStreamlet {
 object RecommenderModelServerMain {
   def main(args: Array[String]): Unit = {
 
-    val dtype = "recommender"
     implicit val system: ActorSystem = ActorSystem("ModelServing")
     implicit val askTimeout: Timeout = Timeout(30.seconds)
 
     val modelserver = system.actorOf(
       ModelServingActor.props[RecommenderRecord, Seq[ProductPrediction]](
-        "recommender", RecommenderTensorFlowServingModelFactory)))
+        "recommender", RecommenderTensorFlowServingModelFactory))
 
-    // val modelserver = system.actorOf(ModelServingManager.props(new ServingActorResolver(actors)))
     val descriptor = new ModelDescriptor(
       name = "Tensorflow Model",
       description = "For model Serving",
@@ -77,7 +73,7 @@ object RecommenderModelServerMain {
 
     println(s"Sending descriptor ${descriptor.toRichString} to the scoring engine...")
     modelserver.ask(descriptor)
-    val record = new RecommenderRecord(10L, Seq(1L, 2L, 3L, 4L), dtype)
+    val record = new RecommenderRecord(10L, Seq(1L, 2L, 3L, 4L))
     Thread.sleep(1000)
     val result = modelserver.ask(record).mapTo[ServingResult[Seq[ProductPrediction]]]
     Thread.sleep(1000)

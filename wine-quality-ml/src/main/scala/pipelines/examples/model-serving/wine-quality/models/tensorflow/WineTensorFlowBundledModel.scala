@@ -33,7 +33,7 @@ class WineTensorFlowBundledModel(descriptor: ModelDescriptor)
 /**
  * Implementation of TensorFlow bundled model factory.
  */
-object WineTensorFlowBundledModel extends ModelFactory[WineRecord, Double] {
+object WineTensorFlowBundledModelFactory extends ModelFactory[WineRecord, Double] {
 
   def make(descriptor: ModelDescriptor): Either[String, Model[WineRecord, Double]] =
     Right(new WineTensorFlowBundledModel(descriptor))

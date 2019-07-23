@@ -19,7 +19,7 @@ import scala.concurrent.duration._
  */
 final case object WineDataIngress extends AkkaStreamlet {
 
-  val out = AvroOutlet[WineRecord]("out", _.log_id)
+  val out = AvroOutlet[WineRecord]("out", _.lot_id)
 
   final override val shape = StreamletShape(out)
 

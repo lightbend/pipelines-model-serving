@@ -58,8 +58,8 @@ object RecommenderTensorFlowServingModelMain {
     val gson = new Gson
 
     val descriptor = ModelDescriptorUtil.unknown
-    val model = RecommenderTensorFlowServingModel.create(descriptor).right.get
-    val record = new RecommenderRecord(10L, Seq(1L, 2L, 3L, 4L), "recommender")
+    val model = new RecommenderTensorFlowServingModel(descriptor)
+    val record = new RecommenderRecord(10L, Seq(1L, 2L, 3L, 4L))
     val httpRes = gson.toJson(new TFPredictionResult(new RecommendationOutputs(
       Seq(1, 2, 3).toArray,
       Seq(Seq(.1).toArray, Seq(.2).toArray, Seq(.3).toArray, Seq(.4).toArray).toArray)))

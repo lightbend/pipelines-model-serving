@@ -37,7 +37,7 @@ class WinePMMLModel(descriptor: ModelDescriptor)
 /**
  * Factory for wine data PMML model
  */
-object WinePMMLModel extends ModelFactory[WineRecord, Double] {
+object WinePMMLModelFactory extends ModelFactory[WineRecord, Double] {
 
   val modelName = "WinePMMLModel"
 

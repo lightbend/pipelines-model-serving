@@ -2,9 +2,10 @@
     "namespace": "pipelines.examples.modelserving.winequality.data",
     "type": "record",
     "name": "WineRecord",
+    "doc": "'lot_id' is added to the original records, simulating the id of the 'lot' where this wine originated. Mostly we use it as a potential partition key.",
     "fields":[
       {
-          "name": "lot_id",  // identifies where this wine came from
+          "name": "lot_id",
           "type": "string"
       },
       {

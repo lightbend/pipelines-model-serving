@@ -12,7 +12,7 @@ import pipelinesx.config.ConfigUtil
 import pipelinesx.config.ConfigUtil.implicits._
 import scala.concurrent.duration._
 import scala.collection.JavaConverters._
-import com.lightbend.modelserving.model.{ ModelDescriptor, ModelType, Record }
+import com.lightbend.modelserving.model.{ ModelDescriptor, ModelType }
 
 /**
  * One at a time every two minutes, loads a PMML or TensorFlow model and
@@ -20,7 +20,7 @@ import com.lightbend.modelserving.model.{ ModelDescriptor, ModelType, Record }
  */
 final case object WineModelIngress extends AkkaStreamlet {
 
-  val out = AvroOutlet[ModelDescriptor]("out", _.modelType)
+  val out = AvroOutlet[ModelDescriptor]("out", _.modelType.toString)
 
   final override val shape = StreamletShape(out)
 
@@ -55,7 +55,7 @@ object WineModelIngressUtil {
       frequency:       FiniteDuration              = modelFrequencySeconds): Source[ModelDescriptor, NotUsed] = {
     val recordsReader = WineModelsReader(modelsResources)
     Source.repeat(recordsReader)
-      .map(reader ⇒ Record(reader.next()))
+      .map(reader ⇒ reader.next())
       .throttle(1, frequency)
   }
 

@@ -20,7 +20,7 @@ import com.lightbend.modelserving.model.{ ModelDescriptor, ModelType }
  */
 final case object RecommenderModelIngress extends AkkaStreamlet {
 
-  val out = AvroOutlet[ModelDescriptor]("out", _.modelType)
+  val out = AvroOutlet[ModelDescriptor]("out", _.modelType.toString)
 
   final override val shape = StreamletShape.withOutlets(out)
 
