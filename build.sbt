@@ -20,29 +20,9 @@ lazy val wineModelServingPipeline = (project in file("./wine-quality-ml"))
   .enablePlugins(PipelinesApplicationPlugin)
   .enablePlugins(PipelinesAkkaStreamsLibraryPlugin)
   .settings(
-    name := s"wine-quality-ml-$user",
+    name := s"wine-quality-ml-nolan",
     version := thisVersion,
-    pipelinesDockerRegistry := dockerRegistry
-  )
-  .dependsOn(util, data, dataModel, modelLibrary, dataIngestors, modelServingFlow, modelServingEgress)
-
-lazy val recommenderModelServingPipeline = (project in file("./recommender-ml"))
-  .enablePlugins(PipelinesApplicationPlugin)
-  .enablePlugins(PipelinesAkkaStreamsLibraryPlugin)
-  .settings(
-    name := s"recommender-ml-$user",
-    version := thisVersion,
-    pipelinesDockerRegistry := dockerRegistry
-  )
-  .dependsOn(util, data, dataModel, modelLibrary, dataIngestors, modelServingFlow, modelServingEgress)
-
-lazy val airlineFlightsModelServingPipeline = (project in file("./airline-flights-ml"))
-  .enablePlugins(PipelinesApplicationPlugin)
-  .enablePlugins(PipelinesAkkaStreamsLibraryPlugin)
-  .settings(
-    name := s"airline-flights-ml-$user",
-    version := thisVersion,
-    pipelinesDockerRegistry := dockerRegistry
+    pipelinesDockerRegistry := Some("docker-registry-default.gsa2.lightbend.com")
   )
   .dependsOn(util, data, dataModel, modelLibrary, dataIngestors, modelServingFlow, modelServingEgress)
 
@@ -79,7 +59,7 @@ lazy val modelLibrary = (project in file("./model-library"))
   .dependsOn(util, data, dataModel)
 
 lazy val dataIngestors = (project in file("./data-ingestors"))
-  .enablePlugins(PipelinesAkkaStreamsLibraryPlugin)
+  .enablePlugins(PipelinesAkkaStreamsLibraryPlugin, PipelinesSparkLibraryPlugin)
   .settings(
     name := "data-ingestors",
     commonSettings,

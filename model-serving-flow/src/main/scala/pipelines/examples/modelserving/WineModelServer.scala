@@ -5,6 +5,8 @@ import akka.actor.ActorSystem
 import akka.stream.scaladsl.Sink
 import akka.pattern.ask
 import akka.util.Timeout
+import com.lightbend.cinnamon.akka.{ CinnamonEvent, CinnamonEvents, CinnamonMetrics }
+import com.lightbend.cinnamon.metric.{ GaugeDouble, Recorder }
 import com.lightbend.modelserving.model.actor.{ ModelServingActor, ModelServingManager }
 import com.lightbend.modelserving.model.{ ModelToServe, ServingActorResolver, ServingResult }
 import pipelines.akkastream.AkkaStreamlet
@@ -13,6 +15,7 @@ import pipelines.examples.data.{ ModelDescriptor, WineRecord, WineResult }
 import pipelines.examples.modelserving.winemodel.{ WineDataRecord, WineFactoryResolver }
 import pipelines.streamlets.StreamletShape
 import pipelines.streamlets.avro.{ AvroInlet, AvroOutlet }
+
 import scala.concurrent.duration._
 
 final case object WineModelServer extends AkkaStreamlet {
@@ -44,7 +47,22 @@ final case object WineModelServer extends AkkaStreamlet {
       }.filter {
         r ⇒ r.result != None
       }.map {
-        r ⇒ WineResult(r.name, r.dataType, r.duration, r.result.get)
+        r ⇒
+          {
+            val sysDurationRecorder: Recorder = CinnamonMetrics(system).createRecorder(
+              "MLDurationRecorder",
+              tags = Map("model" -> r.name))
+            sysDurationRecorder.record(r.duration)
+
+            val sysResultRecorder: GaugeDouble = CinnamonMetrics(system).createGaugeDouble(
+              "MLResultRecorder",
+              tags = Map("model" -> r.name))
+            sysResultRecorder.set(r.result.get)
+
+            println("Duration: " + r.duration)
+
+            WineResult(r.name, r.dataType, r.duration, r.result.get)
+          }
       }
     protected def modelFlow =
       FlowWithPipelinesContext[ModelDescriptor].map {
