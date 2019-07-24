@@ -61,15 +61,18 @@ final case object AirlineFlightModelServer extends AkkaStreamlet {
 }
 
 object AirlineFlightModelServerMain {
-  // WARNING: Currently, the Pipelines plugin interferes with running mains,
-  // even when you use
-  //   runMain pipelines.examples.modelserving.airlineflights.AirlineFlightModelServerMain
-  // Instead, start the console and run it there:
-  // ```
-  // import pipelines.examples.modelserving.airlineflights._
-  // AirlineFlightModelServerMain.main(Array())
-  // ...
-  // ```
+  /**
+   * Testing parts of the airline app.
+   * WARNING: Currently, the Pipelines plugin interferes with running mains,
+   * even when you use
+   *   runMain pipelines.examples.modelserving.airlineflights.AirlineFlightModelServerMain
+   * Instead, start the console and run it there:
+   * ```
+   * import pipelines.examples.modelserving.airlineflights._
+   * AirlineFlightModelServerMain.main(Array())
+   * ...
+   * ```
+   */
   def main(args: Array[String]): Unit = {
 
     println("Starting...")

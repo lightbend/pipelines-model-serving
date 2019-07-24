@@ -1,5 +1,6 @@
 package pipelines.examples.modelserving.airlineflights
 
+import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{ Source, Sink }
@@ -19,7 +20,8 @@ import scala.concurrent.duration._
  */
 final case object AirlineFlightModelIngress extends AkkaStreamlet {
 
-  val out = AvroOutlet[ModelDescriptor]("out", _.name)
+  // Use ONE partition for input to model serving
+  val out = AvroOutlet[ModelDescriptor]("out", _ ⇒ "airlines")
 
   final override val shape = StreamletShape.withOutlets(out)
 
@@ -46,12 +48,14 @@ protected final class ModelDescriptorProvider() {
   def getModelDescriptor(): ModelDescriptor = {
     count += 1
     val index = count % sourceBytes.length
-    new ModelDescriptor(
+    val md = new ModelDescriptor(
       name = s"Airline flight Model $count (model #${index + 1})",
       description = "Airline H2O flight Model",
       modelType = ModelType.H2O,
       modelBytes = Some(sourceBytes(index)),
       modelSourceLocation = Some(sourcePaths(index)))
+    println("AirlineFlightModelIngress: Returning " + md.toRichString)
+    md
   }
 }
 
@@ -68,8 +72,9 @@ object AirlineFlightModelIngressUtil {
   def makeSource(
       frequency: FiniteDuration = modelFrequencySeconds): Source[ModelDescriptor, _] = {
     val provider = new ModelDescriptorProvider()
-    Source.tick(0.seconds, frequency, provider)
-      .map(p ⇒ p.getModelDescriptor())
+    Source.repeat(NotUsed)
+      .map(_ ⇒ provider.getModelDescriptor())
+      .throttle(1, frequency)
   }
 
   /**
@@ -79,44 +84,41 @@ object AirlineFlightModelIngressUtil {
    * ```
    * > console
    * scala> import pipelines.examples.modelserving.airlineflights._
-   * scala> AirlineFlightModelIngressUtil.main(Array("-f", "15", "-n", "3"))
+   * scala> AirlineFlightModelIngressUtil.main(Array("-f", "5"))
    */
   def main(args: Array[String]): Unit = {
       def help() = println(s"""
-      |usage: AirlineFlightModelIngressUtil [-h|--help] [-n|--count N] [-f|--frequency F]
+      |usage: AirlineFlightModelIngressUtil [-h|--help] [-f|--frequency F]
       |where:
       |  -h | --help         print this message and exit
-      |  -n | --count N      N total iterations before stopping (default: doesn't stop)
       |  -f | --frequency F  F seconds between output model descriptions (default: $modelFrequencySeconds)
       |""".stripMargin)
 
-      def parseArgs(args2: Seq[String], opts: (Long, FiniteDuration)): (Long, FiniteDuration) = args2 match {
+      def parseArgs(args2: Seq[String], freq: FiniteDuration): FiniteDuration = args2 match {
         case ("-h" | "--help") +: _ ⇒
           help()
           sys.exit(0)
-        case Nil                                 ⇒ opts
-        case ("-n" | "--count") +: n +: tail     ⇒ parseArgs(tail, (n.toLong, opts._2))
-        case ("-f" | "--frequency") +: n +: tail ⇒ parseArgs(tail, (opts._1, n.toInt.seconds))
+        case Nil                                 ⇒ freq
+        case ("-f" | "--frequency") +: n +: tail ⇒ parseArgs(tail, n.toInt.seconds)
         case x +: _ ⇒
           println(s"ERROR: Unrecognized argument $x. All args: ${args.mkString(" ")}")
           help()
           sys.exit(1)
       }
 
-    val (total, frequency) = parseArgs(args, (Long.MaxValue, modelFrequencySeconds))
-    println(s"# of iterations: ${if (total < Long.MaxValue) total.toString else "infinite"}")
+    val frequency = parseArgs(args, modelFrequencySeconds)
     println(s"Frequency (seconds): ${frequency}")
     implicit val system = ActorSystem("AirlineFlightModelIngress-Main")
     implicit val mat = ActorMaterializer()
-    val provider = new ModelDescriptorProvider()
-    println(s"Provider sourcePaths: ${provider.sourcePaths.mkString(", ")}")
-    println(s"Provider sourceBytes: ${provider.sourceBytes.take(64).mkString(" ")}")
-    println(s"next: ${provider.getModelDescriptor().toRichString}")
-    println(s"next: ${provider.getModelDescriptor().toRichString}")
-    makeSource(frequency).take(total).runWith(
-      Sink.foreach(md ⇒ println(md.toRichString)))
-    println("Finished!")
-    println("\n\nCalling exit. If in sbt, ignore 'sbt.TrapExitSecurityException'...\n\n")
-    sys.exit(0)
+    // val provider = new ModelDescriptorProvider()
+    // println(s"Provider sourcePaths: ${provider.sourcePaths.mkString(", ")}")
+    // println(s"Provider sourceBytes: ${provider.sourceBytes.take(64).mkString(" ")}")
+    // println(s"next: ${provider.getModelDescriptor().toRichString}")
+    // println(s"next: ${provider.getModelDescriptor().toRichString}")
+    makeSource(frequency).runWith {
+      Sink.foreach { md ⇒
+        println(md.toRichString)
+      }
+    }.asInstanceOf[Unit] // silence warning about discarded value.
   }
 }

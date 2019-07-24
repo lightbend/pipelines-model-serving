@@ -24,6 +24,7 @@ class ModelServingActor[RECORD, RESULT](
 
   private var currentModel: Option[Model[RECORD, RESULT]] = None
   var currentState: Option[ModelServingStats] = None
+  var countRecordsWithNoModel: Int = 0
 
   override def preStart {
     // check first to see if there's anything to restore...
@@ -46,15 +47,21 @@ class ModelServingActor[RECORD, RESULT](
 
   override def receive: PartialFunction[Any, Unit] = {
     case descriptor: ModelDescriptor ⇒
-      log.info(s"Received new model from descriptor: ${descriptor.toRichString}")
+      log.info(s"Received new model from descriptor: ${descriptor.toRichString}...")
 
       modelFactory.create(descriptor) match {
         case Right(newModel) ⇒
+          // Log old model stats:
+          if (countRecordsWithNoModel > 0)
+            log.info(s"  $countRecordsWithNoModel records weren't scored, because there was no model.")
+          currentState.map(s ⇒
+            log.info(s"  Old model's stats: $s"))
           // close current model first
           currentModel.foreach(_.cleanup())
           // Update model and state
           currentModel = Some(newModel)
           currentState = Some(ModelServingStats(newModel.descriptor))
+          countRecordsWithNoModel = 0
           // persist new model
           filePersistence.saveState(newModel, descriptor.constructName()) match {
             case Left(error)  ⇒ log.error(error)
@@ -62,7 +69,7 @@ class ModelServingActor[RECORD, RESULT](
             case Right(false) ⇒ log.error(s"BUG: FilePersistence.saveState returned Right(false) for model $newModel.")
           }
         case Left(error) ⇒
-          log.error(s"Failed to instantiate the model: $error")
+          log.error(s"  Failed to instantiate the model: $error")
       }
       sender() ! Done
 
@@ -81,8 +88,10 @@ class ModelServingActor[RECORD, RESULT](
           sender() ! ServingResult(currentState.get.name, currentState.get.modelType, duration, Some(prediction))
 
         case None ⇒
-          log.warning(s"No model available for scoring. Skipping...")
-          sender() ! ServingResult("No model available")
+          countRecordsWithNoModel += 1
+          if (countRecordsWithNoModel % 100 == 0)
+            log.warning(s"No model available for scoring. $countRecordsWithNoModel records skipped!")
+          sender() ! ServingResult(s"No model available - missed score count $countRecordsWithNoModel")
       }
 
     case _: GetState ⇒

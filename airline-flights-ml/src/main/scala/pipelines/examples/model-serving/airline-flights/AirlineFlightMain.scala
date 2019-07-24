@@ -10,8 +10,14 @@ import akka.util.Timeout
 
 /**
  * For testing the logic outside of Pipelines. Try -h or --help for information
+ * Use sbt console, not sbt runMain:
+ * ```
+ * import pipelines.examples.modelserving.airlineflights._
+ * AirlineFlightMain.main(Array("-n", "20"))
+ * ...
+ * ```
  */
-object AirlineFlightsMain {
+object AirlineFlightMain {
   val defaultN = 100
   implicit val askTimeout: Timeout = Timeout(30.seconds)
 
@@ -37,7 +43,7 @@ object AirlineFlightsMain {
       }
 
     val options = parseArgs(args, Options(defaultN))
-    println("AirlineFlightsMain: Running airlines test application.")
+    println("AirlineFlightMain: Running airlines test application.")
     println(s"Printing a maximum of ${options.count} flight records")
 
     val modelServer = AirlineFlightModelServer.makeModelServer()
@@ -62,7 +68,7 @@ object AirlineFlightsMain {
   def help(): Unit = {
     println(s"""
       |Tests airline flights data app.
-      |usage: scala ...AirlineFlightsMain [-h|--help] [-n|--count N]
+      |usage: scala ...AirlineFlightMain [-h|--help] [-n|--count N]
       |where:
       |  -h | --help       print this message and quits
       |  -n | --count N    print this number of flight records (default: $defaultN)

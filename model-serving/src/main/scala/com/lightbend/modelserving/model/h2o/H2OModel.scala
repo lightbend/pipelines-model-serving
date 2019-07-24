@@ -37,7 +37,7 @@ abstract class H2OModel[RECORD, RESULT](val descriptor: ModelDescriptor)
         val zis = new ZipInputStream(new ByteArrayInputStream(descriptor.modelBytes.get))
         val filesMap = MMap.empty[String, Array[Byte]]
         Stream.continually(zis.getNextEntry).takeWhile(_ != null).foreach { file ⇒
-          // info(s"  Reading file file from zip archive: $file") // 2 leading spaces...
+          info(s"  Reading file from zip archive: $file") // 2 leading spaces...
           filesMap += (file.getName -> loadFile(zis))
         }
         zis.close()
