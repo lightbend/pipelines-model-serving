@@ -18,9 +18,10 @@ package com.lightbend.modelserving.model
 /**
  * Model serving result definition.
  */
-case class ServingResult[RESULT](
-    result:    Option[RESULT] = None,
-    errors:    String         = "",
-    duration:  Long           = 0,
-    modelName: String         = "No Model",
-    modelType: ModelType      = ModelType.UNKNOWN)
+case class ServingResult[INRECORD, OUTRECORD](
+    input:     INRECORD,
+    result:    OUTRECORD,
+    errors:    String    = "",
+    duration:  Long      = 0,
+    modelName: String    = "No Model",
+    modelType: ModelType = ModelType.UNKNOWN)
