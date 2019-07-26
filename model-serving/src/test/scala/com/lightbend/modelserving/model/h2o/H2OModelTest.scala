@@ -1,11 +1,12 @@
 package com.lightbend.modelserving.model.h2o
 
-import com.lightbend.modelserving.model.ModelDescriptor
+import com.lightbend.modelserving.model.{ ModelDescriptor, ModelType }
 import hex.genmodel.easy.RowData
 import hex.genmodel.easy.prediction.BinomialModelPrediction
 import pipelinesx.test.OutputInterceptor
 import org.scalatest.{ FunSpec, BeforeAndAfterAll }
 import java.io.FileInputStream
+import java.lang.{ Double ⇒ JDouble }
 
 // TODO: Uses the Airline model as an example, but needs to be made more generic.
 class H2OModelTest extends FunSpec with BeforeAndAfterAll with OutputInterceptor {
@@ -43,17 +44,24 @@ class H2OModelTest extends FunSpec with BeforeAndAfterAll with OutputInterceptor
     val probs = prediction.classProbabilities
     val probability = if (probs.length == 2) probs(1) else 0.0
     row.put("delayPredictionLabel", prediction.label)
-    row.put("delayPredictionProbability", probability.toString)
+    row.put("delayPredictionProbability", new JDouble(probability))
     row
   }
 
   final class TestH2OModel(descriptor: ModelDescriptor)
-    extends H2OModel[RowData, RowData](descriptor) {
-    /** Score a record with the model */
-    override def score(input: RowData): Either[String, RowData] = {
-      val prediction = model.predict(input)
-      Right(toResult(input, prediction.asInstanceOf[BinomialModelPrediction]))
+    extends H2OModel[RowData, BinomialModelPrediction, RowData](descriptor) {
+
+    protected def invokeModel(record: RowData): (String, BinomialModelPrediction) = {
+      val prediction = h2oModel.predict(record)
+      ("", prediction.asInstanceOf[BinomialModelPrediction])
     }
+    protected def makeOutRecord(
+        record:    RowData,
+        errors:    String,
+        score:     BinomialModelPrediction,
+        duration:  Long,
+        modelName: String,
+        modelType: ModelType): RowData = toResult(record, score)
   }
 
   val modelPath = "model-serving/src/test/resources/airlines/models/mojo/gbm_pojo_test.zip"
@@ -69,12 +77,14 @@ class H2OModelTest extends FunSpec with BeforeAndAfterAll with OutputInterceptor
         val descriptor = H2OModel.defaultDescriptor
           .copy(modelBytes = Some(buffer), modelSourceLocation = Some(modelPath))
         val testH2OModel = new TestH2OModel(descriptor)
-        testH2OModel.score(row1) match {
-          case Left(error) ⇒ fail(error)
-          case Right(result) ⇒
-            assert("YES" == result.get("delayPredictionLabel"))
-            val prob = result.get("delayPredictionProbability").toString.toDouble
-            assert(0.60 < prob && prob < 0.65)
+        val servingResult = testH2OModel.score(row1)
+        assert("" == servingResult.errors)
+        servingResult.result match {
+          case None ⇒ fail("result is None")
+          case Some(rowData) ⇒
+            val probability = rowData.get("delayPredictionProbability").asInstanceOf[JDouble].doubleValue
+            assert("YES" == rowData.get("delayPredictionLabel").toString)
+            assert(0.6 <= probability && probability <= 0.7)
         }
       }
     }

@@ -4,7 +4,7 @@ import java.io.{ ByteArrayInputStream, ByteArrayOutputStream, Serializable }
 import java.util.zip.ZipInputStream
 import scala.collection.mutable.{ Map ⇒ MMap }
 
-import com.lightbend.modelserving.model.{ Model, ModelDescriptor, ModelType }
+import com.lightbend.modelserving.model.{ ModelBase, ModelDescriptor, ModelType }
 import com.lightbend.modelserving.model.ModelDescriptorUtil.implicits._
 
 import hex.ModelCategory
@@ -15,8 +15,8 @@ import hex.genmodel.easy.EasyPredictModelWrapper
  * Abstraction for all H2O models.
  * @param descriptor about the model to construct. At this time, only loading the embedded "modelBytes" is supported.
  */
-abstract class H2OModel[RECORD, RESULT](val descriptor: ModelDescriptor)
-  extends Model[RECORD, RESULT] with Serializable {
+abstract class H2OModel[RECORD, SCORE, RESULT](descriptor: ModelDescriptor)
+  extends ModelBase[RECORD, SCORE, RESULT](descriptor) with Serializable {
 
   assert(descriptor.modelBytes != None, s"Invalid descriptor ${descriptor.toRichString}")
 
@@ -51,7 +51,7 @@ abstract class H2OModel[RECORD, RESULT](val descriptor: ModelDescriptor)
     val backend = new InMemoryMojoReaderBackend(mapAsJavaMap(filesMap))
     val m = new EasyPredictModelWrapper(MojoModel.load(backend))
     val cat = m.getModelCategory
-    if (verifyModelType(cat) == false) {
+    if (verifyKnownModelCategory(cat) == false) {
       throw new RuntimeException(s"Unknown H2O model category: $cat")
     } else {
       info(s"Successfully loaded H2O model, category = $cat")
@@ -61,16 +61,13 @@ abstract class H2OModel[RECORD, RESULT](val descriptor: ModelDescriptor)
     case scala.util.control.NonFatal(th) ⇒ throw H2OModel.H2OModelLoadError(descriptor, th)
   }
 
-  val model: EasyPredictModelWrapper = loadModel(descriptor)
+  protected val h2oModel: EasyPredictModelWrapper = loadModel(descriptor)
 
   /** Abstraction for cleaning up resources */
   override def cleanup(): Unit = {}
 
-  /** Validate model type. */
-  private def verifyModelType(mc: ModelCategory): Boolean = mc match {
-    case ModelCategory.Unknown ⇒ false
-    case _                     ⇒ true
-  }
+  private def verifyKnownModelCategory(mc: ModelCategory): Boolean =
+    mc != ModelCategory.Unknown
 }
 
 object H2OModel {

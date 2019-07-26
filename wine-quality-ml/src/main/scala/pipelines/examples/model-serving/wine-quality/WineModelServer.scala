@@ -42,14 +42,16 @@ final case object WineModelServer extends AkkaStreamlet {
       atLeastOnceSource(in1).via(modelFlow).runWith(Sink.ignore)
       atLeastOnceSource(in0).via(dataFlow).to(atLeastOnceSink(out))
     }
+
     protected def dataFlow =
       FlowWithPipelinesContext[WineRecord].mapAsync(1) {
         data ⇒ modelserver.ask(data).mapTo[ServingResult[Double]]
       }.filter {
-        r ⇒ r.result != None
+        sr ⇒ sr.result != None // should only happen when there is no model for scoring.
       }.map {
-        r ⇒ WineResult(r.name, r.duration, r.result.get)
+        sr ⇒ WineResult(sr.modelName, sr.duration, sr.result.get)
       }
+
     protected def modelFlow =
       FlowWithPipelinesContext[ModelDescriptor].mapAsync(1) {
         descriptor ⇒ modelserver.ask(descriptor).mapTo[Done]
@@ -61,7 +63,6 @@ object WineModelServerMain {
   def main(args: Array[String]): Unit = {
 
     implicit val system: ActorSystem = ActorSystem("ModelServing")
-    implicit val executor = system.getDispatcher
     implicit val askTimeout: Timeout = Timeout(30.seconds)
 
     val modelserver = system.actorOf(
@@ -85,8 +86,6 @@ object WineModelServerMain {
       "wine quality sample data",
       .0, .0, .0, .0, .0, .0, .0, .0, .0, .0, .0)
     val result = modelserver.ask(record).mapTo[ServingResult[Double]]
-    result.foreach(data ⇒ {
-      println(s"Result ${data.result.get}, model ${data.name}, duration ${data.duration}")
-    })
+    println(s"Result: $result")
   }
 }

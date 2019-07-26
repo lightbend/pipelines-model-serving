@@ -37,16 +37,18 @@ final case object RecommenderModelServer extends AkkaStreamlet {
       atLeastOnceSource(in1).via(modelFlow).runWith(Sink.ignore)
       atLeastOnceSource(in0).via(dataFlow).to(atLeastOnceSink(out))
     }
+
     protected def dataFlow =
       FlowWithPipelinesContext[RecommenderRecord].mapAsync(1) {
         record ⇒
           modelserver.ask(record)
             .mapTo[ServingResult[Seq[ProductPrediction]]]
       }.filter {
-        r ⇒ r.result != None
+        sr ⇒ sr.result != None // should only happen when there is no model for scoring.
       }.map {
-        r ⇒ RecommendationResult(r.name, r.duration, r.result.get)
+        sr ⇒ RecommendationResult(sr.modelName, sr.duration, sr.result.get)
       }
+
     protected def modelFlow =
       FlowWithPipelinesContext[ModelDescriptor].mapAsync(1) {
         descriptor ⇒ modelserver.ask(descriptor).mapTo[Done]

@@ -1,7 +1,7 @@
 package pipelines.examples.modelserving.recommender.models.tensorflow
 
 import pipelines.examples.modelserving.recommender.data.{ ProductPrediction, RecommenderRecord }
-import com.lightbend.modelserving.model.{ Model, ModelFactory, ModelDescriptor, ModelDescriptorUtil }
+import com.lightbend.modelserving.model.{ Model, ModelFactory, ModelDescriptor, ModelDescriptorUtil, ModelType }
 import com.lightbend.modelserving.model.tensorflow.TensorFlowServingModel
 import com.google.gson.Gson
 
@@ -16,22 +16,28 @@ class RecommenderTensorFlowServingModel(descriptor: ModelDescriptor)
     TFRequest("", TFRequestInputs(products, users))
   }
 
-  override def getResult(
-      result: TFPredictionResult,
-      input:  RecommenderRecord): Either[String, Seq[ProductPrediction]] = {
-    // is it possible we'll get error results??
-    val predictions = result.outputs.recommendations.map(_(0))
-      .zip(input.products).map(r ⇒ ProductPrediction(r._2, r._1))
-    Right(predictions)
+  protected def makeOutRecord(
+      record:    RecommenderRecord,
+      errors:    String,
+      score:     TFPredictionResult,
+      duration:  Long,
+      modelName: String,
+      modelType: ModelType): Seq[ProductPrediction] = {
+    // The basic Seq[] return type means we can't return metadata, including errors (TODO)
+    val predictions = score.outputs.recommendations.map(_(0))
+      .zip(record.products).map(r ⇒ ProductPrediction(r._2, r._1))
+    predictions
   }
 
   // Test method to ensure that transformation works correctly
-  def transformer(input: RecommenderRecord, servingResult: String): Unit = {
-
-    val hTTPRec = gson.toJson(getHTTPRequest(input))
-    println(s" input to json : $hTTPRec")
+  // TODO: replace this method and main below with a call through the full scoring
+  // pipeline.
+  def transformer(record: RecommenderRecord, servingResult: String): Unit = {
+    val hTTPRec = gson.toJson(getHTTPRequest(record))
+    println(s" record to json : $hTTPRec")
     val res = gson.fromJson(servingResult, clazz)
-    val result = getResult(res, input)
+    val result = res.outputs.recommendations.map(_(0))
+      .zip(record.products).map(r ⇒ ProductPrediction(r._2, r._1))
     println(s"execution result $result")
   }
 }
@@ -54,16 +60,14 @@ object RecommenderTensorFlowServingModelFactory extends ModelFactory[Recommender
 object RecommenderTensorFlowServingModelMain {
   // Testing transformation
   def main(args: Array[String]): Unit = {
-
-    val gson = new Gson
-
     val descriptor = ModelDescriptorUtil.unknown
     val model = new RecommenderTensorFlowServingModel(descriptor)
     val record = new RecommenderRecord(10L, Seq(1L, 2L, 3L, 4L))
     val httpRes = gson.toJson(new TFPredictionResult(new RecommendationOutputs(
       Seq(1, 2, 3).toArray,
       Seq(Seq(.1).toArray, Seq(.2).toArray, Seq(.3).toArray, Seq(.4).toArray).toArray)))
-    model.transformer(record, httpRes)
+    val result = model.transformer(record, httpRes)
+    println(s"result: $result")
   }
 }
 

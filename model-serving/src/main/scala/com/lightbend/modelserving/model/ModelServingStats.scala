@@ -16,24 +16,25 @@
 package com.lightbend.modelserving.model
 
 /**
- * Model serving statistics definition
+ * Model serving statistics definition.
+ * TODO: Assumes that
  */
 final case class ModelServingStats(
-    modelType:    ModelType = ModelType.UNKNOWN,
-    name:         String    = "",
-    description:  String    = "",
-    since:        Long      = 0,
-    var usage:    Long      = 0,
-    var duration: Double    = 0.0,
-    var min:      Long      = Long.MaxValue,
-    var max:      Long      = Long.MinValue) {
+    modelType:      ModelType = ModelType.UNKNOWN,
+    modelName:      String    = "",
+    description:    String    = "",
+    since:          Long      = 0,
+    var scoreCount: Long      = 0,
+    var duration:   Long      = 0,
+    var min:        Long      = Long.MaxValue,
+    var max:        Long      = Long.MinValue) {
 
   /**
    * Increment model serving statistics; invoked after scoring every record.
    * @param executionTime Long value for the milliseconds it took to score the record.
    */
   def incrementUsage(executionTime: Long): ModelServingStats = {
-    usage = usage + 1
+    scoreCount = scoreCount + 1
     duration = duration + executionTime
     if (executionTime < min) min = executionTime
     if (executionTime > max) max = executionTime
@@ -45,12 +46,12 @@ object ModelServingStats {
   def apply(descriptor: ModelDescriptor): ModelServingStats =
     new ModelServingStats(
       modelType = descriptor.modelType,
-      name = descriptor.name,
+      modelName = descriptor.name,
       description = descriptor.description,
       since = System.currentTimeMillis())
 
   val unknown = new ModelServingStats(
     modelType = ModelType.UNKNOWN,
-    name = "<unknown>",
+    modelName = "<unknown>",
     description = "No stats have been collected yet!")
 }

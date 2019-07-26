@@ -1,6 +1,6 @@
 package pipelines.examples.modelserving.airlineflights.models
 
-import com.lightbend.modelserving.model.{ Model, ModelDescriptor, ModelType }
+import com.lightbend.modelserving.model.{ Model, ModelDescriptor, ModelType, ServingResult }
 import com.lightbend.modelserving.model.persistence.FilePersistence
 import org.scalatest.FlatSpec
 import pipelines.examples.modelserving.airlineflights.data.{ AirlineFlightRecord, AirlineFlightResult }
@@ -48,16 +48,25 @@ class AirlineH2OProcessorTest extends FlatSpec with OutputInterceptor {
   val fp = FilePersistence[AirlineFlightRecord, AirlineFlightResult](
     AirlineFlightH2OModelFactory, "test-persistence")
 
+  def assertServingResult(servingResult: ServingResult[AirlineFlightResult]): Unit = {
+    assert("" == servingResult.errors)
+    servingResult.result match {
+      case None ⇒ fail("None result")
+      case Some(res) ⇒
+        val probability = res.delayPredictionProbability
+        assert("YES" == res.delayPredictionLabel)
+        assert(0.6 <= probability && probability <= 0.7)
+    }
+  }
+
   "Loading a valid model for the first time" should "succeed" in {
     ignoreOutput {
       val model = createModel("airline") match {
         case Right(m)    ⇒ m
         case Left(error) ⇒ fail(error)
       }
-      model.score(input) match {
-        case Left(error)   ⇒ fail(error)
-        case Right(result) ⇒ assert("YES" == result.delayPredictionLabel)
-      }
+      val servingResult = model.score(input)
+      assertServingResult(servingResult)
     }
   }
 
@@ -93,10 +102,7 @@ class AirlineH2OProcessorTest extends FlatSpec with OutputInterceptor {
         }
       }
       assert(original.descriptor == restoredModel.descriptor)
-      restoredModel.score(input) match {
-        case Left(error)   ⇒ fail(error)
-        case Right(result) ⇒ assert("YES" == result.delayPredictionLabel)
-      }
+      assertServingResult(restoredModel.score(input))
     }
   }
 

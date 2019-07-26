@@ -7,7 +7,7 @@ import hex.genmodel.easy.RowData
 import hex.genmodel.easy.prediction.BinomialModelPrediction
 
 class AirlineFlightH2OModel(descriptor: ModelDescriptor)
-  extends H2OModel[AirlineFlightRecord, AirlineFlightResult](descriptor) {
+  extends H2OModel[AirlineFlightRecord, BinomialModelPrediction, AirlineFlightResult](descriptor) {
 
   val modelName = "AirlineFlightH2OModel"
 
@@ -26,11 +26,23 @@ class AirlineFlightH2OModel(descriptor: ModelDescriptor)
   }
 
   // create resulting message based on input and prediction result
-  def toResult(record: AirlineFlightRecord, prediction: BinomialModelPrediction): Either[String, AirlineFlightResult] = {
-    val probs = prediction.classProbabilities
+  protected def makeOutRecord(
+      record:    AirlineFlightRecord,
+      errors:    String,
+      score:     BinomialModelPrediction,
+      duration:  Long,
+      modelName: String,
+      modelType: ModelType): AirlineFlightResult = {
+    val probs = score.classProbabilities
     val probability = if (probs.length == 2) probs(1) else 0.0
-    //    println(s"Prediction that flight departure will be delayed: ${prediction.label} (probability: $probability) for $record")
+    //    println(s"Prediction that flight departure will be delayed: ${score.label} (probability: $probability) for $record")
     val afr = AirlineFlightResult(
+      errors = errors,
+      delayPredictionLabel = score.label,
+      delayPredictionProbability = probability,
+      modelType = ModelType.H2O.toString,
+      modelName = modelName,
+      duration = duration,
       year = record.year,
       month = record.month,
       dayOfMonth = record.dayOfMonth,
@@ -42,20 +54,15 @@ class AirlineFlightH2OModel(descriptor: ModelDescriptor)
       arrDelay = record.arrDelay,
       depDelay = record.depDelay,
       origin = record.origin,
-      destination = record.destination,
-      delayPredictionLabel = prediction.label,
-      delayPredictionProbability = probability,
-      modelType = ModelType.H2O.toString,
-      modelName = modelName,
-      duration = 0)
-    Right(afr)
+      destination = record.destination)
+    afr
   }
 
   /** Score a record with the model */
-  override def score(input: AirlineFlightRecord): Either[String, AirlineFlightResult] = {
-    val row = toRow(input)
-    val prediction = model.predict(row)
-    toResult(input, prediction.asInstanceOf[BinomialModelPrediction])
+  protected def invokeModel(record: AirlineFlightRecord): (String, BinomialModelPrediction) = {
+    val row = toRow(record)
+    val prediction = h2oModel.predict(row)
+    ("", prediction.asInstanceOf[BinomialModelPrediction])
   }
 }
 

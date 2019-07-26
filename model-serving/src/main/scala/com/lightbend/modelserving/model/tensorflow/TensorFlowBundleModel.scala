@@ -5,7 +5,7 @@ import java.nio.file.Files
 import scala.collection.mutable.{ Map ⇒ MMap }
 import scala.collection.JavaConverters._
 
-import com.lightbend.modelserving.model.{ Model, ModelDescriptor }
+import com.lightbend.modelserving.model.{ ModelBase, ModelDescriptor }
 import com.lightbend.modelserving.model.ModelDescriptorUtil.implicits._
 
 import com.google.protobuf.Descriptors
@@ -18,8 +18,8 @@ import org.tensorflow.framework.{ MetaGraphDef, SavedModel, SignatureDef, Tensor
  * This is a very simple implementation, assuming that the TensorFlow saved model bundle is local (constructor, get tags)
  * The realistic implementation has to use some shared data storage, for example, S3, Minio, etc.
  */
-abstract class TensorFlowBundleModel[RECORD, RESULT](val descriptor: ModelDescriptor)
-  extends Model[RECORD, RESULT] with Serializable {
+abstract class TensorFlowBundleModel[RECORD, SCORE, RESULT](descriptor: ModelDescriptor)
+  extends ModelBase[RECORD, SCORE, RESULT](descriptor) with Serializable {
 
   assert(descriptor.modelBytes != None, s"Invalid descriptor ${descriptor.toRichString}")
 

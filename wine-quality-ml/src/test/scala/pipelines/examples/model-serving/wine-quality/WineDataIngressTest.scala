@@ -68,6 +68,7 @@ class WineDataIngressTest extends FunSpec with BeforeAndAfterAll with OutputInte
       // appears to not load the data or have too much of it! Then the very last check
       // for "Completed" fails. Obviously, I'd love for someone to figure out why this
       // happens...
+      // Also, "ignoreOutput" doesn't appear to capture all output!!
       ignoreOutput {
         val config = ConfigFactory.load()
         val testkit = AkkaStreamletTestKit(system, mat, config)

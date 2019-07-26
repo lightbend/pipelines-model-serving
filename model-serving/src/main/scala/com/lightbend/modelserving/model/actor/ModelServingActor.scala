@@ -35,7 +35,7 @@ class ModelServingActor[RECORD, RESULT](
           currentState = Some(
             ModelServingStats(
               modelType = model.descriptor.modelType,
-              name = model.descriptor.name,
+              modelName = model.descriptor.name,
               description = model.descriptor.description,
               since = System.currentTimeMillis()))
           log.info(s"Restored model with descriptor ${model.descriptor}")
@@ -80,18 +80,15 @@ class ModelServingActor[RECORD, RESULT](
       val record = recordBase.asInstanceOf[RECORD]
       currentModel match {
         case Some(model) ⇒
-          val start = System.currentTimeMillis()
-          val prediction = model.score(record)
-          val duration = System.currentTimeMillis() - start
-          currentState = currentState.map(_.incrementUsage(duration))
-          log.info(s"Processed data in $duration ms with result $prediction")
-          sender() ! ServingResult(currentState.get.name, currentState.get.modelType, duration, Some(prediction))
+          sender() ! model.score(record)
 
         case None ⇒
           countRecordsWithNoModel += 1
           if (countRecordsWithNoModel % 100 == 0)
             log.warning(s"No model available for scoring. $countRecordsWithNoModel records skipped!")
-          sender() ! ServingResult(s"No model available - missed score count $countRecordsWithNoModel")
+          sender() ! ServingResult(
+            errors = s"No model available - missed score count $countRecordsWithNoModel",
+            result = None)
       }
 
     case _: GetState ⇒

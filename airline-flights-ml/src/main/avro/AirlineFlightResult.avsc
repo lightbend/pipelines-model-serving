@@ -4,6 +4,30 @@
     "name": "AirlineFlightResult",
     "fields":[
       {
+        "name": "errors",
+        "type": "string"
+      },
+      {
+        "name": "delayPredictionLabel",
+        "type": "string"
+      },
+      {
+        "name": "delayPredictionProbability",
+        "type": "double"
+      },
+      {
+        "name": "modelType",
+        "type": "string"
+      },
+      {
+        "name": "modelName",
+        "type": "string"
+      },
+      {
+        "name": "duration",
+        "type": "long"
+      },
+      {
         "name": "year",
         "type": "int"
       },
@@ -50,26 +74,6 @@
       {
         "name": "destination",
         "type": "string"
-      },
-      {
-        "name": "delayPredictionLabel",
-        "type": "string"
-      },
-      {
-        "name": "delayPredictionProbability",
-        "type": "double"
-      },
-      {
-        "name": "modelType",
-        "type": "string"
-      },
-      {
-        "name": "modelName",
-        "type": "string"
-      },
-      {
-        "name": "duration",
-        "type": "long"
       }
     ]
 }

@@ -61,7 +61,7 @@ final case class FilePersistence[RECORD, RESULT](
     }
   } catch {
     case scala.util.control.NonFatal(th) ⇒
-      Left(s"getInputStream failed: Does input ${statePath(fileName)} exist? $th")
+      Left(throwableMsg(s"getInputStream failed: Does input ${statePath(fileName)} exist?", th))
   }
 
   // Both are returned so we can close the channels for the file...
@@ -81,7 +81,7 @@ final case class FilePersistence[RECORD, RESULT](
     }
   } catch {
     case scala.util.control.NonFatal(th) ⇒
-      Left(s"getOutputStream failed: Is the ${statePath(fileName)} location writable? $th")
+      Left(throwableMsg(s"getOutputStream failed: Is the ${statePath(fileName)} location writable?", th))
   }
   /**
    * Restore the state from a file system. Use [[stateExists]] first to determine
@@ -102,8 +102,7 @@ final case class FilePersistence[RECORD, RESULT](
           }
         } catch {
           case t: Throwable ⇒
-            val tStr = LoggingUtil.throwableToString(t)
-            Left(s"Error restoring state for data type $fileName. $tStr")
+            Left(throwableMsg(s"Error restoring state for data type $fileName.", t))
         } finally {
           is.close()
           fis.getChannel.close()
@@ -128,8 +127,7 @@ final case class FilePersistence[RECORD, RESULT](
           Right(true)
         } catch {
           case t: Throwable ⇒
-            val tStr = LoggingUtil.throwableToString(t)
-            Left(s"Error saving state for data type $filePath. $tStr")
+            Left(throwableMsg(s"Error saving state for data type $filePath.", t))
         } finally {
           os.flush()
           os.close()
@@ -139,4 +137,7 @@ final case class FilePersistence[RECORD, RESULT](
         Left(s"Error saving state for data type $filePath. $error")
     }
   }
+
+  private def throwableMsg(msg: String, th: Throwable): String =
+    msg + " " + LoggingUtil.throwableToString(th)
 }

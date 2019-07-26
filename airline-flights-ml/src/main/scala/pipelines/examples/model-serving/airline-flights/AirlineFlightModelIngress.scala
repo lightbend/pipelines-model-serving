@@ -3,9 +3,9 @@ package pipelines.examples.modelserving.airlineflights
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.{ Source, Sink }
+import akka.stream.scaladsl.{ Sink, Source }
 import pipelines.akkastream.AkkaStreamlet
-import pipelines.akkastream.scaladsl.{ RunnableGraphStreamletLogic }
+import pipelines.akkastream.scaladsl.RunnableGraphStreamletLogic
 import pipelines.streamlets.avro.AvroOutlet
 import pipelines.streamlets.StreamletShape
 import pipelinesx.config.ConfigUtil
@@ -13,6 +13,7 @@ import pipelinesx.config.ConfigUtil.implicits._
 import com.lightbend.modelserving.model.{ ModelDescriptor, ModelType }
 import com.lightbend.modelserving.model.ModelDescriptorUtil.implicits._
 import scala.concurrent.duration._
+import java.io.ByteArrayOutputStream
 
 /**
  * Ingress of model updates. In this case, every two minutes we load and
@@ -38,8 +39,10 @@ protected final class ModelDescriptorProvider() {
     AirlineFlightModelIngressUtil.modelSources.toArray
   val sourceBytes: Array[Array[Byte]] = sourcePaths map { path ⇒
     val is = this.getClass.getClassLoader.getResourceAsStream(path)
-    val mojo = new Array[Byte](is.available)
-    is.read(mojo)
+    val buffer = new Array[Byte](1024)
+    val content = new ByteArrayOutputStream()
+    Stream.continually(is.read(buffer)).takeWhile(_ != -1).foreach(content.write(buffer, 0, _))
+    val mojo = content.toByteArray
     mojo
   }
 
@@ -82,9 +85,9 @@ object AirlineFlightModelIngressUtil {
    * At this time, Pipelines intercepts calls to sbt run and sbt runMain, so use
    * the console instead:
    * ```
-   * > console
-   * scala> import pipelines.examples.modelserving.airlineflights._
-   * scala> AirlineFlightModelIngressUtil.main(Array("-f", "5"))
+   * import pipelines.examples.modelserving.airlineflights._
+   * AirlineFlightModelIngressUtil.main(Array("-f", "5"))
+   * ```
    */
   def main(args: Array[String]): Unit = {
       def help() = println(s"""

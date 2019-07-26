@@ -1,6 +1,6 @@
 package com.lightbend.modelserving.model.tensorflow
 
-import com.lightbend.modelserving.model.{ Model, ModelDescriptor }
+import com.lightbend.modelserving.model.{ ModelBase, ModelDescriptor }
 import com.lightbend.modelserving.model.ModelDescriptorUtil.implicits._
 
 import com.google.gson.Gson
@@ -11,9 +11,9 @@ import scalaj.http.Http // TODO: Replace with a Lightbend library??
  * implement supporting methods (data transforms), based on his own model. Serializability here is required for Spark.
  */
 
-abstract class TensorFlowServingModel[RECORD, RESULT, HTTPREQUEST, HTTPRESULT](
-    val descriptor: ModelDescriptor)
-  extends Model[RECORD, RESULT] with Serializable {
+abstract class TensorFlowServingModel[INRECORD, OUTRECORD, HTTPREQUEST, HTTPRESULT](
+    descriptor: ModelDescriptor)
+  extends ModelBase[INRECORD, HTTPRESULT, OUTRECORD](descriptor) with Serializable {
 
   assert(descriptor.modelBytes != None, s"Invalid descriptor ${descriptor.toRichString}")
 
@@ -27,21 +27,19 @@ abstract class TensorFlowServingModel[RECORD, RESULT, HTTPREQUEST, HTTPRESULT](
   override def cleanup(): Unit = {}
 
   /** Convert incoming request to HTTP */
-  def getHTTPRequest(input: RECORD): HTTPREQUEST
-
-  /** Convert HTTPResult to Result */
-  def getResult(result: HTTPRESULT, input: RECORD): Either[String, RESULT]
+  def getHTTPRequest(input: INRECORD): HTTPREQUEST
 
   /** Score a record with the model */
-  override def score(input: RECORD): Either[String, RESULT] = {
+  override def invokeModel(input: INRECORD): (String, HTTPRESULT) = {
     // Post request
     val result = Http(path).postData(gson.toJson(getHTTPRequest(input))).header("content-type", "application/json").asString
+    val prediction = gson.fromJson(result.body, clazz)
     result.code match {
       case 200 ⇒ // Success
-        val prediction = gson.fromJson(result.body, clazz)
-        getResult(prediction, input)
+        ("", prediction)
       case _ ⇒ // Error
-        Left(s"Error processing serving request - code ${result.code}, error ${result.body}")
+        (s"Error processing serving request - code ${result.code}, error ${result.body}",
+          prediction)
     }
   }
 }

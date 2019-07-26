@@ -1,7 +1,7 @@
 package pipelines.examples.modelserving.winequality.models.tensorflow
 
 import com.lightbend.modelserving.model.tensorflow.TensorFlowBundleModel
-import com.lightbend.modelserving.model.{ Model, ModelDescriptor, ModelFactory }
+import com.lightbend.modelserving.model.{ Model, ModelDescriptor, ModelFactory, ModelType }
 import com.lightbend.modelserving.model.ModelDescriptor
 import pipelines.examples.modelserving.winequality.data.WineRecord
 
@@ -9,11 +9,11 @@ import pipelines.examples.modelserving.winequality.data.WineRecord
  * Implementation of TensorFlow bundled model for Wine.
  */
 class WineTensorFlowBundledModel(descriptor: ModelDescriptor)
-  extends TensorFlowBundleModel[WineRecord, Double](descriptor) {
+  extends TensorFlowBundleModel[WineRecord, Double, Double](descriptor) {
 
-  override def score(input: WineRecord): Either[String, Double] = try {
-    // Create input tensor
-    val modelInput = WineTensorFlowModel.toTensor(input)
+  protected def invokeModel(record: WineRecord): (String, Double) = {
+    // Create record tensor
+    val modelInput = WineTensorFlowModel.toTensor(record)
     // Serve model using TensorFlow APIs
     val signature = signatures.head._2
     val tinput = signature.inputs.head._2
@@ -23,11 +23,16 @@ class WineTensorFlowBundledModel(descriptor: ModelDescriptor)
     val rshape = result.shape
     val rMatrix = Array.ofDim[Float](rshape(0).asInstanceOf[Int], rshape(1).asInstanceOf[Int])
     result.copyTo(rMatrix)
-    Right(rMatrix(0).indices.maxBy(rMatrix(0)).toDouble)
-  } catch {
-    case scala.util.control.NonFatal(th) ⇒
-      Left(s"WineTensorFlowBundledModel.score failed: $th")
+    ("", rMatrix(0).indices.maxBy(rMatrix(0)).toDouble)
   }
+
+  protected def makeOutRecord(
+      record:    WineRecord,
+      errors:    String,
+      score:     Double,
+      duration:  Long,
+      modelName: String,
+      modelType: ModelType): Double = score
 }
 
 /**

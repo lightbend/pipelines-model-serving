@@ -6,7 +6,7 @@ import com.lightbend.modelserving.model.actor.ModelServingActor
 import com.lightbend.modelserving.model.{ ModelDescriptor, ModelType, ServingResult }
 import com.lightbend.modelserving.model.ModelDescriptorUtil.implicits._
 import akka.Done
-import akka.actor.ActorRef
+import akka.actor.{ ActorRef, ActorSystem }
 import akka.pattern.ask
 import akka.stream.scaladsl.Sink
 import akka.util.Timeout
@@ -26,8 +26,9 @@ final case object AirlineFlightModelServer extends AkkaStreamlet {
 
   implicit val askTimeout: Timeout = Timeout(30.seconds)
 
-  def makeModelServer(): ActorRef = {
-    context.system.actorOf(
+  /** Uses the actor system as an argument to support testing outside of the streamlet. */
+  def makeModelServer(sys: ActorSystem): ActorRef = {
+    sys.actorOf(
       ModelServingActor.props[AirlineFlightRecord, AirlineFlightResult](
         "airlines", AirlineFlightH2OModelFactory))
   }
@@ -38,21 +39,17 @@ final case object AirlineFlightModelServer extends AkkaStreamlet {
       atLeastOnceSource(in0).via(dataFlow).to(atLeastOnceSink(out))
     }
 
-    val modelServer = makeModelServer()
+    val modelServer = makeModelServer(context.system)
 
     protected def dataFlow =
       FlowWithPipelinesContext[AirlineFlightRecord].mapAsync(1) {
         record ⇒ modelServer.ask(record).mapTo[ServingResult[AirlineFlightResult]]
       }.filter {
-        r ⇒ r.result != None
+        sr ⇒ sr.result != None // should only happen when there is no model for scoring
       }.map {
-        r ⇒
-          val result = r.result.get
-          result.modelName = r.name
-          result.modelType = r.modelType.toString
-          result.duration = r.duration
-          result
+        sr ⇒ sr.result.get
       }
+
     protected def modelFlow =
       FlowWithPipelinesContext[ModelDescriptor].mapAsync(1) {
         descriptor ⇒ modelServer.ask(descriptor).mapTo[Done]
@@ -70,7 +67,6 @@ object AirlineFlightModelServerMain {
    * ```
    * import pipelines.examples.modelserving.airlineflights._
    * AirlineFlightModelServerMain.main(Array())
-   * ...
    * ```
    */
   def main(args: Array[String]): Unit = {
@@ -79,7 +75,8 @@ object AirlineFlightModelServerMain {
     implicit val askTimeout: Timeout = Timeout(30.seconds)
 
     println("Making the model server (actor)...")
-    val modelServer = AirlineFlightModelServer.makeModelServer()
+    implicit val system = ActorSystem("AirlineFlightModelServerMain")
+    val modelServer = AirlineFlightModelServer.makeModelServer(system)
 
     println("Getting the H2O model...")
     val is = this.getClass.getClassLoader.getResourceAsStream("airlines/models/mojo/gbm_pojo_test.zip")
@@ -101,10 +98,8 @@ object AirlineFlightModelServerMain {
     println("Sending record to the scoring engine...")
     val resultFuture = modelServer.ask(record).mapTo[ServingResult[AirlineFlightResult]]
     val result = Await.result(resultFuture, 2 seconds)
-    result.result match {
-      case None    ⇒ println(s"Received a None in the result: $result")
-      case Some(r) ⇒ println(s"Received result: $r")
-    }
+    println(s"Received result: $result")
+
     println("\n\nCalling exit. If in sbt, ignore 'sbt.TrapExitSecurityException'...\n\n")
     sys.exit(0)
   }

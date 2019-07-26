@@ -7,6 +7,7 @@ import scala.concurrent.Await
 import scala.concurrent.duration._
 import akka.pattern.ask
 import akka.util.Timeout
+import akka.actor.ActorSystem
 
 /**
  * For testing the logic outside of Pipelines. Try -h or --help for information
@@ -46,7 +47,8 @@ object AirlineFlightMain {
     println("AirlineFlightMain: Running airlines test application.")
     println(s"Printing a maximum of ${options.count} flight records")
 
-    val modelServer = AirlineFlightModelServer.makeModelServer()
+    implicit val system = ActorSystem("AirlineFlightMain")
+    val modelServer = AirlineFlightModelServer.makeModelServer(system)
     val reader = RecordsReader.fromConfiguration[AirlineFlightRecord](
       configurationKeyRoot = AirlineFlightRecordsIngressUtil.rootConfigKey,
       dropFirstN = 1)(
@@ -55,10 +57,11 @@ object AirlineFlightMain {
       val (_, record) = reader.next()
       val resultFuture = modelServer.ask(record).mapTo[ServingResult[AirlineFlightResult]]
       val result = Await.result(resultFuture, 2 seconds)
-      result.result match {
-        case None    ⇒ println(s"$n: Received a None in the result: $result")
-        case Some(r) ⇒ println(s"$n: Received result: $r")
-      }
+      if (result.errors.length == 0)
+        println(s"$n: scoring returned an error: ${result.errors} (full result: ${result})")
+      else
+        println(s"$n: scoring successful:: ${result.result} (full result: ${result})")
+
       Thread.sleep(100)
     }
 

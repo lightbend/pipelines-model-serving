@@ -96,9 +96,41 @@ object AirlineFlightRecordsIngressUtil {
     }
   }
 
+  /**
+   * WARNING: Currently, the Pipelines plugin interferes with running mains,
+   * even when you use
+   *   runMain pipelines.examples.modelserving.airlineflights.AirlineFlightModelServerMain
+   * Instead, start the console and run it there:
+   * ```
+   * import pipelines.examples.modelserving.airlineflights._
+   * AirlineFlightRecordsIngressUtil.main(Array("-n", "10"))
+   * ```
+   */
   def main(args: Array[String]): Unit = {
-    val count = if (args.length > 0) args(0).toInt else 100000
+    val defaultN = 1000
+      def parseArgs(args2: Seq[String], count: Int): Int = args2 match {
+        case Nil ⇒ count
+        case ("-h" | "--help") +: _ ⇒
+          help()
+          sys.exit(0)
+        case ("-n" | "--count") +: x +: tail ⇒ parseArgs(tail, x.toInt)
+        case x +: _ ⇒
+          println(s"ERROR: Invalid argument $x. (args = ${args.mkString(" ")}")
+          help()
+          sys.exit(1)
+      }
 
+      def help(): Unit = {
+        println(s"""
+      |Tests airline flights data app.
+      |usage: scala ...AirlineFlightMain [-h|--help] [-n|--count N]
+      |where:
+      |  -h | --help       print this message and quits
+      |  -n | --count N    print this number of flight records (default: $defaultN)
+      |""".stripMargin)
+      }
+
+    val count = parseArgs(args, defaultN)
     val reader =
       RecordsReader.fromConfiguration[AirlineFlightRecord](
         configurationKeyRoot = rootConfigKey,
