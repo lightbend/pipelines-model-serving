@@ -52,7 +52,9 @@ abstract class MainBase[T](
    */
   protected def toString(t: T): String = t.toString
 
-  val className = this.getClass.getName
+  // Akka restricts names for actors to [a-zA-Z0-9_-], where '_' and '-' can't
+  // be the first character.
+  val className = this.getClass.getName.replaceAll("[^a-zA-Z0-9_-]", "_")
 
   def main(args: Array[String]): Unit = {
     val (count, frequency) =

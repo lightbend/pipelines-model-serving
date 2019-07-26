@@ -57,10 +57,24 @@ object RecommenderTensorFlowServingModelFactory extends ModelFactory[Recommender
     Right(new RecommenderTensorFlowServingModel(descriptor))
 }
 
+/**
+ * Test program for [[RecommenderModelServer]]. Just loads the TensorFlow Serving
+ * model and uses it to score one record. So, this program focuses on ensuring
+ * the logic works for any model, but doesn't exercise all the available models.
+ * For testing purposes, only.
+ * At this time, Pipelines intercepts calls to sbt run and sbt runMain, so use
+ * the console instead:
+ * ```
+ * import pipelines.examples.modelserving.recommender.models.tensorflow._
+ * RecommenderTensorFlowServingModelMain.main(Array())
+ * ```
+ */
 object RecommenderTensorFlowServingModelMain {
   // Testing transformation
   def main(args: Array[String]): Unit = {
-    val descriptor = ModelDescriptorUtil.unknown
+    val descriptor = ModelDescriptorUtil.unknown.copy(
+      modelBytes =
+        Some("http://recommender-service-kubeflow.foobarserver.lightbend.com/v1/models/recommender/versions/1:predict".getBytes()))
     val model = new RecommenderTensorFlowServingModel(descriptor)
     val record = new RecommenderRecord(10L, Seq(1L, 2L, 3L, 4L))
     val gson = new Gson

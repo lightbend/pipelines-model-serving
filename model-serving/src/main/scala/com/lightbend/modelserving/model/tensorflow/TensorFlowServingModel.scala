@@ -21,6 +21,7 @@ abstract class TensorFlowServingModel[INRECORD, OUTRECORD, HTTPREQUEST, HTTPRESU
   val clazz: Class[HTTPRESULT]
 
   // Convert input into file path
+  // TODO: Put this in the 'modelSourceLocation' field instead!
   var path = new String(descriptor.modelBytes.get)
 
   // Nothing to cleanup in this case

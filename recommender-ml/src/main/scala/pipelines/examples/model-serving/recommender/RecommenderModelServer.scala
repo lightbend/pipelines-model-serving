@@ -84,12 +84,13 @@ object RecommenderModelServerMain {
       ModelServingActor.props[RecommenderRecord, Seq[ProductPrediction]](
         "recommender", RecommenderTensorFlowServingModelFactory))
 
+    val location = Some("http://recommender1-service-kubeflow.lightshift.lightbend.com/v1/models/recommender1/versions/1:predict")
     val descriptor = new ModelDescriptor(
       name = "Tensorflow Model",
       description = "For model Serving",
       modelType = ModelType.TENSORFLOWSERVING,
-      modelBytes = None,
-      modelSourceLocation = Some("http://recommender1-service-kubeflow.lightshift.lightbend.com/v1/models/recommender1/versions/1:predict"))
+      modelBytes = Some(location.get.getBytes),
+      modelSourceLocation = location)
 
     val record = new RecommenderRecord(10L, Seq(1L, 2L, 3L, 4L))
 
@@ -98,7 +99,7 @@ object RecommenderModelServerMain {
       Thread.sleep(100)
       val result = Await.result(modelserver.ask(record).mapTo[ServingResult[Seq[ProductPrediction]]], 5 seconds)
       println(s"$i: result - $result")
-      Thread.sleep(frequency.length * 1000)
+      Thread.sleep(frequency.length)
     }
     sys.exit(0)
   }

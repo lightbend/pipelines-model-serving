@@ -107,7 +107,7 @@ object WineModelServerMain {
       Thread.sleep(100)
       val result = Await.result(modelserver.ask(record).mapTo[ServingResult[Double]], 5 seconds)
       println(s"$i: result - $result")
-      Thread.sleep(frequency.length * 1000)
+      Thread.sleep(frequency.length)
     }
     sys.exit(0)
   }
