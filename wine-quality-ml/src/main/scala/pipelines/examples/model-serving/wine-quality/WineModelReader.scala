@@ -7,7 +7,7 @@ import com.lightbend.modelserving.model.{ ModelDescriptor, ModelType }
  * Provides an infinite stream of wine records, repeatedly reading them from
  * the specified resource.
  */
-final case class WineModelsReader(resourceNames: Map[ModelType, Seq[String]]) {
+final case class WineModelReader(resourceNames: Map[ModelType, Seq[String]]) {
 
   assert(resourceNames.size > 0)
 
@@ -73,19 +73,5 @@ final case class WineModelsReader(resourceNames: Map[ModelType, Seq[String]]) {
     currentIndex = 0
     if (finished(whichType, 0))
       println(s"WARNING: No resources specified for model type $whichType")
-  }
-}
-
-object WineModelsReader {
-
-  /** For testing purposes. */
-  def main(args: Array[String]): Unit = {
-    val count = if (args.length > 0) args(0).toInt else 100000
-
-    val reader = new WineModelsReader(WineModelIngressUtil.wineModelsResources)
-    (1 to count).foreach { n ⇒
-      val model = reader.next()
-      println("%7d: %s".format(n, model))
-    }
   }
 }

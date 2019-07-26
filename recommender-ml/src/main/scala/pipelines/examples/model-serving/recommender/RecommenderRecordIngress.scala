@@ -19,7 +19,7 @@ import pipelinesx.config.ConfigUtil.implicits._
  * Ingress of data for recommendations. In this case, every second we
  * load and send downstream one record that is randomly generated.
  */
-final case object RecommenderDataIngress extends AkkaStreamlet {
+final case object RecommenderRecordIngress extends AkkaStreamlet {
 
   val out = AvroOutlet[RecommenderRecord]("out", _.user.toString)
 
@@ -27,11 +27,11 @@ final case object RecommenderDataIngress extends AkkaStreamlet {
 
   override final def createLogic = new RunnableGraphStreamletLogic {
     def runnableGraph =
-      RecommenderDataIngressUtil.makeSource().to(atMostOnceSink(out))
+      RecommenderRecordIngressUtil.makeSource().to(atMostOnceSink(out))
   }
 }
 
-object RecommenderDataIngressUtil {
+object RecommenderRecordIngressUtil {
 
   lazy val dataFrequencyMilliseconds: FiniteDuration =
     ConfigUtil.default.getOrElse[Int]("recommender.data-frequency-milliseconds")(1).milliseconds
@@ -58,7 +58,7 @@ object RecommenderDataIngressUtil {
   /** For testing purposes. */
   def main(args: Array[String]): Unit = {
     println(s"frequency (seconds): ${dataFrequencyMilliseconds}")
-    implicit val system = ActorSystem("RecommenderDataIngress-Main")
+    implicit val system = ActorSystem("RecommenderRecordIngress-Main")
     implicit val mat = ActorMaterializer()
     val source = makeSource(dataFrequencyMilliseconds)
     source.runWith(Sink.foreach(println))

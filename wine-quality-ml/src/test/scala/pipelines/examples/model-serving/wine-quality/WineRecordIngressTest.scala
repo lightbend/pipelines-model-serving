@@ -10,7 +10,7 @@ import pipelines.examples.modelserving.winequality.data.WineRecord
 import com.typesafe.config.ConfigFactory
 import pipelinesx.test.OutputInterceptor
 
-class WineDataIngressTest extends FunSpec with BeforeAndAfterAll with OutputInterceptor {
+class WineRecordIngressTest extends FunSpec with BeforeAndAfterAll with OutputInterceptor {
 
   val initializingMsgFmt = "RecordsReader: Initializing from resource %s"
   // val filePrefix = "wine-quality-ml/target/scala-2.12/test-classes/"
@@ -18,7 +18,7 @@ class WineDataIngressTest extends FunSpec with BeforeAndAfterAll with OutputInte
   val testGoodRecordsResources = Array("wine/data/10_winequality_red.csv")
   val testBadRecordsResources = Array("wine/data/error_winequality_red.csv")
   val emptyOutput: Array[String] = Array()
-  private implicit val system = ActorSystem("WineDataIngress")
+  private implicit val system = ActorSystem("WineRecordIngress")
   private implicit val mat = ActorMaterializer()
 
   override def afterAll: Unit = {
@@ -27,7 +27,7 @@ class WineDataIngressTest extends FunSpec with BeforeAndAfterAll with OutputInte
   }
 
   def toKeyedWineRecord(s: String): (String, WineRecord) = {
-    val rec = WineDataIngressUtil.parse(s).right.get
+    val rec = WineRecordIngressUtil.parse(s).right.get
     (rec.lot_id, rec)
   }
 
@@ -62,7 +62,7 @@ class WineDataIngressTest extends FunSpec with BeforeAndAfterAll with OutputInte
     s"TEST BUG: (PWD: ${sys.env("PWD")}) Failed to load expected data from $sourcesStr\n$s"
   }
 
-  describe("WineDataIngress") {
+  describe("WineRecordIngress") {
     it("Loads one or more CSV file resources from the CLASSPATH") {
       // NOTE: If this test fails, try running it again. For some reason, it sometimes
       // appears to not load the data or have too much of it! Then the very last check
@@ -72,7 +72,7 @@ class WineDataIngressTest extends FunSpec with BeforeAndAfterAll with OutputInte
       ignoreOutput {
         val config = ConfigFactory.load()
         val testkit = AkkaStreamletTestKit(system, mat, config)
-        val ingress = WineDataIngress // Relies on the .../test/resources/application.conf to point to the correct files
+        val ingress = WineRecordIngress // Relies on the .../test/resources/application.conf to point to the correct files
         val out = testkit.outletAsTap(ingress.out)
 
         val exp = expected(testGoodRecordsResources)

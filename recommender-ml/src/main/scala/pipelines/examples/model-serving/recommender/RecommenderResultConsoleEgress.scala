@@ -7,10 +7,10 @@ import pipelines.examples.modelserving.recommender.data._
 import pipelinesx.egress.ConsoleEgressLogic
 
 final case object RecommenderConsoleEgress extends AkkaStreamlet {
-  val in = AvroInlet[RecommendationResult]("in")
+  val in = AvroInlet[RecommenderResult]("in")
   final override val shape = StreamletShape.withInlets(in)
 
-  override def createLogic = ConsoleEgressLogic[RecommendationResult](
+  override def createLogic = ConsoleEgressLogic[RecommenderResult](
     in = in,
     prefix = "Recommender: ")
 }

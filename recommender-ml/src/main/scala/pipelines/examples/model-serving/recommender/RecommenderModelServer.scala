@@ -1,6 +1,6 @@
 package pipelines.examples.modelserving.recommender
 
-import pipelines.examples.modelserving.recommender.data.{ ProductPrediction, RecommenderRecord, RecommendationResult }
+import pipelines.examples.modelserving.recommender.data.{ ProductPrediction, RecommenderRecord, RecommenderResult }
 import pipelines.examples.modelserving.recommender.models.tensorflow.RecommenderTensorFlowServingModelFactory
 import com.lightbend.modelserving.model.actor.ModelServingActor
 import com.lightbend.modelserving.model.{ ModelDescriptor, ModelType, ServingResult }
@@ -22,7 +22,7 @@ final case object RecommenderModelServer extends AkkaStreamlet {
   val dtype = "recommender"
   val in0 = AvroInlet[RecommenderRecord]("in-0")
   val in1 = AvroInlet[ModelDescriptor]("in-1")
-  val out = AvroOutlet[RecommendationResult]("out", _.name)
+  val out = AvroOutlet[RecommenderResult]("out", _.name)
   final override val shape = StreamletShape.withInlets(in0, in1).withOutlets(out)
 
   override final def createLogic = new RunnableGraphStreamletLogic() {
@@ -46,7 +46,7 @@ final case object RecommenderModelServer extends AkkaStreamlet {
       }.filter {
         sr ⇒ sr.result != None // should only happen when there is no model for scoring.
       }.map {
-        sr ⇒ RecommendationResult(sr.modelName, sr.duration, sr.result.get)
+        sr ⇒ RecommenderResult(sr.modelName, sr.duration, sr.result.get)
       }
 
     protected def modelFlow =

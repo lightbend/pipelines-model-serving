@@ -94,7 +94,7 @@ object AirlineFlightModelIngressUtil {
       |usage: AirlineFlightModelIngressUtil [-h|--help] [-f|--frequency F]
       |where:
       |  -h | --help         print this message and exit
-      |  -f | --frequency F  F seconds between output model descriptions (default: $modelFrequencySeconds)
+      |  -f | --frequency F  seconds between output model descriptions (default: $modelFrequencySeconds)
       |""".stripMargin)
 
       def parseArgs(args2: Seq[String], freq: FiniteDuration): FiniteDuration = args2 match {

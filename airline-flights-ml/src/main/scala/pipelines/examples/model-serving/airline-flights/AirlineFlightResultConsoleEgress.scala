@@ -6,7 +6,7 @@ import pipelines.streamlets.avro.AvroInlet
 import pipelines.akkastream.AkkaStreamlet
 import pipelinesx.egress.ConsoleEgressLogic
 
-final case object AirlineFlightResultsConsoleEgress extends AkkaStreamlet {
+final case object AirlineFlightResultConsoleEgress extends AkkaStreamlet {
   val in = AvroInlet[AirlineFlightResult]("in")
   final override val shape = StreamletShape.withInlets(in)
 

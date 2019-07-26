@@ -1,7 +1,7 @@
 {
   "namespace": "pipelines.examples.modelserving.recommender.data",
   "type": "record",
-  "name": "RecommendationResult",
+  "name": "RecommenderResult",
   "fields":[
     {
       "name": "name",

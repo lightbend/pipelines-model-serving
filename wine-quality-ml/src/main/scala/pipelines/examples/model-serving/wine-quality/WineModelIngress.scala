@@ -13,6 +13,7 @@ import pipelinesx.config.ConfigUtil.implicits._
 import scala.concurrent.duration._
 import scala.collection.JavaConverters._
 import com.lightbend.modelserving.model.{ ModelDescriptor, ModelType }
+import com.lightbend.modelserving.model.ModelDescriptorUtil.implicits._
 
 /**
  * One at a time every two minutes, loads a PMML or TensorFlow model and
@@ -53,20 +54,70 @@ object WineModelIngressUtil {
   def makeSource(
       modelsResources: Map[ModelType, Seq[String]] = wineModelsResources,
       frequency:       FiniteDuration              = modelFrequencySeconds): Source[ModelDescriptor, NotUsed] = {
-    val recordsReader = WineModelsReader(modelsResources)
+    val recordsReader = WineModelReader(modelsResources)
     Source.repeat(recordsReader)
       .map(reader ⇒ reader.next())
       .throttle(1, frequency)
   }
+}
 
-  /** For testing purposes. */
+/**
+ * Test program for [[WineModelIngress]] and [[WineModelIngressUtil]].
+ * It reads models and prints their data.
+ */
+object WineModelIngressMain {
+
+  /**
+   * For testing purposes.
+   * At this time, Pipelines intercepts calls to sbt run and sbt runMain, so use
+   * the console instead:
+   * ```
+   * import pipelines.examples.modelserving.winequality._
+   * WineModelIngressMain.main(Array("-n", "5"))
+   * ```
+   */
   def main(args: Array[String]): Unit = {
-    println(s"frequency (seconds): ${modelFrequencySeconds}")
-    println(s"records sources:     ${wineModelsResources}")
-    implicit val system = ActorSystem("WineModelIngress-Main")
+    val defaultN = 100
+    val defaultF = WineModelIngressUtil.dataFrequencyMilliseconds
+    def help() = println(s"""
+      |usage: WineModelIngressMain [-h|--help] [-n|--count N] [-f|--frequency F]
+      |where:
+      |  -h | --help         print this message and exit
+      |  -n | --count N      print N records and stop (default: $defaultN)
+      |  -f | --frequency F  seconds between output model descriptions (default: $defaultF)
+      |""".stripMargin)
+
+    def parseArgs(args2: Seq[String], nf: (Int,Int)): (Int,Int) = args2 match {
+      case ("-h" | "--help") +: _ ⇒
+        help()
+        sys.exit(0)
+      case Nil                                 ⇒ nf
+      case ("-n" | "--count") +: n +: tail ⇒ parseArgs(tail, (n.toInt, nf._2))
+      case ("-f" | "--frequency") +: n +: tail ⇒ parseArgs(tail, (nf._1, n.toInt.seconds))
+      case x +: _ ⇒
+        println(s"ERROR: Unrecognized argument $x. All args: ${args.mkString(" ")}")
+        help()
+        sys.exit(1)
+    }
+
+    val (count, frequency) = parseArgs(args, (defaultN, defaultF))
+
+    println(s"printing $count records")
+    println(s"frequency (seconds): $frequency")
+    implicit val system = ActorSystem("WineModelIngressMain")
     implicit val mat = ActorMaterializer()
-    val source = makeSource(wineModelsResources, modelFrequencySeconds)
-    source.runWith(Sink.foreach(println))
-    println("Finished!")
+    val source = WineModelIngressUtil.makeSource(
+      wineModelsResources.wineModelsResources, frequency)
+    source.runWith {
+      Sink.foreach { descriptor ⇒
+        println(descriptor.toRichString)
+        count -= 1
+        if (count == 0) {
+          println("Finished!")
+          sys.exit(0)
+        }
+      }
+    }
+    println("Should never get here...")
   }
 }
