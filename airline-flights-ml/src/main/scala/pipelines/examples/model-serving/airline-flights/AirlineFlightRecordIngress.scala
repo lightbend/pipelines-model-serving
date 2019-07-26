@@ -11,11 +11,12 @@ import pipelinesx.ingress.RecordsReader
 import pipelinesx.config.ConfigUtil
 import pipelinesx.config.ConfigUtil.implicits._
 import scala.concurrent.duration._
+import com.lightbend.modelserving.model.util.MainBase
 
 /**
  * Load Airline flight data at a rate specified in the application configuration.
  */
-final case object AirlineFlightRecordsIngress extends AkkaStreamlet {
+final case object AirlineFlightRecordIngress extends AkkaStreamlet {
 
   // Use ONE partition for input to model serving
   val out = AvroOutlet[AirlineFlightRecord]("out", _ ⇒ "airlines")
@@ -24,11 +25,11 @@ final case object AirlineFlightRecordsIngress extends AkkaStreamlet {
 
   override final def createLogic = new RunnableGraphStreamletLogic {
     def runnableGraph =
-      AirlineFlightRecordsIngressUtil.makeSource().to(atMostOnceSink(out))
+      AirlineFlightRecordIngressUtil.makeSource().to(atMostOnceSink(out))
   }
 }
 
-object AirlineFlightRecordsIngressUtil {
+object AirlineFlightRecordIngressUtil {
 
   val rootConfigKey = "airline-flights"
 
@@ -95,50 +96,23 @@ object AirlineFlightRecordsIngressUtil {
           s"ERROR: Failed to parse string ${tokens.mkString(",")}. cause: $nf")
     }
   }
+}
 
-  /**
-   * WARNING: Currently, the Pipelines plugin interferes with running mains,
-   * even when you use
-   *   runMain pipelines.examples.modelserving.airlineflights.AirlineFlightModelServerMain
-   * Instead, start the console and run it there:
-   * ```
-   * import pipelines.examples.modelserving.airlineflights._
-   * AirlineFlightRecordsIngressUtil.main(Array("-n", "10"))
-   * ```
-   */
-  def main(args: Array[String]): Unit = {
-    val defaultN = 1000
-      def parseArgs(args2: Seq[String], count: Int): Int = args2 match {
-        case Nil ⇒ count
-        case ("-h" | "--help") +: _ ⇒
-          help()
-          sys.exit(0)
-        case ("-n" | "--count") +: x +: tail ⇒ parseArgs(tail, x.toInt)
-        case x +: _ ⇒
-          println(s"ERROR: Invalid argument $x. (args = ${args.mkString(" ")}")
-          help()
-          sys.exit(1)
-      }
+/**
+ * Test program for [[AirlineFlightRecordIngress]] and [[AirlineFlightRecordIngressUtil]];
+ * reads records and prints them. For testing purposes only.
+ * At this time, Pipelines intercepts calls to sbt run and sbt runMain, so use
+ * the console instead:
+ * ```
+ * import pipelines.examples.modelserving.airlineflights._
+ * AirlineFlightRecordIngressMain.main(Array("-n","10","-f","1000"))
+ * ```
+ */
+object AirlineFlightRecordIngressMain extends MainBase[AirlineFlightRecord](
+  defaultCount = 10,
+  defaultFrequencyMillis = AirlineFlightRecordIngressUtil.dataFrequencyMilliseconds) {
 
-      def help(): Unit = {
-        println(s"""
-      |Tests airline flights data app.
-      |usage: scala ...AirlineFlightMain [-h|--help] [-n|--count N]
-      |where:
-      |  -h | --help       print this message and quits
-      |  -n | --count N    print this number of flight records (default: $defaultN)
-      |""".stripMargin)
-      }
-
-    val count = parseArgs(args, defaultN)
-    val reader =
-      RecordsReader.fromConfiguration[AirlineFlightRecord](
-        configurationKeyRoot = rootConfigKey,
-        dropFirstN = 1)(parse)
-
-    (1 to count).foreach { n ⇒
-      val record = reader.next()
-      println("%7d: %s".format(n, record))
-    }
-  }
+  override protected def makeSource(frequency: FiniteDuration): Source[AirlineFlightRecord, NotUsed] =
+    AirlineFlightRecordIngressUtil.makeSource(
+      AirlineFlightRecordIngressUtil.rootConfigKey, frequency)
 }

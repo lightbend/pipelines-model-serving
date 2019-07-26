@@ -4,7 +4,7 @@ import pipelines.examples.modelserving.recommender.data.{ ProductPrediction, Rec
 import pipelines.examples.modelserving.recommender.models.tensorflow.RecommenderTensorFlowServingModelFactory
 import com.lightbend.modelserving.model.actor.ModelServingActor
 import com.lightbend.modelserving.model.{ ModelDescriptor, ModelType, ServingResult }
-import com.lightbend.modelserving.model.ModelDescriptorUtil.implicits._
+import com.lightbend.modelserving.model.util.MainBase
 
 import akka.Done
 import akka.actor.ActorSystem
@@ -16,6 +16,7 @@ import pipelines.akkastream.scaladsl.{ FlowWithPipelinesContext, RunnableGraphSt
 import pipelines.streamlets.StreamletShape
 import pipelines.streamlets.avro.{ AvroInlet, AvroOutlet }
 import scala.concurrent.duration._
+import scala.concurrent.Await
 
 final case object RecommenderModelServer extends AkkaStreamlet {
 
@@ -56,8 +57,25 @@ final case object RecommenderModelServer extends AkkaStreamlet {
   }
 }
 
+/**
+ * Test program for [[RecommenderModelServer]]. Just loads the TensorFlow Serving
+ * model and uses it to score one record. So, this program focuses on ensuring
+ * the logic works for any model, but doesn't exercise all the available models.
+ * For testing purposes, only.
+ * At this time, Pipelines intercepts calls to sbt run and sbt runMain, so use
+ * the console instead:
+ * ```
+ * import pipelines.examples.modelserving.recommender._
+ * RecommenderModelServerMain.main(Array("-n","3","-f","1000"))
+ * ```
+ */
 object RecommenderModelServerMain {
+  val defaultCount = 3
+  val defaultFrequencyMillis = 1000.milliseconds
+
   def main(args: Array[String]): Unit = {
+    val (count, frequency) =
+      MainBase.parseArgs(args, this.getClass.getName, defaultCount, defaultFrequencyMillis)
 
     implicit val system: ActorSystem = ActorSystem("ModelServing")
     implicit val askTimeout: Timeout = Timeout(30.seconds)
@@ -73,12 +91,15 @@ object RecommenderModelServerMain {
       modelBytes = None,
       modelSourceLocation = Some("http://recommender1-service-kubeflow.lightshift.lightbend.com/v1/models/recommender1/versions/1:predict"))
 
-    println(s"Sending descriptor ${descriptor.toRichString} to the scoring engine...")
-    modelserver.ask(descriptor)
     val record = new RecommenderRecord(10L, Seq(1L, 2L, 3L, 4L))
-    Thread.sleep(1000)
-    val result = modelserver.ask(record).mapTo[ServingResult[Seq[ProductPrediction]]]
-    Thread.sleep(1000)
-    println(result)
+
+    for (i ← 0 until count) {
+      modelserver.ask(descriptor)
+      Thread.sleep(100)
+      val result = Await.result(modelserver.ask(record).mapTo[ServingResult[Seq[ProductPrediction]]], 5 seconds)
+      println(s"$i: result - $result")
+      Thread.sleep(frequency.length * 1000)
+    }
+    sys.exit(0)
   }
 }

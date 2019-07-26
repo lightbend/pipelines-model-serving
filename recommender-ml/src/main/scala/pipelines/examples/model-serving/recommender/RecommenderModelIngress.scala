@@ -1,9 +1,7 @@
 package pipelines.examples.modelserving.recommender
 
 import akka.NotUsed
-import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.{ Source, Sink }
+import akka.stream.scaladsl.Source
 import pipelines.akkastream.AkkaStreamlet
 import pipelines.akkastream.scaladsl.{ RunnableGraphStreamletLogic }
 import pipelines.streamlets.avro.AvroOutlet
@@ -12,6 +10,7 @@ import pipelinesx.config.ConfigUtil
 import pipelinesx.config.ConfigUtil.implicits._
 import scala.concurrent.duration._
 import com.lightbend.modelserving.model.{ ModelDescriptor, ModelType }
+import com.lightbend.modelserving.model.util.ModelMainBase
 
 /**
  * Ingress of model updates. In this case, every two minutes we load and
@@ -74,34 +73,23 @@ object RecommenderModelIngressUtil {
       .map(finder ⇒ finder.getModelDescriptor())
       .throttle(1, frequency)
   }
+}
 
-  /** For testing purposes. */
-  def main(args: Array[String]): Unit = {
-      def help() = println(s"""
-      |usage: RecommenderModelIngressUtil [-h|--help] [N]
-      |where:
-      |  -h | --help       print this message and exit
-      |  N                 N seconds between output model descriptions (default: $modelFrequencySeconds)
-      |""".stripMargin)
+/**
+ * Test program for [[RecommenderModelIngress]] and [[RecommenderModelIngressUtil]].
+ * It reads models and prints their data. For testing purposes only.
+ * At this time, Pipelines intercepts calls to sbt run and sbt runMain, so use
+ * the console instead:
+ * ```
+ * import pipelines.examples.modelserving.recommender._
+ * RecommenderModelIngressMain.main(Array("-n","3","-f","1000"))
+ * ```
+ */
+object RecommenderModelIngressMain extends ModelMainBase(
+  defaultCount = 3,
+  defaultFrequencyMillis = RecommenderModelIngressUtil.modelFrequencySeconds * 1000) {
 
-      def parseArgs(args2: Seq[String], freq: FiniteDuration): FiniteDuration = args2 match {
-        case ("-h" | "--help") +: _ ⇒
-          help()
-          sys.exit(0)
-        case Nil       ⇒ freq
-        case n +: tail ⇒ parseArgs(tail, n.toInt.seconds)
-        case x +: _ ⇒
-          println(s"ERROR: Unrecognized argument $x. All args: ${args.mkString(" ")}")
-          help()
-          sys.exit(1)
-      }
-    val frequency = parseArgs(args, modelFrequencySeconds)
-    println(s"frequency (seconds): ${frequency}")
-    println(s"server URLs:         ${recommenderServerLocations}")
-    implicit val system = ActorSystem("RecommenderModelIngress-Main")
-    implicit val mat = ActorMaterializer()
-    val source = makeSource(recommenderServerLocations, frequency)
-    source.runWith(Sink.foreach(println))
-    println("Finished!")
-  }
+  override protected def makeSource(frequency: FiniteDuration): Source[ModelDescriptor, NotUsed] =
+    RecommenderModelIngressUtil.makeSource(
+      RecommenderModelIngressUtil.recommenderServerLocations, frequency)
 }

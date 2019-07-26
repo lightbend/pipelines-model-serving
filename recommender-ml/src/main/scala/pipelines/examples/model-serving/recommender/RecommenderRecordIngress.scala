@@ -2,9 +2,7 @@ package pipelines.examples.modelserving.recommender
 
 import pipelines.examples.modelserving.recommender.data._
 import akka.NotUsed
-import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.{ Source, Sink }
+import akka.stream.scaladsl.Source
 import pipelines.akkastream.AkkaStreamlet
 import pipelines.akkastream.scaladsl.{ RunnableGraphStreamletLogic }
 import pipelines.streamlets.avro.AvroOutlet
@@ -14,6 +12,7 @@ import scala.util.Random
 import scala.concurrent.duration._
 import pipelinesx.config.ConfigUtil
 import pipelinesx.config.ConfigUtil.implicits._
+import com.lightbend.modelserving.model.util.MainBase
 
 /**
  * Ingress of data for recommendations. In this case, every second we
@@ -54,14 +53,22 @@ object RecommenderRecordIngressUtil {
       new RecommenderRecord(user, products)
     }
   }
+}
 
-  /** For testing purposes. */
-  def main(args: Array[String]): Unit = {
-    println(s"frequency (seconds): ${dataFrequencyMilliseconds}")
-    implicit val system = ActorSystem("RecommenderRecordIngress-Main")
-    implicit val mat = ActorMaterializer()
-    val source = makeSource(dataFrequencyMilliseconds)
-    source.runWith(Sink.foreach(println))
-    println("Finished!")
-  }
+/**
+ * Test program for [[RecommenderRecordIngress]] and [[RecommenderRecordIngressUtil]];
+ * reads records and prints them. For testing purposes only.
+ * At this time, Pipelines intercepts calls to sbt run and sbt runMain, so use
+ * the console instead:
+ * ```
+ * import pipelines.examples.modelserving.recommender._
+ * RecommenderRecordIngressMain.main(Array("-n","10","-f","1000"))
+ * ```
+ */
+object RecommenderRecordIngressMain extends MainBase[RecommenderRecord](
+  defaultCount = 10,
+  defaultFrequencyMillis = RecommenderRecordIngressUtil.dataFrequencyMilliseconds) {
+
+  override protected def makeSource(frequency: FiniteDuration): Source[RecommenderRecord, NotUsed] =
+    RecommenderRecordIngressUtil.makeSource(frequency)
 }

@@ -50,9 +50,9 @@ object AirlineFlightMain {
     implicit val system = ActorSystem("AirlineFlightMain")
     val modelServer = AirlineFlightModelServer.makeModelServer(system)
     val reader = RecordsReader.fromConfiguration[AirlineFlightRecord](
-      configurationKeyRoot = AirlineFlightRecordsIngressUtil.rootConfigKey,
+      configurationKeyRoot = AirlineFlightRecordIngressUtil.rootConfigKey,
       dropFirstN = 1)(
-      AirlineFlightRecordsIngressUtil.parse)
+      AirlineFlightRecordIngressUtil.parse)
     (1 to options.count).foreach { n ⇒
       val (_, record) = reader.next()
       val resultFuture = modelServer.ask(record).mapTo[ServingResult[AirlineFlightResult]]

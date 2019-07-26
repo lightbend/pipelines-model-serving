@@ -4,7 +4,8 @@ import models.AirlineFlightH2OModelFactory
 import pipelines.examples.modelserving.airlineflights.data.{ AirlineFlightRecord, AirlineFlightResult }
 import com.lightbend.modelserving.model.actor.ModelServingActor
 import com.lightbend.modelserving.model.{ ModelDescriptor, ModelType, ServingResult }
-import com.lightbend.modelserving.model.ModelDescriptorUtil.implicits._
+import com.lightbend.modelserving.model.util.MainBase
+
 import akka.Done
 import akka.actor.{ ActorRef, ActorSystem }
 import akka.pattern.ask
@@ -57,26 +58,30 @@ final case object AirlineFlightModelServer extends AkkaStreamlet {
   }
 }
 
+/**
+ * Test program for [[AirlineFlightModelServer]]. Just loads the PMML model and uses it
+ * to score one record. So, this program focuses on ensuring the logic works
+ * for any model, but doesn't exercise all the available models.
+ * For testing purposes, only.
+ * At this time, Pipelines intercepts calls to sbt run and sbt runMain, so use
+ * the console instead:
+ * ```
+ * import pipelines.examples.modelserving.airlineflights._
+ * AirlineFlightModelServerMain.main(Array("-n","3","-f","1000"))
+ * ```
+ */
 object AirlineFlightModelServerMain {
-  /**
-   * Testing parts of the airline app.
-   * WARNING: Currently, the Pipelines plugin interferes with running mains,
-   * even when you use
-   *   runMain pipelines.examples.modelserving.airlineflights.AirlineFlightModelServerMain
-   * Instead, start the console and run it there:
-   * ```
-   * import pipelines.examples.modelserving.airlineflights._
-   * AirlineFlightModelServerMain.main(Array())
-   * ```
-   */
-  def main(args: Array[String]): Unit = {
+  val defaultCount = 3
+  val defaultFrequencyMillis = 1000.milliseconds
 
-    println("Starting...")
+  def main(args: Array[String]): Unit = {
+    val (count, frequency) =
+      MainBase.parseArgs(args, this.getClass.getName, defaultCount, defaultFrequencyMillis)
+
+    implicit val system: ActorSystem = ActorSystem("ModelServing")
     implicit val askTimeout: Timeout = Timeout(30.seconds)
 
-    println("Making the model server (actor)...")
-    implicit val system = ActorSystem("AirlineFlightModelServerMain")
-    val modelServer = AirlineFlightModelServer.makeModelServer(system)
+    val modelserver = AirlineFlightModelServer.makeModelServer(system)
 
     println("Getting the H2O model...")
     val is = this.getClass.getClassLoader.getResourceAsStream("airlines/models/mojo/gbm_pojo_test.zip")
@@ -90,17 +95,15 @@ object AirlineFlightModelServerMain {
       modelBytes = Some(mojo),
       modelSourceLocation = Some("classpath:airlines/models/mojo/gbm_pojo_test.zip"))
 
-    println(s"Sending descriptor ${descriptor.toRichString} to the scoring engine...\n")
-    val modelLoadResult = Await.result(modelServer.ask(descriptor), 5 seconds)
-    println(s"Result from loading the model: $modelLoadResult\n")
-
     val record = AirlineFlightRecord(1990, 1, 3, 3, 1707, 1630, 1755, 1723, "US", 29, 0, 48, 53, 0, 32, 37, "CMH", "IND", 182, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
-    println("Sending record to the scoring engine...")
-    val resultFuture = modelServer.ask(record).mapTo[ServingResult[AirlineFlightResult]]
-    val result = Await.result(resultFuture, 2 seconds)
-    println(s"Received result: $result")
 
-    println("\n\nCalling exit. If in sbt, ignore 'sbt.TrapExitSecurityException'...\n\n")
+    for (i ← 0 until count) {
+      modelserver.ask(descriptor)
+      Thread.sleep(100)
+      val result = Await.result(modelserver.ask(record).mapTo[ServingResult[AirlineFlightResult]], 5 seconds)
+      println(s"$i: result - $result")
+      Thread.sleep(frequency.length * 1000)
+    }
     sys.exit(0)
   }
 }

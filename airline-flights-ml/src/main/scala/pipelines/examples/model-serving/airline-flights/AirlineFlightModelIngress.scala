@@ -1,19 +1,20 @@
 package pipelines.examples.modelserving.airlineflights
 
 import akka.NotUsed
-import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.{ Sink, Source }
+import akka.stream.scaladsl.Source
+import scala.concurrent.duration._
+import java.io.ByteArrayOutputStream
+
 import pipelines.akkastream.AkkaStreamlet
 import pipelines.akkastream.scaladsl.RunnableGraphStreamletLogic
 import pipelines.streamlets.avro.AvroOutlet
 import pipelines.streamlets.StreamletShape
 import pipelinesx.config.ConfigUtil
 import pipelinesx.config.ConfigUtil.implicits._
+
 import com.lightbend.modelserving.model.{ ModelDescriptor, ModelType }
 import com.lightbend.modelserving.model.ModelDescriptorUtil.implicits._
-import scala.concurrent.duration._
-import java.io.ByteArrayOutputStream
+import com.lightbend.modelserving.model.util.ModelMainBase
 
 /**
  * Ingress of model updates. In this case, every two minutes we load and
@@ -73,55 +74,29 @@ object AirlineFlightModelIngressUtil {
 
   /** Helper method extracted from AirlineFlightModelIngress for easier unit testing. */
   def makeSource(
-      frequency: FiniteDuration = modelFrequencySeconds): Source[ModelDescriptor, _] = {
+      frequency: FiniteDuration = modelFrequencySeconds): Source[ModelDescriptor, NotUsed] = {
     val provider = new ModelDescriptorProvider()
     Source.repeat(NotUsed)
       .map(_ ⇒ provider.getModelDescriptor())
       .throttle(1, frequency)
   }
-
-  /**
-   * For testing purposes.
-   * At this time, Pipelines intercepts calls to sbt run and sbt runMain, so use
-   * the console instead:
-   * ```
-   * import pipelines.examples.modelserving.airlineflights._
-   * AirlineFlightModelIngressUtil.main(Array("-f", "5"))
-   * ```
-   */
-  def main(args: Array[String]): Unit = {
-      def help() = println(s"""
-      |usage: AirlineFlightModelIngressUtil [-h|--help] [-f|--frequency F]
-      |where:
-      |  -h | --help         print this message and exit
-      |  -f | --frequency F  seconds between output model descriptions (default: $modelFrequencySeconds)
-      |""".stripMargin)
-
-      def parseArgs(args2: Seq[String], freq: FiniteDuration): FiniteDuration = args2 match {
-        case ("-h" | "--help") +: _ ⇒
-          help()
-          sys.exit(0)
-        case Nil                                 ⇒ freq
-        case ("-f" | "--frequency") +: n +: tail ⇒ parseArgs(tail, n.toInt.seconds)
-        case x +: _ ⇒
-          println(s"ERROR: Unrecognized argument $x. All args: ${args.mkString(" ")}")
-          help()
-          sys.exit(1)
-      }
-
-    val frequency = parseArgs(args, modelFrequencySeconds)
-    println(s"Frequency (seconds): ${frequency}")
-    implicit val system = ActorSystem("AirlineFlightModelIngress-Main")
-    implicit val mat = ActorMaterializer()
-    // val provider = new ModelDescriptorProvider()
-    // println(s"Provider sourcePaths: ${provider.sourcePaths.mkString(", ")}")
-    // println(s"Provider sourceBytes: ${provider.sourceBytes.take(64).mkString(" ")}")
-    // println(s"next: ${provider.getModelDescriptor().toRichString}")
-    // println(s"next: ${provider.getModelDescriptor().toRichString}")
-    makeSource(frequency).runWith {
-      Sink.foreach { md ⇒
-        println(md.toRichString)
-      }
-    }.asInstanceOf[Unit] // silence warning about discarded value.
-  }
 }
+
+/**
+ * Test program for [[AirlineFlightModelIngress]] and [[AirlineFlightModelIngressUtil]].
+ * It reads models and prints their data. For testing purposes only.
+ * At this time, Pipelines intercepts calls to sbt run and sbt runMain, so use
+ * the console instead:
+ * ```
+ * import pipelines.examples.modelserving.airlineflights._
+ * AirlineFlightModelIngressMain.main(Array("-n","20","-f","1000"))
+ * ```
+ */
+object AirlineFlightModelIngressMain extends ModelMainBase(
+  defaultCount = 20,
+  defaultFrequencyMillis = AirlineFlightModelIngressUtil.modelFrequencySeconds * 1000) {
+
+  override protected def makeSource(frequency: FiniteDuration): Source[ModelDescriptor, NotUsed] =
+    AirlineFlightModelIngressUtil.makeSource(frequency)
+}
+
