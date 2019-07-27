@@ -3,7 +3,7 @@ package pipelines.examples.modelserving.airlineflights
 import models.AirlineFlightH2OModelFactory
 import pipelines.examples.modelserving.airlineflights.data.{ AirlineFlightRecord, AirlineFlightResult }
 import com.lightbend.modelserving.model.actor.ModelServingActor
-import com.lightbend.modelserving.model.{ ModelDescriptor, ModelType, ServingResult }
+import com.lightbend.modelserving.model.{ ModelDescriptor, ModelType }
 import com.lightbend.modelserving.model.util.MainBase
 
 import akka.Done
@@ -44,11 +44,7 @@ final case object AirlineFlightModelServer extends AkkaStreamlet {
 
     protected def dataFlow =
       FlowWithPipelinesContext[AirlineFlightRecord].mapAsync(1) {
-        record ⇒ modelServer.ask(record).mapTo[ServingResult[AirlineFlightResult]]
-      }.filter {
-        sr ⇒ sr.result != None // should only happen when there is no model for scoring
-      }.map {
-        sr ⇒ sr.result.get
+        record ⇒ modelServer.ask(record).mapTo[AirlineFlightResult]
       }
 
     protected def modelFlow =
@@ -89,9 +85,9 @@ object AirlineFlightModelServerMain {
     is.read(mojo)
 
     val descriptor = new ModelDescriptor(
-      name = "Airline model",
-      description = "Mojo airline model",
+      modelName = "Airline model",
       modelType = ModelType.H2O,
+      description = "Mojo airline model",
       modelBytes = Some(mojo),
       modelSourceLocation = Some("classpath:airlines/models/mojo/gbm_pojo_test.zip"))
 
@@ -100,7 +96,7 @@ object AirlineFlightModelServerMain {
     for (i ← 0 until count) {
       modelserver.ask(descriptor)
       Thread.sleep(100)
-      val result = Await.result(modelserver.ask(record).mapTo[ServingResult[AirlineFlightResult]], 5 seconds)
+      val result = Await.result(modelserver.ask(record).mapTo[AirlineFlightResult], 5 seconds)
       println(s"$i: result - $result")
       Thread.sleep(frequency.length)
     }

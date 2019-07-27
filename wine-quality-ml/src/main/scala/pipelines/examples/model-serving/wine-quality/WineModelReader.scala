@@ -26,9 +26,9 @@ final case class WineModelReader(resourceNames: Map[ModelType, Seq[String]]) {
       val barray = readBytes(resourceName)
       currentIndex += 1
       new ModelDescriptor(
-        name = s"Tensorflow Model - $resourceName",
-        description = "generated from TensorFlow",
         modelType = ModelType.TENSORFLOW,
+        modelName = s"Tensorflow Model - $resourceName",
+        description = "generated from TensorFlow",
         modelBytes = Some(barray),
         modelSourceLocation = None)
 
@@ -41,9 +41,9 @@ final case class WineModelReader(resourceNames: Map[ModelType, Seq[String]]) {
       val barray = readBytes(resourceName)
       currentIndex += 1
       new ModelDescriptor(
-        name = resourceName.dropRight(5),
-        description = "generated from Spark",
         modelType = ModelType.PMML,
+        modelName = resourceName.dropRight(5),
+        description = "generated from Spark",
         modelBytes = Some(barray),
         modelSourceLocation = None)
 

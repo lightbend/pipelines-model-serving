@@ -1,12 +1,12 @@
 package pipelines.examples.modelserving.recommender.models.tensorflow
 
-import pipelines.examples.modelserving.recommender.data.{ ProductPrediction, RecommenderRecord }
-import com.lightbend.modelserving.model.{ Model, ModelFactory, ModelDescriptor, ModelDescriptorUtil, ModelType }
+import pipelines.examples.modelserving.recommender.data.{ ModelResult, ModelResultMetadata, ProductPrediction, RecommenderRecord, RecommenderResult }
+import com.lightbend.modelserving.model.{ Model, ModelFactory, ModelDescriptor, ModelDescriptorUtil, ModelType, ScoreMetadata }
 import com.lightbend.modelserving.model.tensorflow.TensorFlowServingModel
 import com.google.gson.Gson
 
 class RecommenderTensorFlowServingModel(descriptor: ModelDescriptor)
-  extends TensorFlowServingModel[RecommenderRecord, Seq[ProductPrediction], TFRequest, TFPredictionResult](descriptor) {
+  extends TensorFlowServingModel[RecommenderRecord, RecommenderResult, TFRequest, TFPredictionResult](descriptor) {
 
   override val clazz: Class[TFPredictionResult] = classOf[TFPredictionResult]
 
@@ -16,17 +16,34 @@ class RecommenderTensorFlowServingModel(descriptor: ModelDescriptor)
     TFRequest("", TFRequestInputs(products, users))
   }
 
-  protected def makeOutRecord(
-      record:    RecommenderRecord,
-      errors:    String,
-      score:     TFPredictionResult,
-      duration:  Long,
-      modelName: String,
-      modelType: ModelType): Seq[ProductPrediction] = {
-    // The basic Seq[] return type means we can't return metadata, including errors (TODO)
-    val predictions = score.outputs.recommendations.map(_(0))
-      .zip(record.products).map(r ⇒ ProductPrediction(r._2, r._1))
-    predictions
+  protected def initFrom(record: RecommenderRecord): RecommenderResult =
+    new RecommenderResult(
+      modelResult = new ModelResult( // will be overwritten subsequently
+        predictions = Nil),
+      modelResultMetadata = new ModelResultMetadata( // will be overwritten subsequently
+        errors = "",
+        modelType = ModelType.TENSORFLOWSERVING.ordinal,
+        modelName = "RecommenderTensorFlowServingModel",
+        duration = 0),
+      user = record.user,
+      products = record.products)
+
+  protected def setScoreAndMetadata(
+      out:      RecommenderResult,
+      score:    Option[TFPredictionResult],
+      metadata: ScoreMetadata): RecommenderResult = {
+    val predictions: Seq[ProductPrediction] = score match {
+      case None ⇒ Nil
+      case Some(tfpr) ⇒
+        val recoms = tfpr.outputs.recommendations.map(_(0)) // take first recommendation result in each nested array
+        out.products.zip(recoms).map(r ⇒ ProductPrediction(r._1, r._2))
+    }
+    out.modelResult.predictions = predictions
+    out.modelResultMetadata.errors = metadata.errors
+    out.modelResultMetadata.modelType = metadata.modelType.ordinal
+    out.modelResultMetadata.modelName = metadata.modelName
+    out.modelResultMetadata.duration = metadata.duration.length
+    out
   }
 
   // Test method to ensure that transformation works correctly
@@ -45,7 +62,7 @@ class RecommenderTensorFlowServingModel(descriptor: ModelDescriptor)
 /**
  * Implementation of TensorFlow serving model factory.
  */
-object RecommenderTensorFlowServingModelFactory extends ModelFactory[RecommenderRecord, Seq[ProductPrediction]] {
+object RecommenderTensorFlowServingModelFactory extends ModelFactory[RecommenderRecord, RecommenderResult] {
 
   /**
    * Creates a new TensorFlow serving model.
@@ -53,8 +70,18 @@ object RecommenderTensorFlowServingModelFactory extends ModelFactory[Recommender
    * @param descriptor model to serve representation of TensorFlow serving model.
    * @return model
    */
-  def make(descriptor: ModelDescriptor): Either[String, Model[RecommenderRecord, Seq[ProductPrediction]]] =
-    Right(new RecommenderTensorFlowServingModel(descriptor))
+  def make(
+      descriptor: ModelDescriptor): Either[String, Model[RecommenderRecord, RecommenderResult]] =
+    if (descriptor == Model.noopModelDescriptor) Right(noopModel)
+    else Right(new RecommenderTensorFlowServingModel(descriptor))
+
+  lazy val noopModel: Model[RecommenderRecord, RecommenderResult] =
+    new RecommenderTensorFlowServingModel(Model.noopModelDescriptor) with Model.NoopModel[RecommenderRecord, TFPredictionResult, RecommenderResult] {
+
+      override protected def init(): String = "no bytes"
+      override protected def invokeModel(record: RecommenderRecord): (String, Option[TFPredictionResult]) =
+        noopInvokeModel(record)
+    }
 }
 
 /**
@@ -79,8 +106,8 @@ object RecommenderTensorFlowServingModelMain {
     val record = new RecommenderRecord(10L, Seq(1L, 2L, 3L, 4L))
     val gson = new Gson
     val httpRes = gson.toJson(new TFPredictionResult(new RecommendationOutputs(
-      Seq(1, 2, 3).toArray,
-      Seq(Seq(.1).toArray, Seq(.2).toArray, Seq(.3).toArray, Seq(.4).toArray).toArray)))
+      Array(1, 2, 3),
+      Array(Array(.1), Array(.2), Array(.3), Array(.4)))))
     val result = model.transformer(record, httpRes)
     println(s"result: $result")
   }

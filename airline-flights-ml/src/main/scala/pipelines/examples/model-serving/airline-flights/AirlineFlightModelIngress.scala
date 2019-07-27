@@ -53,9 +53,9 @@ protected final class ModelDescriptorProvider() {
     count += 1
     val index = count % sourceBytes.length
     val md = new ModelDescriptor(
-      name = s"Airline flight Model $count (model #${index + 1})",
-      description = "Airline H2O flight Model",
       modelType = ModelType.H2O,
+      modelName = s"Airline flight Model $count (model #${index + 1})",
+      description = "Airline H2O flight Model",
       modelBytes = Some(sourceBytes(index)),
       modelSourceLocation = Some(sourcePaths(index)))
     println("AirlineFlightModelIngress: Returning " + md.toRichString)

@@ -1,15 +1,15 @@
 {
-    "namespace": "pipelines.examples.modelserving.recommender.data",
-    "type": "record",
-    "name": "RecommenderRecord",
-    "fields":[
-      {
-          "name": "user",
-          "type": "long"
-      },
-      {
-        "name": "products",
-        "type": {"type": "array", "items": "long"}
-      }
-    ]
+  "namespace": "pipelines.examples.modelserving.recommender.data",
+  "type": "record",
+  "name": "RecommenderRecord",
+  "fields":[
+    {
+        "name": "user",
+        "type": "long"
+    },
+    {
+      "name": "products",
+      "type": {"type": "array", "items": "long"}
+    }
+  ]
 }

@@ -1,20 +1,23 @@
 package pipelines.examples.modelserving.winequality.models.tensorflow
 
 import com.lightbend.modelserving.model.tensorflow.TensorFlowModel
-import com.lightbend.modelserving.model.{ Model, ModelDescriptor, ModelFactory, ModelType }
+import com.lightbend.modelserving.model.{ Model, ModelDescriptor, ModelFactory }
+import pipelines.examples.modelserving.winequality.WineModelCommon
+import pipelines.examples.modelserving.winequality.data.{ WineRecord, WineResult }
 import org.tensorflow.Tensor
-import pipelines.examples.modelserving.winequality.data.WineRecord
+import org.tensorflow.{ Graph, Session }
 
 /**
  * TensorFlow model implementation for wine data
  */
 class WineTensorFlowModel(metadata: ModelDescriptor)
-  extends TensorFlowModel[WineRecord, Double, Double](metadata) {
+  extends TensorFlowModel[WineRecord, Double, WineResult](metadata)
+  with WineModelCommon {
 
   import WineTensorFlowModel._
 
   /** Score a wine record with the model */
-  protected def invokeModel(record: WineRecord): (String, Double) = {
+  override protected def invokeModel(record: WineRecord): (String, Option[Double]) = {
     // Create modelInput tensor
     val modelInput = toTensor(record)
     // Serve model using TensorFlow APIs
@@ -25,16 +28,8 @@ class WineTensorFlowModel(metadata: ModelDescriptor)
     val rMatrix = Array.ofDim[Float](rshape(0).asInstanceOf[Int], rshape(1).asInstanceOf[Int])
     result.copyTo(rMatrix)
     // Get result
-    ("", rMatrix(0).indices.maxBy(rMatrix(0)).toDouble)
+    ("", Some(rMatrix(0).indices.maxBy(rMatrix(0)).toDouble))
   }
-
-  protected def makeOutRecord(
-      record:    WineRecord,
-      errors:    String,
-      score:     Double,
-      duration:  Long,
-      modelName: String,
-      modelType: ModelType): Double = score
 }
 
 object WineTensorFlowModel {
@@ -57,8 +52,17 @@ object WineTensorFlowModel {
 }
 
 /** Factory for wine data PMML model */
-object WineTensorFlowModelFactory extends ModelFactory[WineRecord, Double] {
+object WineTensorFlowModelFactory extends ModelFactory[WineRecord, WineResult] {
 
-  def make(descriptor: ModelDescriptor): Either[String, Model[WineRecord, Double]] =
-    Right(new WineTensorFlowModel(descriptor))
+  def make(descriptor: ModelDescriptor): Either[String, Model[WineRecord, WineResult]] =
+    if (descriptor == Model.noopModelDescriptor) Right(noopModel)
+    else Right(new WineTensorFlowModel(descriptor))
+
+  lazy val noopModel: Model[WineRecord, WineResult] =
+    new WineTensorFlowModel(Model.noopModelDescriptor) with Model.NoopModel[WineRecord, Double, WineResult] {
+
+      override protected def init(): (Graph, Session, Signatures) = (null, null, Map.empty) // Ouch!
+      override protected def invokeModel(record: WineRecord): (String, Option[Double]) =
+        noopInvokeModel(record)
+    }
 }

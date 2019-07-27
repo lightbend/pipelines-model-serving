@@ -38,9 +38,9 @@ protected final class ModelDescriptorFinder(
     val i = nextServerIndex()
     val location = serverLocations(i)
     new ModelDescriptor(
-      name = "Tensorflow Model",
-      description = "For model Serving",
       modelType = ModelType.TENSORFLOWSERVING,
+      modelName = "Tensorflow Model",
+      description = "For model Serving",
       modelBytes = None,
       modelSourceLocation = Some(location))
   }

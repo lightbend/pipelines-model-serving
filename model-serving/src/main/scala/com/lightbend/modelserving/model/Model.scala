@@ -1,15 +1,66 @@
 package com.lightbend.modelserving.model
 
 import pipelinesx.logging.{ LoggingUtil, StdoutStderrLogger }
+import scala.concurrent.duration._
 
 trait Model[INRECORD, OUTRECORD] {
   val descriptor: ModelDescriptor
 
-  /** Score a record with the model */
-  def score(input: INRECORD): ServingResult[OUTRECORD]
+  /** Score a record with the model and update the running statistics. */
+  def score(record: INRECORD, stats: ModelServingStats): (OUTRECORD, ModelServingStats)
 
   /** Abstraction for cleaning up resources */
   def cleanup(): Unit
+}
+
+/**
+ * Declares methods required by [[ModelBase]] that concrete classes must implement.
+ * The reason this trait is separate is to make it easier to implement some or all
+ * of these methods with reusable mixins. For example, 'initFrom' will often be
+ * the same for different models in the same application.
+ */
+trait ModelImplTrait[INRECORD, MODEL_OUTPUT, OUTRECORD] extends Model[INRECORD, OUTRECORD] {
+
+  /**
+   * Do implementation-dependent scoring. Note that return type; we considered
+   * using Either[String, MODEL_OUTPUT], but in fact you may want as much of the same
+   * information as possible sent downstream, whether or not errors occur. The
+   * stringent typing also encourages this policy. Hence, _a MODEL_OUTPUT must also
+   * always be returned_, but it's value maybe meaningless; a non-empty String
+   * indicates that case.
+   * @param the input record to score
+   * @return a tuple with 1) any errors as a string, so "" when no errors, 2) the
+   *         optional score value (which could be an object), possibly None on failure
+   */
+  protected def invokeModel(input: INRECORD): (String, Option[MODEL_OUTPUT])
+
+  /**
+   * Because the OUTRECORDs need to be defined with Avro, which has no support
+   * for inheritance among other limitations, and because the OUTRECORD format
+   * is unknown in this generic code, it is necessary for you to implement this
+   * method that creates the OUTRECORD from the INRECORD. We recommend that the
+   * OUTRECORD contain all the fields of the INRECORD, i.e., OUTRECORD <: INRECORD.
+   * @param input the original input record used for scoring.
+   */
+  protected def initFrom(record: INRECORD): OUTRECORD
+
+  /**
+   * Because the OUTRECORDs need to be defined with Avro, which has no support
+   * for inheritance among other limitations, and because the OUTRECORD format
+   * is unknown in this generic code, it is necessary for you to implement this
+   * method that adds the scoring results and metadata to the OUTRECORD.
+   * See [[ScoreMetadata]] for details of its contents.
+   * This method is called in a protocol of first scoring, then partial construction
+   * with with INRECORD fields and finally this step that adds the score and metadata.
+   * Note that this function is called even when scoring fails, so that as much information
+   * as possible can be sent downstream. (Users can optionally filter on failures
+   * in a downstream streamlet.) Hence, the score passed in is actually an Option.
+   * @param out the partially constructed output record, which has already been initialized with INRECORD fields.
+   * @param score the score result. An option in case scoring failed!!
+   * @param metadata the score metadata.
+   */
+  protected def setScoreAndMetadata(
+      out: OUTRECORD, score: Option[MODEL_OUTPUT], metadata: ScoreMetadata): OUTRECORD
 }
 
 /**
@@ -18,85 +69,62 @@ trait Model[INRECORD, OUTRECORD] {
  * `INRECORD` is the type of the records sent to the model for scoring.
  * `OUTRECORD` is the type of the data returned by the model. It should include any
  * fields from the INRECORD needed downstream with the results.
- * SCORE is the type of results the actual model implementation returns.
+ * MODEL_OUTPUT is the type of results the actual model implementation returns,
+ * e.g., a "score".
  * @param descriptor the [[ModelDescriptor]] used to construct this instance.
  * @param logger the logger to use.
  */
-abstract class ModelBase[INRECORD, SCORE, OUTRECORD](
-    val descriptor: ModelDescriptor) extends Model[INRECORD, OUTRECORD] {
+abstract class ModelBase[INRECORD, MODEL_OUTPUT, OUTRECORD](
+    val descriptor: ModelDescriptor)
+  extends Model[INRECORD, OUTRECORD]
+  with ModelImplTrait[INRECORD, MODEL_OUTPUT, OUTRECORD] {
 
   val logger = StdoutStderrLogger(this.getClass()) // make configurable...
 
   /**
-   * Do implementation-dependent scoring. Note that return type; we considered
-   * using Either[String, SCORE], but in fact you may want as much of the same
-   * information as possible sent downstream, whether or not errors occur. The
-   * stringent typing also encourages this policy. Hence, _a SCORE must also
-   * always be returned_, but it's value maybe meaningless; a non-empty String
-   * indicates that case.
-   */
-  protected def invokeModel(input: INRECORD): (String, SCORE)
-
-  /**
-   * Because the OUTRECORDs need to be defined with Avro, which has limitations,
-   * like no support for inheritance, and the OUTRECORD format is unknown in this
-   * generic code, it is necessary for you to implement this method that creates
-   * the OUTRECORD and sets any data required form the metadata passed in as
-   * arguments, the result (obviously) and any errors, and any fields from the
-   * INRECORD.
-   * @param input the original input record used for scoring.
-   * @param errors an empty string if no errors occurred, otherwise information about the errors.
-   * @param score the output of the model scoring.
-   * @param duration the time in milliseconds it took for the model to score the record.
-   * @param modelName the name or id of this model.
-   * @param modelType the kind of model (e.g., PMML...)
-   */
-  protected def makeOutRecord(
-      record:    INRECORD,
-      errors:    String,
-      score:     SCORE,
-      duration:  Long,
-      modelName: String,
-      modelType: ModelType): OUTRECORD
-
-  /**
    * Score a record with the model
-   * @return the ServingResult with the OUTRECORD, error string, and some scoring metadata.
+   * @return the OUTRECORD, including the error string, and some scoring metadata.
    */
-  def score(record: INRECORD): ServingResult[OUTRECORD] = try {
+  def score(record: INRECORD, stats: ModelServingStats): (OUTRECORD, ModelServingStats) = {
     val start = System.currentTimeMillis()
-    val (errors, score) = invokeModel(record)
-    val duration = System.currentTimeMillis() - start
-    logger.debug(s"Processed record in $duration ms with result $score")
-    val out = makeOutRecord(
-      record, errors, score, duration, descriptor.name, descriptor.modelType)
-    ServingResult(
-      result = Some(out),
-      errors = errors,
+    var scoreMetadata = ScoreMetadata.init(
+      descriptor = descriptor,
+      startTime = start.milliseconds)
+    val (errors, scoreOption) = try {
+      invokeModel(record)
+    } catch {
+      case scala.util.control.NonFatal(th) ⇒
+        (s"score() failed: ${LoggingUtil.throwableToString(th)}", None)
+    }
+    val duration = (System.currentTimeMillis() - start).milliseconds
+    scoreMetadata = scoreMetadata.copy(
       duration = duration,
-      modelName = descriptor.name,
-      modelType = descriptor.modelType)
-  } catch {
-    case scala.util.control.NonFatal(th) ⇒
-      ServingResult(
-        result = None,
-        errors = s"score() failed: ${LoggingUtil.throwableToString(th)}",
-        duration = 0,
-        modelName = descriptor.name,
-        modelType = descriptor.modelType)
+      errors = errors)
 
+    val out1: OUTRECORD = initFrom(record)
+    val out = setScoreAndMetadata(out1, scoreOption, scoreMetadata)
+    stats.incrementUsage(duration)
+    (out, stats)
   }
 }
 
 object Model {
+  protected val noopDescription = "Noop model - there is no real model currently available."
+
+  trait NoopModel[INRECORD, MODEL_OUTPUT, OUTRECORD] {
+
+    protected def noopInvokeModel(input: INRECORD): (String, Option[MODEL_OUTPUT]) =
+      (noopDescription, None)
+  }
 
   /**
-   * Model serving result data. Used for actor messaging, primarily.
+   * Model Descriptor for NOOP models. Note that the bytes are initialized to an
+   * empty array in a Some, rather than a None, which is used as the default in
+   * [[ModelDescriptorUtil.unknown]], because our TensorFlow model code asserts
+   * on None!
    */
-  case class ServingResult[OUTRECORD](
-      result:    Option[OUTRECORD],
-      errors:    String            = "",
-      modelName: String            = "No Model",
-      modelType: ModelType         = ModelType.UNKNOWN,
-      duration:  Long              = 0)
+  lazy val noopModelDescriptor = ModelDescriptorUtil.unknown.copy(
+    modelName = "NoopModel",
+    description = noopDescription,
+    modelBytes = Some(Array()))
 }

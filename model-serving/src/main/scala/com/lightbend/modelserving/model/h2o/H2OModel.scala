@@ -15,8 +15,8 @@ import hex.genmodel.easy.EasyPredictModelWrapper
  * Abstraction for all H2O models.
  * @param descriptor about the model to construct. At this time, only loading the embedded "modelBytes" is supported.
  */
-abstract class H2OModel[RECORD, SCORE, RESULT](descriptor: ModelDescriptor)
-  extends ModelBase[RECORD, SCORE, RESULT](descriptor) with Serializable {
+abstract class H2OModel[RECORD, MODEL_OUTPUT, RESULT](descriptor: ModelDescriptor)
+  extends ModelBase[RECORD, MODEL_OUTPUT, RESULT](descriptor) with Serializable {
 
   assert(descriptor.modelBytes != None, s"Invalid descriptor ${descriptor.toRichString}")
 
@@ -72,7 +72,7 @@ abstract class H2OModel[RECORD, SCORE, RESULT](descriptor: ModelDescriptor)
 
 object H2OModel {
   def defaultDescriptor: ModelDescriptor = ModelDescriptor(
-    name = "H2O Model",
+    modelName = "H2O Model",
     description = "",
     modelType = ModelType.H2O,
     modelBytes = None,

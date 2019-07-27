@@ -22,7 +22,9 @@ abstract class TensorFlowServingModel[INRECORD, OUTRECORD, HTTPREQUEST, HTTPRESU
 
   // Convert input into file path
   // TODO: Put this in the 'modelSourceLocation' field instead!
-  var path = new String(descriptor.modelBytes.get)
+  protected def init(): String = new String(descriptor.modelBytes.get)
+
+  var path = init()
 
   // Nothing to cleanup in this case
   override def cleanup(): Unit = {}
@@ -31,10 +33,10 @@ abstract class TensorFlowServingModel[INRECORD, OUTRECORD, HTTPREQUEST, HTTPRESU
   def getHTTPRequest(input: INRECORD): HTTPREQUEST
 
   /** Score a record with the model */
-  override def invokeModel(input: INRECORD): (String, HTTPRESULT) = {
+  override protected def invokeModel(input: INRECORD): (String, Option[HTTPRESULT]) = {
     // Post request
     val result = Http(path).postData(gson.toJson(getHTTPRequest(input))).header("content-type", "application/json").asString
-    val prediction = gson.fromJson(result.body, clazz)
+    val prediction = Some(gson.fromJson(result.body, clazz))
     result.code match {
       case 200 ⇒ // Success
         ("", prediction)

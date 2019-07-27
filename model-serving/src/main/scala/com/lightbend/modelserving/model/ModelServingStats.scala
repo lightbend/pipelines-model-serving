@@ -14,44 +14,45 @@
  */
 
 package com.lightbend.modelserving.model
+import scala.concurrent.duration._
 
 /**
  * Model serving statistics definition.
  * TODO: Assumes that
  */
 final case class ModelServingStats(
-    modelType:      ModelType = ModelType.UNKNOWN,
-    modelName:      String    = "",
-    description:    String    = "",
-    since:          Long      = 0,
-    var scoreCount: Long      = 0,
-    var duration:   Long      = 0,
-    var min:        Long      = Long.MaxValue,
-    var max:        Long      = Long.MinValue) {
+    modelType:   ModelType      = ModelType.UNKNOWN,
+    modelName:   String         = "",
+    description: String         = "",
+    scoreCount:  Long           = 0,
+    since:       FiniteDuration = System.currentTimeMillis().milliseconds,
+    duration:    FiniteDuration = 0.milliseconds,
+    min:         FiniteDuration = 1000000.milliseconds, // arbitrary, but reasonable
+    max:         FiniteDuration = 0.milliseconds) {
 
   /**
    * Increment model serving statistics; invoked after scoring every record.
    * @param executionTime Long value for the milliseconds it took to score the record.
    */
-  def incrementUsage(executionTime: Long): ModelServingStats = {
-    scoreCount = scoreCount + 1
-    duration = duration + executionTime
-    if (executionTime < min) min = executionTime
-    if (executionTime > max) max = executionTime
-    this
-  }
+  def incrementUsage(executionTime: FiniteDuration): ModelServingStats =
+    this.copy(
+      scoreCount = this.scoreCount + 1,
+      duration = this.duration + executionTime,
+      min = if (executionTime < this.min) executionTime else this.min,
+      max = if (executionTime > this.min) executionTime else this.max)
 }
 
 object ModelServingStats {
   def apply(descriptor: ModelDescriptor): ModelServingStats =
     new ModelServingStats(
       modelType = descriptor.modelType,
-      modelName = descriptor.name,
-      description = descriptor.description,
-      since = System.currentTimeMillis())
+      modelName = descriptor.modelName,
+      description = descriptor.description)
 
-  val unknown = new ModelServingStats(
+  val unknown = new ModelServingStats()
+
+  val noop = new ModelServingStats(
     modelType = ModelType.UNKNOWN,
-    modelName = "<unknown>",
-    description = "No stats have been collected yet!")
+    modelName = "NoopModel",
+    description = "No model is currently available; a NOOP Model in use.")
 }

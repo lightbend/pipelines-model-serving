@@ -2,7 +2,6 @@ package pipelines.examples.modelserving.airlineflights
 
 import pipelines.examples.modelserving.airlineflights.data.{ AirlineFlightRecord, AirlineFlightResult }
 import pipelinesx.ingress.RecordsReader
-import com.lightbend.modelserving.model.ServingResult
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import akka.pattern.ask
@@ -55,12 +54,12 @@ object AirlineFlightMain {
       AirlineFlightRecordIngressUtil.parse)
     (1 to options.count).foreach { n ⇒
       val (_, record) = reader.next()
-      val resultFuture = modelServer.ask(record).mapTo[ServingResult[AirlineFlightResult]]
+      val resultFuture = modelServer.ask(record).mapTo[AirlineFlightResult]
       val result = Await.result(resultFuture, 2 seconds)
-      if (result.errors.length == 0)
-        println(s"$n: scoring returned an error: ${result.errors} (full result: ${result})")
+      if (result.modelResultMetadata.errors.length == 0)
+        println(s"$n: scoring returned an error: ${result.modelResultMetadata.errors} (full result: ${result})")
       else
-        println(s"$n: scoring successful:: ${result.result} (full result: ${result})")
+        println(s"$n: scoring successful:: ${result.modelResult} (full result: ${result})")
 
       Thread.sleep(100)
     }

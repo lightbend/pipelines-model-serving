@@ -20,27 +20,27 @@ class ModelServingActor[RECORD, RESULT](
   val log = Logging(context.system, this)
   log.info(s"Creating ModelServingActor for $label")
 
-  private val filePersistence = FilePersistence[RECORD, RESULT](modelFactory)
+  protected val filePersistence = FilePersistence[RECORD, RESULT](modelFactory)
 
-  private var currentModel: Option[Model[RECORD, RESULT]] = None
-  var currentState: Option[ModelServingStats] = None
-  var countRecordsWithNoModel: Int = 0
+  private lazy val noopModelEither = modelFactory.create(Model.noopModelDescriptor)
+  assert(noopModelEither.isRight, noopModelEither.left.get)
+  lazy val noopModel = noopModelEither.right.get
+  protected var currentModel: Model[RECORD, RESULT] = noopModel
+  protected var currentStats: ModelServingStats = ModelServingStats.noop
 
   override def preStart {
     // check first to see if there's anything to restore...
     if (filePersistence.stateExists(label)) {
       filePersistence.restoreState(label) match {
         case Right(model) ⇒
-          currentModel = Some(model)
-          currentState = Some(
-            ModelServingStats(
-              modelType = model.descriptor.modelType,
-              modelName = model.descriptor.name,
-              description = model.descriptor.description,
-              since = System.currentTimeMillis()))
+          currentModel = model
+          currentStats = ModelServingStats(
+            modelType = model.descriptor.modelType,
+            modelName = model.descriptor.modelName,
+            description = model.descriptor.description)
           log.info(s"Restored model with descriptor ${model.descriptor}")
-        case Left(error) ⇒
-          log.error(error)
+        case Left(unsuccessfulMessage) ⇒
+          log.warning(unsuccessfulMessage)
       }
     }
   }
@@ -51,17 +51,12 @@ class ModelServingActor[RECORD, RESULT](
 
       modelFactory.create(descriptor) match {
         case Right(newModel) ⇒
-          // Log old model stats:
-          if (countRecordsWithNoModel > 0)
-            log.info(s"  $countRecordsWithNoModel records weren't scored, because there was no model.")
-          currentState.map(s ⇒
-            log.info(s"  Old model's stats: $s"))
-          // close current model first
-          currentModel.foreach(_.cleanup())
-          // Update model and state
-          currentModel = Some(newModel)
-          currentState = Some(ModelServingStats(newModel.descriptor))
-          countRecordsWithNoModel = 0
+          // Log old model stats and clean up:
+          log.info(s"  Previous model statistics: $currentStats")
+          currentModel.cleanup()
+          // Update current model and reset state
+          currentModel = newModel
+          currentStats = ModelServingStats(newModel.descriptor)
           // persist new model
           filePersistence.saveState(newModel, descriptor.constructName()) match {
             case Left(error)  ⇒ log.error(error)
@@ -73,26 +68,21 @@ class ModelServingActor[RECORD, RESULT](
       }
       sender() ! Done
 
-    // The typing in the these two lines is a hack. If we just have `case r: RECORD`
+    // The typing in the the next two lines is a hack. If we have `case r: RECORD`,
     // the compiler complains that it can't check the type of RECORD (it could be
-    // a Seq[_] for all it knows, and hence eliminated by erasure).
+    // a Seq[_] for all it knows, and hence eliminated by erasure), but
+    // SpecificRecordBase is a concrete type.
     case recordBase: SpecificRecordBase ⇒
       val record = recordBase.asInstanceOf[RECORD]
-      currentModel match {
-        case Some(model) ⇒
-          sender() ! model.score(record)
-
-        case None ⇒
-          countRecordsWithNoModel += 1
-          if (countRecordsWithNoModel % 100 == 0)
-            log.warning(s"No model available for scoring. $countRecordsWithNoModel records skipped!")
-          sender() ! ServingResult(
-            errors = s"No model available - missed score count $countRecordsWithNoModel",
-            result = None)
+      val (result, stats2) = currentModel.score(record, currentStats)
+      currentStats = stats2
+      if (currentStats.scoreCount % 100 == 0) {
+        log.debug(s"Current statistics: $currentStats")
       }
+      sender() ! result
 
     case _: GetState ⇒
-      sender() ! currentState.getOrElse(ModelServingStats.unknown)
+      sender() ! currentStats
 
     case unknown ⇒
       log.error(s"ModelServingActor: Unknown actor message received: $unknown")

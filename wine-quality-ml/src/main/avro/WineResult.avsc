@@ -4,13 +4,90 @@
   "name": "WineResult",
   "fields":[
     {
-      "name": "name",
+      "name": "modelResult",
+      "type": {
+        "name": "ModelResult",
+        "type": "record",
+        "fields": [
+          {
+            "name": "quality",
+            "type": "double"
+          }
+        ]
+      }
+    },
+    {
+      "name": "modelResultMetadata",
+      "type": {
+        "name": "ModelResultMetadata",
+        "type": "record",
+        "fields": [
+          {
+            "name": "errors",
+            "type": "string"
+          },
+          {
+            "name": "modelType",
+            "type": "int"
+          },
+          {
+            "name": "modelName",
+            "type": "string"
+          },
+          {
+            "name": "duration",
+            "type": "long"
+          }
+        ]
+      }
+    },
+    {
+      "name": "lot_id",
       "type": "string"
-    },{
-      "name": "duration",
-      "type": "long"
-    },{
-      "name": "result",
+    },
+    {
+      "name": "fixed_acidity",
       "type": "double"
-    }]
+    },
+    {
+      "name": "volatile_acidity",
+      "type": "double"
+    },
+    {
+      "name": "citric_acid",
+      "type": "double"
+    },
+    {
+      "name": "residual_sugar",
+      "type": "double"
+    },
+    {
+      "name": "chlorides",
+      "type": "double"
+    },
+    {
+      "name": "free_sulfur_dioxide",
+      "type": "double"
+    },
+    {
+      "name": "total_sulfur_dioxide",
+      "type": "double"
+    },
+    {
+      "name": "density",
+      "type": "double"
+    },
+    {
+      "name": "pH",
+      "type": "double"
+    },
+    {
+      "name": "sulphates",
+      "type": "double"
+    },
+    {
+      "name": "alcohol",
+      "type": "double"
+    }
+  ]
 }

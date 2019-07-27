@@ -18,34 +18,36 @@ import org.tensorflow.framework.{ MetaGraphDef, SavedModel, SignatureDef, Tensor
  * This is a very simple implementation, assuming that the TensorFlow saved model bundle is local (constructor, get tags)
  * The realistic implementation has to use some shared data storage, for example, S3, Minio, etc.
  */
-abstract class TensorFlowBundleModel[RECORD, SCORE, RESULT](descriptor: ModelDescriptor)
-  extends ModelBase[RECORD, SCORE, RESULT](descriptor) with Serializable {
+abstract class TensorFlowBundleModel[RECORD, MODEL_OUTPUT, RESULT](descriptor: ModelDescriptor)
+  extends ModelBase[RECORD, MODEL_OUTPUT, RESULT](descriptor) with Serializable {
 
   assert(descriptor.modelBytes != None, s"Invalid descriptor ${descriptor.toRichString}")
 
-  setup()
-  var tags: Seq[String] = _
-  var graph: Graph = _
-  var signatures: Map[String, Signature] = _
-  var session: Session = _
+  type Signatures = Map[String, Signature]
 
-  private def setup(): Unit = {
+  // setup is different for each TensorFlow model kind, so we hide these differences
+  // behind a protected method init below.
+  private def setup(): (Graph, Session, Signatures) = {
     // Convert input into file path
+    // TODO: this should really be in the modelSourceLocation field!
     val path = new String(descriptor.modelBytes.get)
     // get tags. We assume here that the first tag is the one we use
-    tags = getTags(path)
-    // get saved model bundle
+    val tags: Seq[String] = getTags(path)
     val bundle = SavedModelBundle.load(path, tags(0))
-    // get grapth
-    graph = bundle.graph
+    val graph = bundle.graph
     // get metatagraph and signature
     val metaGraphDef = MetaGraphDef.parseFrom(bundle.metaGraphDef)
     val signatureMap = metaGraphDef.getSignatureDefMap.asScala
     //  parse signature, so that we can use definitions (if necessary) programmatically in score method
-    signatures = parseSignatures(signatureMap)
+    val signatures = parseSignatures(signatureMap)
     // Create TensorFlow session
-    session = bundle.session
+    val session = bundle.session
+    (graph, session, signatures)
   }
+
+  protected def init(): (Graph, Session, Signatures) = setup()
+
+  val (graph, session, signatures) = init()
 
   override def cleanup(): Unit = {
     try {

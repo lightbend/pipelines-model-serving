@@ -484,7 +484,14 @@ object RecordsReader {
 }
 
 /**
- * Program to test the logic.
+ * Test program for [[RecordsReader]]; reads records and prints them.
+ * For testing purposes only.
+ * At this time, Pipelines intercepts calls to sbt run and sbt runMain, so use
+ * the console instead:
+ * ```
+ * import pipelines.examples.ingress._
+ * RecordsReaderMain.main(Array("-c","-n","10","classpath_path_to_resource"))
+ * ```
  */
 object RecordsReaderMain {
 

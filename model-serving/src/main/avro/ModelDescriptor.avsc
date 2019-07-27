@@ -5,7 +5,7 @@
   "doc": "Messages for exchanging model data (bytes for deserializing, optionally) and metadata. Note that using a enum string, rather than an ordinal for modelType may cause problems for Spark usage of this library.",
   "fields":[
     {
-      "name": "name",
+      "name": "modelName",
       "type": "string"
     },
     {

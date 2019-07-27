@@ -4,23 +4,63 @@
   "name": "RecommenderResult",
   "fields":[
     {
-      "name": "name",
-      "type": "string"
-    },{
-      "name": "duration",
-      "type": "long"
-    },{
-      "name": "result",
+      "name": "modelResult",
       "type": {
-            "type": "array", "items":
-                {
-                    "name":"ProductPrediction",
-                    "type":"record",
-                    "fields":[
-                        {"name":"product", "type":"long"},
-                        {"name":"probability", "type": "double"}
-                    ]
-                }
+        "name": "ModelResult",
+        "type": "record",
+        "fields": [
+          {
+            "name": "predictions",
+            "type": {
+              "type": "array",
+              "items": {
+                "name": "ProductPrediction",
+                "type": "record",
+                "fields": [
+                    {"name": "product",     "type": "long"},
+                    {"name": "probability", "type": "double"}
+                ]
+              }
+            }
+          }
+        ]
       }
-    }]
-}
+    },
+    {
+      "name": "modelResultMetadata",
+      "type": {
+        "name": "ModelResultMetadata",
+        "type": "record",
+        "fields": [
+          {
+            "name": "errors",
+            "type": "string"
+          },
+          {
+            "name": "modelType",
+            "type": "int"
+          },
+          {
+            "name": "modelName",
+            "type": "string"
+          },
+          {
+            "name": "duration",
+            "type": "long"
+          }
+        ]
+      }
+    },
+
+    {
+      "name": "user",
+      "type": "long"
+    },
+    {
+      "name": "products",
+      "type": {
+        "type": "array",
+        "items": "long"
+      }
+    }
+  ]}

@@ -17,14 +17,14 @@ import pipelines.akkastream.scaladsl.{ FlowWithPipelinesContext, RunnableGraphSt
 import pipelines.streamlets.StreamletShape
 import pipelines.streamlets.avro.{ AvroInlet, AvroOutlet }
 import com.lightbend.modelserving.model.actor.ModelServingActor
-import com.lightbend.modelserving.model.{ ModelDescriptor, ModelType, MultiModelFactory, ServingResult }
+import com.lightbend.modelserving.model.{ ModelDescriptor, ModelType, MultiModelFactory }
 import com.lightbend.modelserving.model.util.MainBase
 
 final case object WineModelServer extends AkkaStreamlet {
 
   val in0 = AvroInlet[WineRecord]("in-0")
   val in1 = AvroInlet[ModelDescriptor]("in-1")
-  val out = AvroOutlet[WineResult]("out", _.name)
+  val out = AvroOutlet[WineResult]("out", _.lot_id)
   final override val shape = StreamletShape.withInlets(in0, in1).withOutlets(out)
 
   val modelFactory = MultiModelFactory(
@@ -38,7 +38,7 @@ final case object WineModelServer extends AkkaStreamlet {
     implicit val askTimeout: Timeout = Timeout(30.seconds)
 
     val modelserver = context.system.actorOf(
-      ModelServingActor.props[WineRecord, Double]("wine", modelFactory))
+      ModelServingActor.props[WineRecord, WineResult]("wine", modelFactory))
 
     def runnableGraph() = {
       atLeastOnceSource(in1).via(modelFlow).runWith(Sink.ignore)
@@ -47,11 +47,7 @@ final case object WineModelServer extends AkkaStreamlet {
 
     protected def dataFlow =
       FlowWithPipelinesContext[WineRecord].mapAsync(1) {
-        data ⇒ modelserver.ask(data).mapTo[ServingResult[Double]]
-      }.filter {
-        sr ⇒ sr.result != None // should only happen when there is no model for scoring.
-      }.map {
-        sr ⇒ WineResult(sr.modelName, sr.duration, sr.result.get)
+        data ⇒ modelserver.ask(data).mapTo[WineResult]
       }
 
     protected def modelFlow =
@@ -85,16 +81,16 @@ object WineModelServerMain {
     implicit val askTimeout: Timeout = Timeout(30.seconds)
 
     val modelserver = system.actorOf(
-      ModelServingActor.props[WineRecord, Double]("wine", WineModelServer.modelFactory))
+      ModelServingActor.props[WineRecord, WineResult]("wine", WineModelServer.modelFactory))
 
     val path = "wine/models/winequalityDecisionTreeClassification.pmml"
     val is = this.getClass.getClassLoader.getResourceAsStream(path)
     val pmml = new Array[Byte](is.available)
     is.read(pmml)
     val descriptor = new ModelDescriptor(
-      name = "Wine Model",
-      description = "winequalityDecisionTreeClassification",
       modelType = ModelType.PMML,
+      modelName = "Wine Model",
+      description = "winequalityDecisionTreeClassification",
       modelBytes = Some(pmml),
       modelSourceLocation = None)
 
@@ -105,7 +101,7 @@ object WineModelServerMain {
     for (i ← 0 until count) {
       modelserver.ask(descriptor)
       Thread.sleep(100)
-      val result = Await.result(modelserver.ask(record).mapTo[ServingResult[Double]], 5 seconds)
+      val result = Await.result(modelserver.ask(record).mapTo[Double], 5 seconds)
       println(s"$i: result - $result")
       Thread.sleep(frequency.length)
     }

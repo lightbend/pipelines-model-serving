@@ -1,6 +1,6 @@
 package com.lightbend.modelserving.model.h2o
 
-import com.lightbend.modelserving.model.{ ModelDescriptor, ModelType }
+import com.lightbend.modelserving.model.{ ModelDescriptor, ModelServingStats, ScoreMetadata }
 import hex.genmodel.easy.RowData
 import hex.genmodel.easy.prediction.BinomialModelPrediction
 import pipelinesx.test.OutputInterceptor
@@ -51,17 +51,26 @@ class H2OModelTest extends FunSpec with BeforeAndAfterAll with OutputInterceptor
   final class TestH2OModel(descriptor: ModelDescriptor)
     extends H2OModel[RowData, BinomialModelPrediction, RowData](descriptor) {
 
-    protected def invokeModel(record: RowData): (String, BinomialModelPrediction) = {
+    override protected def invokeModel(record: RowData): (String, Option[BinomialModelPrediction]) = {
       val prediction = h2oModel.predict(record)
-      ("", prediction.asInstanceOf[BinomialModelPrediction])
+      ("", Some(prediction.asInstanceOf[BinomialModelPrediction]))
     }
-    protected def makeOutRecord(
-        record:    RowData,
-        errors:    String,
-        score:     BinomialModelPrediction,
-        duration:  Long,
-        modelName: String,
-        modelType: ModelType): RowData = toResult(record, score)
+    protected def initFrom(record: RowData): RowData = record // we just modify the input!
+    protected def setScoreAndMetadata(
+        out:      RowData,
+        score:    Option[BinomialModelPrediction],
+        metadata: ScoreMetadata): RowData = {
+
+      score match {
+        case Some(bmp) ⇒ toResult(out, bmp)
+        case None      ⇒ fail("something failed!")
+      }
+      out.put("errors", metadata.errors)
+      out.put("modelType", metadata.modelType)
+      out.put("modelName", metadata.modelName)
+      out.put("duration", metadata.duration)
+      out
+    }
   }
 
   val modelPath = "model-serving/src/test/resources/airlines/models/mojo/gbm_pojo_test.zip"
@@ -77,15 +86,11 @@ class H2OModelTest extends FunSpec with BeforeAndAfterAll with OutputInterceptor
         val descriptor = H2OModel.defaultDescriptor
           .copy(modelBytes = Some(buffer), modelSourceLocation = Some(modelPath))
         val testH2OModel = new TestH2OModel(descriptor)
-        val servingResult = testH2OModel.score(row1)
-        assert("" == servingResult.errors)
-        servingResult.result match {
-          case None ⇒ fail("result is None")
-          case Some(rowData) ⇒
-            val probability = rowData.get("delayPredictionProbability").asInstanceOf[JDouble].doubleValue
-            assert("YES" == rowData.get("delayPredictionLabel").toString)
-            assert(0.6 <= probability && probability <= 0.7)
-        }
+        val (servingResult, _) = testH2OModel.score(row1, ModelServingStats())
+        assert("" == servingResult.get("errors").toString)
+        val probability = servingResult.get("delayPredictionProbability").asInstanceOf[JDouble].doubleValue
+        assert("YES" == servingResult.get("delayPredictionLabel").toString)
+        assert(0.6 <= probability && probability <= 0.7)
       }
     }
 

@@ -21,15 +21,16 @@ import pipelinesx.logging.LoggingUtil
 /**
  * Generic definition of a model factory
  */
-trait ModelFactory[RECORD, RESULT] {
+trait ModelFactory[INRECORD, OUTRECORD] {
 
   /**
    * Define this method for concrete subclasses.
    * It's protected; end users call "create", while implementers define "make".
+   * @param descriptor if equal to [[Model.noopModelDescriptor]], a subclass of [[Model.NoopModel]] should be returned!
    */
-  protected def make(descriptor: ModelDescriptor): Either[String, Model[RECORD, RESULT]]
+  protected def make(descriptor: ModelDescriptor): Either[String, Model[INRECORD, OUTRECORD]]
 
-  def create(descriptor: ModelDescriptor): Either[String, Model[RECORD, RESULT]] =
+  def create(descriptor: ModelDescriptor): Either[String, Model[INRECORD, OUTRECORD]] =
     try {
       make(descriptor)
     } catch {
@@ -45,14 +46,14 @@ trait ModelFactory[RECORD, RESULT] {
  * returned through a `Left[String]`.
  * @param modelFactories a map where each [[ModelFactory]] is associated with the [[ModelType]] it constructs.
  */
-final case class MultiModelFactory[RECORD, RESULT](
-    modelFactories: Map[ModelType, ModelFactory[RECORD, RESULT]])
-  extends ModelFactory[RECORD, RESULT] {
+final case class MultiModelFactory[INRECORD, OUTRECORD](
+    modelFactories: Map[ModelType, ModelFactory[INRECORD, OUTRECORD]])
+  extends ModelFactory[INRECORD, OUTRECORD] {
 
   /**
    * Determine which model factory to use from the descriptor and create the model with it.
    */
-  protected def make(descriptor: ModelDescriptor): Either[String, Model[RECORD, RESULT]] = try {
+  protected def make(descriptor: ModelDescriptor): Either[String, Model[INRECORD, OUTRECORD]] = try {
     modelFactories.get(descriptor.modelType) match {
       case Some(factory) ⇒ factory.create(descriptor)
       case None          ⇒ Left(s"$prefix: No factory found for model type ${descriptor.modelType}. ${descStr(descriptor)}")

@@ -35,7 +35,7 @@ object ModelDescriptorUtil {
           case Some(bs)                   ⇒ (bs.take(128).toString, bs.length)
         }
         val sb = new StringBuilder
-        sb.append("ModelDescriptor(name = ").append(descriptor.name)
+        sb.append("ModelDescriptor(modelName = ").append(descriptor.modelName)
           .append(", description = ").append(descriptor.description)
           .append(", modelType = ").append(descriptor.modelType)
           .append(", modelSourceLocation = ").append(descriptor.modelSourceLocation)
@@ -48,7 +48,7 @@ object ModelDescriptorUtil {
       override def equals(obj: Any): Boolean = {
         obj match {
           case md: ModelDescriptor ⇒
-            descriptor.name == md.name &&
+            descriptor.modelName == md.modelName &&
               descriptor.description == md.description &&
               descriptor.modelType == md.modelType &&
               descriptor.modelSourceLocation == md.modelSourceLocation &&
@@ -78,7 +78,7 @@ object ModelDescriptorUtil {
        * defined or empty, return "unnamed-model".
        */
       def constructName(): String = {
-        if (descriptor.name.length > 0) descriptor.name
+        if (descriptor.modelName.length > 0) descriptor.modelName
         else descriptor.modelSourceLocation match {
           case None | Some("") ⇒ "unnamed-model" // default hack
           case Some(path) ⇒
@@ -90,9 +90,9 @@ object ModelDescriptorUtil {
   }
 
   val unknown = ModelDescriptor(
-    name = "unknown",
+    modelName = "unknown",
     description = "unknown description",
-    modelType = ModelType.PMML, // arbitrary
+    modelType = ModelType.UNKNOWN,
     modelBytes = None,
     modelSourceLocation = None)
 
@@ -100,7 +100,7 @@ object ModelDescriptorUtil {
    * Write an instance to a stream.
    */
   def write(descriptor: ModelDescriptor, output: ObjectOutputStream): Unit = {
-    output.writeUTF(descriptor.name)
+    output.writeUTF(descriptor.modelName)
     output.writeUTF(descriptor.description)
     output.writeObject(descriptor.modelType)
     output.writeObject(
@@ -120,11 +120,11 @@ object ModelDescriptorUtil {
         val bs = input.readObject().asInstanceOf[Array[Byte]]
         if (bs.length == 0) None else Some(bs)
       }
-    val name = input.readUTF()
+    val modelName = input.readUTF()
     val description = input.readUTF()
     val modelType = input.readObject().asInstanceOf[ModelType]
     val modelBytes = bytes()
     val location = loc()
-    ModelDescriptor(name, description, modelType, modelBytes, location)
+    ModelDescriptor(modelName, description, modelType, modelBytes, location)
   }
 }
