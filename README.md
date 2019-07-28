@@ -87,9 +87,11 @@ Instructions - TBD
 
 ## Build and Deploy the Applications
 
-Decide which of the three projects you want to build and deploy, then change to that project in `sbt` and run `buildAndPublish`. If you run any of the following commands in the "root" project (`pipelines-model-serving`), you'll get errors about multiple blueprint files being disallowed by Pipelines.
+If you run any of the following commands in the "root" project (`pipelines-model-serving`), you'll get errors about multiple blueprint files being disallowed by Pipelines.
 
-So, from the `sbt` prompt, do _one_ of the following first:
+So, decide which of the three projects you want to build and deploy, then change to that project in `sbt` and run `buildAndPublish`.
+
+Specifically, from the `sbt` prompt, do _one_ of the following first:
 
 1. Wine quality: `project wineModelServingPipeline` (corresponding to the directory `wine-quality-ml`)
 2. Airline flights: `project airlineFlightsModelServingPipeline` (corresponding to the directory `airline-flights-ml`)
@@ -98,12 +100,12 @@ So, from the `sbt` prompt, do _one_ of the following first:
 Now build the project:
 
 ```
-sbt buildAndPublish
+buildAndPublish
 ```
 
 > NOTE: The first task performed is `verifyBlueprint`, which verifies the blueprint is valid. You can run this command separately if you just want to check it after doing edits.
 
-The image name will be based on one of the following strings, where `USER` will be replaced with your user name at build time (so you and your colleagues can easily run separate instances of the app...):
+The image name will be based on one of the following strings, where `USER` will be replaced with your user name at build time (so you and your colleagues can easily run separate instances of the same app...):
 
 * Wine app: `wine-quality-ml-USER`
 * Airline app: `airline-flights-ml-USER`
@@ -145,9 +147,9 @@ The airline and wine apps use freely-available data sets (discussed below). The 
 
 A `pipelinesx.ingress.RecordsReader` class (under the `pipelinesx` project) is used by the airline and wine apps to make this process easy. It supports programmatic specification of resources to be read from the local file system, from the classpath (i.e., added to the `src/main/resources` directory of a project and compiled into the archives), or from URLs. In addition, it supports a configuration-driven method for specifying which source and which files to load in the `src/main/resources/application.conf` file (using HOCON format and the [Typesafe Config](https://github.com/lightbend/config) library), so it's easy to change how it's done by simply changing the configuration. See the class comments for `RecordsReader` for details and see the `*/src/main/resources/reference.conf` and `*/src/test/resources/reference.conf` files for examples.
 
-For the airline app, the full data set available from http://stat-computing.org/dataexpo/2009/ is many GBs in size. The `airline-flights-ml/src/main/resources/reference/reference.conf` downloads from this website only a few of the files available when the streamlet starts. They are stored on the local file system, so if you decide to use more of the files, keep in mind the local disk requirement and the startup overhead for downloading on every startup. (They are cached locally, but if the pod is restarted...).
+For the airline app, the full data set available from http://stat-computing.org/dataexpo/2009/ is many GBs in size. The `airline-flights-ml/src/main/resources/reference/reference.conf` specifies that the _ingress_ streamlet should only download a few of the files available from the website. This happens when the streamlet starts. They are stored on the local file system, so if you decide to use more of the files, keep in mind the local disk requirement and the startup overhead for downloading on every startup. (They are cached locally, but if the pod is restarted...). Also, downloading too many files, which is not down asynchronously at this time, can cause Kubernetes to think the pod is dead, if it takes too long!
 
-Also, there is a truncated data file from 1990, about 1MB in size, in `airline-flights-ml/src/main/resources/airlines/data/1990-10K.csv`. Use that file instead when demoing the app in situations when startup time needs to be as fast as possible, _or_ you are demoing the app in an on-premise K8s cluster with restrictive access to the Internet. Note that it won't make any difference if your laptop has poor Internet connectivity; this download process at startup only happens in the cluster (unless you run the unit tests...), so only the cluster network situation is important.
+Also, for convenience, there is a truncated data file from 1990, about 1MB in size, in `airline-flights-ml/src/main/resources/airlines/data/1990-10K.csv`. Use that file instead when demoing the app in situations when startup time needs to be as fast as possible, _or_ you are demoing the app in an on-premise K8s cluster with restrictive access to the Internet. (Change `reference.conf` to use `FileSystem` instead of `URLs` for `which-one`.) Note that it won't make any difference if your laptop has poor Internet connectivity; this download process at startup only happens in the cluster (unless you run the unit tests...), so only the cluster network situation is important.
 
 > WARNING: If you decide to add more files to the `CLASSPATH` instead, keep in mind that these files are bundled into the application Docker image, so avoid loading too many of them or the image size will be huge!
 
@@ -161,15 +163,18 @@ There are a number of `main` routines available for "mini-testing". All are unde
 
 However, if you just type `run` in those projects, you'll invoke a Pipelines runner that is under development, rather than get a prompt with the available `main` classes.
 
-Instead, use `sbt show determineMainClasses` to find the full paths and then use `sbt runMain foo.bar.Baz` to run the specific example you want. Some of these commands take invocation options, including a `-h` or `--help` option to describe them.
+Instead, use `sbt show determineMainClasses` to find the full paths and then use `sbt runMain foo.bar.Baz` to run the specific example you want. Some of these commands take invocation options, including a `-h` or `--help` option to describe them. All of these classes have code comments with more specific details about running them.
 
-### Sample Data Sets
+## Sample Data Sets
 
 The wine application is inspired by this source, where the data was retrieved:
 https://www.kaggle.com/uciml/red-wine-quality-cortez-et-al-2009
 
 The airline data comes from this data set, http://stat-computing.org/dataexpo/2009/the-data.html, where you can see the full list of available data files. By default, the airline app data ingress downloads a few of these files at startup.
 
+## Improving this Project
+
+There is a [GitHub Project](https://github.com/lightbend/pipelines-model-serving/projects/1) with TODO items, etc.
 
 Copyright (C) 2019 Lightbend Inc. (https://www.lightbend.com).
 
