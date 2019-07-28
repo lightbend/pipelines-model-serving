@@ -48,7 +48,7 @@ abstract class MainBase[T](
 
   /**
    * Normally, this default implementation or the implementation in
-   * [[ModelMainBase.toString(t:T)]] will be sufficient, but override as needed.
+   * the ModelMainBase will be sufficient, but override it when needed.
    */
   protected def toString(t: T): String = t.toString
 
