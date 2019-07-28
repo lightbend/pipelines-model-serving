@@ -182,6 +182,25 @@ This appears to happen most often when an application has existed for a while, b
 
 Workaround: in the OpenShift GUI, go to _applications_ and delete your application, then redeploy. When you redeploy (i.e., `kubectl pipelines deploy {image:tag}`), if you get prompted for the user name and password, then you'll be successful! Use the same credentials you used for the `docker login` command.
 
+### Logging
+
+There is a mix of Akka logging, SLF4J, and generic `Console.out` logging. Get to the logs via Openshift GUI > appplications > my_application > Pods. Or, use `kubectl`:
+
+```shell
+kubectl pipelines status <my-app>
+kubectl logs -n <my-app> <pod-name>
+```
+
+Note that the app name is used as the namespace by Pipelines. For example:
+
+
+```shell
+kubectl pipelines status airline-flights-ml-bucktrends
+kubectl logs -n airline-flights-ml-bucktrends airline-flights-ml-bucktrends-model-serving-UUID-stuff
+...
+```
+
+Note that some logging is done at the `DEBUG` level. If you suspect problems, change the `logback*.xml` settings or for the `Console.out` logging, change `log.debug` to `log.info`!
 ## Improving this Project
 
 There is a [GitHub Project](https://github.com/lightbend/pipelines-model-serving/projects/1) with TODO items, etc.
