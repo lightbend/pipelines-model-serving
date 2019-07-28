@@ -6,7 +6,7 @@ import pipelines.akkastream.AkkaStreamlet
 import pipelines.examples.modelserving.recommender.data._
 import pipelinesx.egress.ConsoleEgressLogic
 
-final case object RecommenderConsoleEgress extends AkkaStreamlet {
+final case object RecommenderResultConsoleEgress extends AkkaStreamlet {
   val in = AvroInlet[RecommenderResult]("in")
   final override val shape = StreamletShape.withInlets(in)
 
