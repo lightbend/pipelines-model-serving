@@ -172,6 +172,16 @@ https://www.kaggle.com/uciml/red-wine-quality-cortez-et-al-2009
 
 The airline data comes from this data set, http://stat-computing.org/dataexpo/2009/the-data.html, where you can see the full list of available data files. By default, the airline app data ingress downloads a few of these files at startup.
 
+## Debugging Notes
+
+### Pods Fail to Load Do to Docker Repo Auth Errors (OpenShift)
+
+Even if you log into the Docker repo in the cluster, you might get pod deployment errors with events that report that authentication against the repo failed, so the images could not be pulled.
+
+This appears to happen most often when an application has existed for a while, beyond timeouts for various logins.
+
+Workaround: in the OpenShift GUI, go to _applications_ and delete your application, then redeploy. When you redeploy (i.e., `kubectl pipelines deploy {image:tag}`), if you get prompted for the user name and password, then you'll be successful! Use the same credentials you used for the `docker login` command.
+
 ## Improving this Project
 
 There is a [GitHub Project](https://github.com/lightbend/pipelines-model-serving/projects/1) with TODO items, etc.
