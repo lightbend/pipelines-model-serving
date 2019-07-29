@@ -44,7 +44,11 @@ abstract class PMMLModel[RECORD, MODEL_OUTPUT, RESULT](descriptor: ModelDescript
     tname = target.getName
   }
 
-  setup()
+  /**
+   * Let setup remain private to each class in the hierarchy, but permit
+   * overrides of init.
+   */
+  protected def init(): Unit = setup()
 }
 
 object PMMLModel {

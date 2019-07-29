@@ -47,6 +47,7 @@ object WinePMMLModelFactory extends ModelFactory[WineRecord, WineResult] {
 
   lazy val noopModel: Model[WineRecord, WineResult] =
     new WinePMMLModel(Model.noopModelDescriptor) with Model.NoopModel[WineRecord, Double, WineResult] {
+      override protected def init(): Unit = {}
       override protected def invokeModel(record: WineRecord): (String, Option[Double]) =
         noopInvokeModel(record)
     }
