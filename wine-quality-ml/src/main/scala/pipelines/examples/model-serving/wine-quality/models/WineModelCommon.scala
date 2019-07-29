@@ -1,7 +1,9 @@
 package pipelines.examples.modelserving.winequality
 
 import data.{ WineRecord, WineResult, ModelResult, ModelResultMetadata }
-import com.lightbend.modelserving.model.{ ModelImplTrait, ModelType, ScoreMetadata }
+import com.lightbend.modelserving.model.{ Model, ModelBase, ModelDescriptor, ModelFactory, ModelImplTrait, ModelType, ScoreMetadata }
+import com.lightbend.modelserving.model.ModelDescriptorUtil.implicits._
+import pipelinesx.logging.StdoutStderrLogger
 
 /**
  * Implements abstract [[Model]] methods that are the same for all the model types.
@@ -41,3 +43,23 @@ trait WineModelCommon extends ModelImplTrait[WineRecord, Double, WineResult] {
     out
   }
 }
+
+/** Factory for a wine-specific "NOOP" model. */
+object WineModelCommonNoopFactory extends ModelFactory[WineRecord, WineResult] {
+
+  val log = StdoutStderrLogger(this.getClass())
+
+  def make(descriptor: ModelDescriptor): Either[String, Model[WineRecord, WineResult]] = {
+    if (descriptor != Model.noopModelDescriptor) {
+      log.warn(s"WineModelCommonNoopFactory.make called but not with the NOOP Model Descriptor. Creating a NoopModel anyway. Descriptor = ${descriptor.toRichString}")
+    }
+    Right(noopModel)
+  }
+
+  lazy val noopModel: Model[WineRecord, WineResult] =
+    new ModelBase[WineRecord, Double, WineResult](Model.noopModelDescriptor) with Model.NoopModel[WineRecord, Double, WineResult] with WineModelCommon {
+      override protected def invokeModel(record: WineRecord): (String, Option[Double]) =
+        noopInvokeModel(record)
+    }
+}
+

@@ -63,9 +63,6 @@ abstract class H2OModel[RECORD, MODEL_OUTPUT, RESULT](descriptor: ModelDescripto
 
   protected val h2oModel: EasyPredictModelWrapper = loadModel(descriptor)
 
-  /** Abstraction for cleaning up resources */
-  override def cleanup(): Unit = {}
-
   private def verifyKnownModelCategory(mc: ModelCategory): Boolean =
     mc != ModelCategory.Unknown
 }

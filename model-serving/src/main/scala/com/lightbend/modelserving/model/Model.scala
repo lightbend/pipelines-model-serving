@@ -9,8 +9,8 @@ trait Model[INRECORD, OUTRECORD] {
   /** Score a record with the model and update the running statistics. */
   def score(record: INRECORD, stats: ModelServingStats): (OUTRECORD, ModelServingStats)
 
-  /** Abstraction for cleaning up resources */
-  def cleanup(): Unit
+  /** Hook for cleaning up resources */
+  def cleanup(): Unit = {}
 }
 
 /**
@@ -111,20 +111,40 @@ abstract class ModelBase[INRECORD, MODEL_OUTPUT, OUTRECORD](
 object Model {
   protected val noopDescription = "Noop model - there is no real model currently available."
 
-  trait NoopModel[INRECORD, MODEL_OUTPUT, OUTRECORD] {
-
-    protected def noopInvokeModel(input: INRECORD): (String, Option[MODEL_OUTPUT]) =
-      (noopDescription, None)
-  }
-
   /**
    * Model Descriptor for NOOP models. Note that the bytes are initialized to an
    * empty array in a Some, rather than a None, which is used as the default in
    * [[ModelDescriptorUtil.unknown]], because our TensorFlow model code asserts
    * on None!
+   * NOTE: The model type must remain `UNKNOWN`, as that's used as a signal for
+   * construction of NoopModels.
    */
-  lazy val noopModelDescriptor = ModelDescriptorUtil.unknown.copy(
+  val noopModelDescriptor = ModelDescriptorUtil.unknown.copy(
     modelName = "NoopModel",
     description = noopDescription,
     modelBytes = Some(Array()))
+
+  /**
+   * This trait is used to implement "NOOP" implementations of models, where most of
+   * the functionality, such as the input and output records are managed normally,
+   * but scoring is stubbed out. Hence, this trait has to use a type parameter
+   * for the model output type, which is normally hidden by the Model interface.
+   */
+  trait NoopModel[INRECORD, MODEL_OUTPUT, OUTRECORD] {
+
+    /**
+     * Used in concrete NoopModel implementations to override `invokeModel` so that
+     * it calls this method and does nothing else. For example, a `ConcreteModel`
+     * with type parameters `IN` and `OUT`, and model (score) output of `Double`:
+     * ```
+     * lazy val noopModel: Model[IN, OUT] =
+     *   new ConcreteModel(Model.noopModelDescriptor) with Model.NoopModel[IN, Double, OUT] {
+     *     override protected def invokeModel(record: IN): (String, Option[Double]) =
+     *       noopInvokeModel(record)
+     * }
+     * ```
+     */
+    protected def noopInvokeModel(input: INRECORD): (String, Option[MODEL_OUTPUT]) =
+      (noopDescription, None)
+  }
 }

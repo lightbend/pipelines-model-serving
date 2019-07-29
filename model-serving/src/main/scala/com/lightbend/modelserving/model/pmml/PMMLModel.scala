@@ -45,8 +45,6 @@ abstract class PMMLModel[RECORD, MODEL_OUTPUT, RESULT](descriptor: ModelDescript
   }
 
   setup()
-
-  override def cleanup(): Unit = {}
 }
 
 object PMMLModel {

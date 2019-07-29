@@ -26,9 +26,6 @@ abstract class TensorFlowServingModel[INRECORD, OUTRECORD, HTTPREQUEST, HTTPRESU
 
   var path = init()
 
-  // Nothing to cleanup in this case
-  override def cleanup(): Unit = {}
-
   /** Convert incoming request to HTTP */
   def getHTTPRequest(input: INRECORD): HTTPREQUEST
 

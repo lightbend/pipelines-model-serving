@@ -11,7 +11,7 @@ import org.apache.avro.specific.SpecificRecordBase
 /**
  * Actor that handles messages to update a model and to score records using the current model.
  * @param label used for identifying the app, e.g., as part of a file name for persistence of the current model.
- * @param modelFactory is used to create new models on demand, based on input [[ModelDescriptor]] instances.
+ * @param modelFactory is used to create new models on demand, based on input [[ModelDescriptor]] instances. WARNING, this factory must support [[Model.noopModelDescriptor]].
  */
 class ModelServingActor[RECORD, RESULT](
     label:        String,
@@ -22,9 +22,14 @@ class ModelServingActor[RECORD, RESULT](
 
   protected val filePersistence = FilePersistence[RECORD, RESULT](modelFactory)
 
-  private lazy val noopModelEither = modelFactory.create(Model.noopModelDescriptor)
-  assert(noopModelEither.isRight, noopModelEither.left.get)
-  lazy val noopModel = noopModelEither.right.get
+  // Create a NoopModel to initialize the current model, before a real one is ingested.
+  lazy val noopModel = modelFactory.create(Model.noopModelDescriptor) match {
+    case Right(model) ⇒ model
+    case Left(errors) ⇒
+      val errorStr = s"modelFactory.create() didn't return a NoopModel (for initialization purposes): errors = $errors"
+      log.error(errorStr)
+      throw new RuntimeException(errorStr)
+  }
   protected var currentModel: Model[RECORD, RESULT] = noopModel
   protected var currentStats: ModelServingStats = ModelServingStats.noop
 

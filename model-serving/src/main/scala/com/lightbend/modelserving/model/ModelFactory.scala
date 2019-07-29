@@ -44,7 +44,12 @@ trait ModelFactory[INRECORD, OUTRECORD] {
  * A model factory that encapsulates several factories, which are selected by the model type
  * when `create` is called. If an appropriate model type is not found, then an error is
  * returned through a `Left[String]`.
+ * NOTE: Because [[actor.ModelServingActor]] calls the assigned factory at start up to
+ * create a default NoopModel, you _must_ add an entry `ModelType.UNKNOWN -> some_factory`
+ * to the input map. Unfortunately, because of the way models are implemented, there is no
+ * way to do this automatically.
  * @param modelFactories a map where each [[ModelFactory]] is associated with the [[ModelType]] it constructs.
+ * @param useNoopModelForUNKNOWN if true, then if [[ModelType.UNKNOWN]] is specified in the descriptor, return a NoopModel
  */
 final case class MultiModelFactory[INRECORD, OUTRECORD](
     modelFactories: Map[ModelType, ModelFactory[INRECORD, OUTRECORD]])
@@ -56,7 +61,9 @@ final case class MultiModelFactory[INRECORD, OUTRECORD](
   protected def make(descriptor: ModelDescriptor): Either[String, Model[INRECORD, OUTRECORD]] = try {
     modelFactories.get(descriptor.modelType) match {
       case Some(factory) ⇒ factory.create(descriptor)
-      case None          ⇒ Left(s"$prefix: No factory found for model type ${descriptor.modelType}. ${descStr(descriptor)}")
+      case None ⇒
+        Left(s"$prefix: No factory found for model type ${descriptor.modelType}. ${descStr(descriptor)}")
+
     }
   } catch {
     case scala.util.control.NonFatal(th) ⇒

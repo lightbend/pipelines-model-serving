@@ -29,6 +29,7 @@ final case object WineModelServer extends AkkaStreamlet {
 
   val modelFactory = MultiModelFactory(
     Map(
+      ModelType.UNKNOWN -> WinePMMLModelFactory, // it can handle construction of a NoopModel!
       ModelType.PMML -> WinePMMLModelFactory,
       ModelType.TENSORFLOW -> WineTensorFlowModelFactory,
       ModelType.TENSORFLOWSAVED -> WineTensorFlowBundledModelFactory))
