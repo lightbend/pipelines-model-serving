@@ -3,18 +3,15 @@ package pipelines.examples.modelserving.winequality.models.tensorflow
 import com.lightbend.modelserving.model.tensorflow.TensorFlowBundleModel
 import com.lightbend.modelserving.model.{ Model, ModelDescriptor, ModelFactory }
 import com.lightbend.modelserving.model.ModelDescriptor
-import pipelines.examples.modelserving.winequality.WineModelCommon
-import pipelines.examples.modelserving.winequality.data.{ WineRecord, WineResult }
-import org.tensorflow.{ Graph, Session }
+import pipelines.examples.modelserving.winequality.data.WineRecord
 
 /**
  * Implementation of TensorFlow bundled model for Wine.
  */
 class WineTensorFlowBundledModel(descriptor: ModelDescriptor)
-  extends TensorFlowBundleModel[WineRecord, Double, WineResult](descriptor)
-  with WineModelCommon {
+  extends TensorFlowBundleModel[WineRecord, Double](descriptor)(() ⇒ 0.0) {
 
-  override protected def invokeModel(record: WineRecord): (String, Option[Double]) = {
+  override protected def invokeModel(record: WineRecord): Either[String, Double] = {
     // Create record tensor
     val modelInput = WineTensorFlowModel.toTensor(record)
     // Serve model using TensorFlow APIs
@@ -26,16 +23,16 @@ class WineTensorFlowBundledModel(descriptor: ModelDescriptor)
     val rshape = result.shape
     val rMatrix = Array.ofDim[Float](rshape(0).asInstanceOf[Int], rshape(1).asInstanceOf[Int])
     result.copyTo(rMatrix)
-    ("", Some(rMatrix(0).indices.maxBy(rMatrix(0)).toDouble))
+    Right(rMatrix(0).indices.maxBy(rMatrix(0)).toDouble)
   }
 }
 
 /**
  * Implementation of TensorFlow bundled model factory.
  */
-object WineTensorFlowBundledModelFactory extends ModelFactory[WineRecord, WineResult] {
+object WineTensorFlowBundledModelFactory extends ModelFactory[WineRecord, Double] {
 
-  def make(descriptor: ModelDescriptor): Either[String, Model[WineRecord, WineResult]] =
+  def make(descriptor: ModelDescriptor): Either[String, Model[WineRecord, Double]] =
     Right(new WineTensorFlowBundledModel(descriptor))
 }
 

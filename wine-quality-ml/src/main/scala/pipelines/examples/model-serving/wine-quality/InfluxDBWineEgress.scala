@@ -33,7 +33,7 @@ final case object InfluxDBWineRecordEgress extends AkkaStreamlet {
 
 object WineResultInfluxDBWriter extends InfluxDBUtil.Writer[WineResult] {
   def addFields(point: Point.Builder, record: WineResult): Point.Builder = {
-    point.addField("result", record.modelResult.quality)
+    point.addField("result", record.modelResult.value)
     point.addField("duration", record.modelResultMetadata.duration)
     point.tag("model", record.modelResultMetadata.modelName)
     point

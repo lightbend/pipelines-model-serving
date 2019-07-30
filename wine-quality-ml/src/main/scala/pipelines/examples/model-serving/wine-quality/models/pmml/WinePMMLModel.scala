@@ -3,18 +3,16 @@ package pipelines.examples.modelserving.winequality.models.pmml
 import com.lightbend.modelserving.model.{ Model, ModelDescriptor, ModelFactory }
 import com.lightbend.modelserving.model.pmml.PMMLModel
 import org.jpmml.evaluator.Computable
-import pipelines.examples.modelserving.winequality.WineModelCommon
-import pipelines.examples.modelserving.winequality.data.{ WineRecord, WineResult }
+import pipelines.examples.modelserving.winequality.data.WineRecord
 import scala.collection.JavaConverters._
 
 /**
  * PMML model implementation for wine data.
  */
 class WinePMMLModel(descriptor: ModelDescriptor)
-  extends PMMLModel[WineRecord, Double, WineResult](descriptor)
-  with WineModelCommon {
+  extends PMMLModel[WineRecord, Double](descriptor)(() ⇒ 0.0) {
 
-  override protected def invokeModel(record: WineRecord): (String, Option[Double]) = {
+  override protected def invokeModel(record: WineRecord): Either[String, Double] = {
     // Clear arguments (from previous run)
     arguments.clear()
     // Populate input based on record
@@ -32,15 +30,15 @@ class WinePMMLModel(descriptor: ModelDescriptor)
       case c: Computable ⇒ c.getResult.toString.toDouble
       case v: Any        ⇒ v.asInstanceOf[Double]
     }
-    ("", Some(d))
+    Right(d)
   }
 }
 
 /**
  * Factory for wine data PMML model
  */
-object WinePMMLModelFactory extends ModelFactory[WineRecord, WineResult] {
+object WinePMMLModelFactory extends ModelFactory[WineRecord, Double] {
 
-  def make(descriptor: ModelDescriptor): Either[String, Model[WineRecord, WineResult]] =
+  def make(descriptor: ModelDescriptor): Either[String, Model[WineRecord, Double]] =
     Right(new WinePMMLModel(descriptor))
 }

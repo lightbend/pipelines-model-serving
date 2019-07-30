@@ -1,12 +1,13 @@
 package pipelines.examples.modelserving.recommender.models.tensorflow
 
-import pipelines.examples.modelserving.recommender.data.{ ModelResult, ModelResultMetadata, KeyValue, RecommenderRecord, RecommenderResult }
-import com.lightbend.modelserving.model.{ Model, ModelFactory, ModelDescriptor, ModelDescriptorUtil, ModelType, ScoreMetadata }
+import pipelines.examples.modelserving.recommender.data.RecommenderRecord
+import com.lightbend.modelserving.model.{ KeyValue, Model, ModelFactory, ModelDescriptor, ModelDescriptorUtil }
 import com.lightbend.modelserving.model.tensorflow.TensorFlowServingModel
 import com.google.gson.Gson
 
 class RecommenderTensorFlowServingModel(descriptor: ModelDescriptor)
-  extends TensorFlowServingModel[RecommenderRecord, RecommenderResult, TFRequest, TFPredictionResult](descriptor) {
+  extends TensorFlowServingModel[RecommenderRecord, TFRequest, TFPredictionResult](
+    descriptor)(() ⇒ RecommenderTensorFlowServingModel.makeEmptyTFPredictionResult()) {
 
   override val clazz: Class[TFPredictionResult] = classOf[TFPredictionResult]
 
@@ -16,36 +17,6 @@ class RecommenderTensorFlowServingModel(descriptor: ModelDescriptor)
     TFRequest("", TFRequestInputs(products, users))
   }
 
-  protected def initFrom(record: RecommenderRecord): RecommenderResult =
-    new RecommenderResult(
-      modelResult = new ModelResult( // will be overwritten subsequently
-        predictions = Nil),
-      modelResultMetadata = new ModelResultMetadata( // will be overwritten subsequently
-        errors = "",
-        modelType = ModelType.TENSORFLOWSERVING.ordinal,
-        modelName = "RecommenderTensorFlowServingModel",
-        duration = 0),
-      user = record.user,
-      products = record.products)
-
-  protected def setScoreAndMetadata(
-      out:      RecommenderResult,
-      score:    Option[TFPredictionResult],
-      metadata: ScoreMetadata): RecommenderResult = {
-    val predictions: Seq[KeyValue] = score match {
-      case None ⇒ Nil
-      case Some(tfpr) ⇒
-        val recoms = tfpr.outputs.recommendations.map(_(0)) // take first recommendation result in each nested array
-        out.products.zip(recoms).map(r ⇒ KeyValue(r._1.toString, r._2))
-    }
-    out.modelResult.predictions = predictions
-    out.modelResultMetadata.errors = metadata.errors
-    out.modelResultMetadata.modelType = metadata.modelType.ordinal
-    out.modelResultMetadata.modelName = metadata.modelName
-    out.modelResultMetadata.duration = metadata.duration.length
-    out
-  }
-
   // Test method to ensure that transformation works correctly
   // TODO: replace this method and main below with a call through the full scoring
   // pipeline.
@@ -53,16 +24,29 @@ class RecommenderTensorFlowServingModel(descriptor: ModelDescriptor)
     val hTTPRec = gson.toJson(getHTTPRequest(record))
     println(s" record to json : $hTTPRec")
     val res = gson.fromJson(servingResult, clazz)
-    val result = res.outputs.recommendations.map(_(0))
-      .zip(record.products).map(r ⇒ KeyValue(r._2.toString, r._1))
+    val result = RecommenderTensorFlowServingModel.predictionToKeyValueArray(record, res)
     println(s"execution result $result")
+  }
+}
+
+object RecommenderTensorFlowServingModel {
+
+  def makeEmptyTFPredictionResult() =
+    TFPredictionResult(
+      outputs = RecommendationOutputs(
+        model = Array.empty[Int],
+        recommendations = Array.empty[Array[Double]]))
+
+  def predictionToKeyValueArray(record: RecommenderRecord, tfpr: TFPredictionResult): Array[KeyValue] = {
+    tfpr.outputs.recommendations.map(_(0)) // take first element in each subarray
+      .zip(record.products).map(r ⇒ KeyValue(r._2.toString, r._1))
   }
 }
 
 /**
  * Implementation of TensorFlow serving model factory.
  */
-object RecommenderTensorFlowServingModelFactory extends ModelFactory[RecommenderRecord, RecommenderResult] {
+object RecommenderTensorFlowServingModelFactory extends ModelFactory[RecommenderRecord, TFPredictionResult] {
 
   /**
    * Creates a new TensorFlow serving model.
@@ -71,7 +55,7 @@ object RecommenderTensorFlowServingModelFactory extends ModelFactory[Recommender
    * @return model
    */
   def make(
-      descriptor: ModelDescriptor): Either[String, Model[RecommenderRecord, RecommenderResult]] =
+      descriptor: ModelDescriptor): Either[String, Model[RecommenderRecord, TFPredictionResult]] =
     Right(new RecommenderTensorFlowServingModel(descriptor))
 }
 

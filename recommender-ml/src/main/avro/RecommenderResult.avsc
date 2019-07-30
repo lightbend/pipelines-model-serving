@@ -1,18 +1,19 @@
 {
-  "namespace": "pipelines.examples.modelserving.recommender.data",
-  "type": "record",
-  "name": "RecommenderResult",
-  "fields":[
-    {
-      "name": "modelResult",
-      "type": "com.lightbend.modelserving.model.ModelKeyDoubleValueArrayResult"
-    },
-    {
-      "name": "modelResultMetadata",
-      "type": "com.lightbend.modelserving.model.ModelResultMetadata"
-    },
-    {
-      "name": "inputRecord",
-      "type": "RecommenderRecord"
-    }
-  ]}
+    "namespace": "pipelines.examples.modelserving.recommender.data",
+    "type": "record",
+    "name": "RecommenderResult",
+    "fields":[
+      {
+        "name": "inputRecord",
+        "type": "RecommenderRecord"
+      },
+      {
+        "name": "modelResult",
+        "type": "com.lightbend.modelserving.model.ModelKeyDoubleValueArrayResult"
+      },
+      {
+        "name": "modelResultMetadata",
+        "type": "com.lightbend.modelserving.model.ModelResultMetadata"
+      }
+  ]
+}

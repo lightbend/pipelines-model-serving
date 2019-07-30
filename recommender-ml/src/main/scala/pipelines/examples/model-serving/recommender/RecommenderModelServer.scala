@@ -1,9 +1,9 @@
 package pipelines.examples.modelserving.recommender
 
 import pipelines.examples.modelserving.recommender.data.{ RecommenderRecord, RecommenderResult }
-import pipelines.examples.modelserving.recommender.models.tensorflow.RecommenderTensorFlowServingModelFactory
+import pipelines.examples.modelserving.recommender.models.tensorflow.{ RecommenderTensorFlowServingModel, RecommenderTensorFlowServingModelFactory, TFPredictionResult }
 import com.lightbend.modelserving.model.actor.ModelServingActor
-import com.lightbend.modelserving.model.{ ModelDescriptor, ModelType }
+import com.lightbend.modelserving.model.{ Model, ModelDescriptor, ModelKeyDoubleValueArrayResult, ModelType }
 import com.lightbend.modelserving.model.util.MainBase
 
 import akka.Done
@@ -23,7 +23,7 @@ final case object RecommenderModelServer extends AkkaStreamlet {
   val dtype = "recommender"
   val in0 = AvroInlet[RecommenderRecord]("in-0")
   val in1 = AvroInlet[ModelDescriptor]("in-1")
-  val out = AvroOutlet[RecommenderResult]("out", _.user.toString)
+  val out = AvroOutlet[RecommenderResult]("out", _.inputRecord.user.toString)
   final override val shape = StreamletShape.withInlets(in0, in1).withOutlets(out)
 
   override final def createLogic = new RunnableGraphStreamletLogic() {
@@ -31,8 +31,10 @@ final case object RecommenderModelServer extends AkkaStreamlet {
     implicit val askTimeout: Timeout = Timeout(30.seconds)
 
     val modelserver = context.system.actorOf(
-      ModelServingActor.props[RecommenderRecord, RecommenderResult](
-        "recommender", RecommenderTensorFlowServingModelFactory))
+      ModelServingActor.props[RecommenderRecord, TFPredictionResult](
+        "recommender",
+        RecommenderTensorFlowServingModelFactory,
+        () ⇒ RecommenderTensorFlowServingModel.makeEmptyTFPredictionResult()))
 
     def runnableGraph() = {
       atLeastOnceSource(in1).via(modelFlow).runWith(Sink.ignore)
@@ -40,8 +42,13 @@ final case object RecommenderModelServer extends AkkaStreamlet {
     }
 
     protected def dataFlow =
-      FlowWithPipelinesContext[RecommenderRecord].mapAsync(1) {
-        record ⇒ modelserver.ask(record).mapTo[RecommenderResult]
+      FlowWithPipelinesContext[RecommenderRecord].mapAsync(1) { record ⇒
+        modelserver.ask(record).mapTo[Model.ModelReturn[TFPredictionResult]]
+          .map { modelReturn ⇒
+            val array = RecommenderTensorFlowServingModel.predictionToKeyValueArray(record, modelReturn.modelOutput)
+            val result = ModelKeyDoubleValueArrayResult(values = array)
+            RecommenderResult(record, result, modelReturn.modelResultMetadata)
+          }
       }
 
     protected def modelFlow =
@@ -75,8 +82,10 @@ object RecommenderModelServerMain {
     implicit val askTimeout: Timeout = Timeout(30.seconds)
 
     val modelserver = system.actorOf(
-      ModelServingActor.props[RecommenderRecord, RecommenderResult](
-        "recommender", RecommenderTensorFlowServingModelFactory))
+      ModelServingActor.props[RecommenderRecord, TFPredictionResult](
+        "recommender",
+        RecommenderTensorFlowServingModelFactory,
+        () ⇒ RecommenderTensorFlowServingModel.makeEmptyTFPredictionResult()))
 
     val location = Some("http://recommender1-service-kubeflow.lightshift.lightbend.com/v1/models/recommender1/versions/1:predict")
     val descriptor = new ModelDescriptor(

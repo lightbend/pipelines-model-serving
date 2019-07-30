@@ -2,22 +2,19 @@ package pipelines.examples.modelserving.winequality.models.tensorflow
 
 import com.lightbend.modelserving.model.tensorflow.TensorFlowModel
 import com.lightbend.modelserving.model.{ Model, ModelDescriptor, ModelFactory }
-import pipelines.examples.modelserving.winequality.WineModelCommon
-import pipelines.examples.modelserving.winequality.data.{ WineRecord, WineResult }
+import pipelines.examples.modelserving.winequality.data.WineRecord
 import org.tensorflow.Tensor
-import org.tensorflow.{ Graph, Session }
 
 /**
  * TensorFlow model implementation for wine data
  */
-class WineTensorFlowModel(metadata: ModelDescriptor)
-  extends TensorFlowModel[WineRecord, Double, WineResult](metadata)
-  with WineModelCommon {
+class WineTensorFlowModel(descriptor: ModelDescriptor)
+  extends TensorFlowModel[WineRecord, Double](descriptor)(() ⇒ 0.0) {
 
   import WineTensorFlowModel._
 
   /** Score a wine record with the model */
-  override protected def invokeModel(record: WineRecord): (String, Option[Double]) = {
+  override protected def invokeModel(record: WineRecord): Either[String, Double] = {
     // Create modelInput tensor
     val modelInput = toTensor(record)
     // Serve model using TensorFlow APIs
@@ -28,7 +25,7 @@ class WineTensorFlowModel(metadata: ModelDescriptor)
     val rMatrix = Array.ofDim[Float](rshape(0).asInstanceOf[Int], rshape(1).asInstanceOf[Int])
     result.copyTo(rMatrix)
     // Get result
-    ("", Some(rMatrix(0).indices.maxBy(rMatrix(0)).toDouble))
+    Right(rMatrix(0).indices.maxBy(rMatrix(0)).toDouble)
   }
 }
 
@@ -52,8 +49,8 @@ object WineTensorFlowModel {
 }
 
 /** Factory for wine data PMML model */
-object WineTensorFlowModelFactory extends ModelFactory[WineRecord, WineResult] {
+object WineTensorFlowModelFactory extends ModelFactory[WineRecord, Double] {
 
-  def make(descriptor: ModelDescriptor): Either[String, Model[WineRecord, WineResult]] =
+  def make(descriptor: ModelDescriptor): Either[String, Model[WineRecord, Double]] =
     Right(new WineTensorFlowModel(descriptor))
 }

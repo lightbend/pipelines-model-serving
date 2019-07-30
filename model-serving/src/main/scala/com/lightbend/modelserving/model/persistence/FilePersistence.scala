@@ -10,11 +10,11 @@ import pipelinesx.logging.LoggingUtil
 /**
  * Persists the state information to a file for quick recovery.
  * @param modelManager that encapsulates handling of Model I/O, etc.
- * @param baseDirPath where to write the persistent models.
+ * @param baseDirPath where to write the persistent models. TODO: relying on the global variable for the default is error prone.
  */
 final case class FilePersistence[RECORD, RESULT](
     modelFactory: ModelFactory[RECORD, RESULT],
-    baseDirPath:  String                       = "persistence") {
+    baseDirPath:  String                       = FilePersistence.mountPointRoot) {
 
   private def getLock(fileChannel: FileChannel, shared: Boolean): (FileLock, Boolean) = {
     try {
@@ -146,4 +146,13 @@ final case class FilePersistence[RECORD, RESULT](
 
   private def throwableMsg(msg: String, th: Throwable): String =
     msg + " " + LoggingUtil.throwableToString(th)
+}
+
+object FilePersistence {
+  var mountPointRoot: String = "persistence"
+
+  def setGlobalMountPoint(mount: String): Unit = {
+    mountPointRoot = mount
+  }
+
 }
