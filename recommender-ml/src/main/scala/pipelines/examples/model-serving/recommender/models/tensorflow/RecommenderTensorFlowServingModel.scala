@@ -1,7 +1,7 @@
 package pipelines.examples.modelserving.recommender.models.tensorflow
 
 import pipelines.examples.modelserving.recommender.data.RecommenderRecord
-import com.lightbend.modelserving.model.{ KeyValue, Model, ModelFactory, ModelDescriptor, ModelDescriptorUtil }
+import com.lightbend.modelserving.model.{ Model, ModelFactory, ModelDescriptor, ModelDescriptorUtil, ModelKeyDoubleValueArrayResult }
 import com.lightbend.modelserving.model.tensorflow.TensorFlowServingModel
 import com.google.gson.Gson
 
@@ -24,7 +24,9 @@ class RecommenderTensorFlowServingModel(descriptor: ModelDescriptor)
     val hTTPRec = gson.toJson(getHTTPRequest(record))
     println(s" record to json : $hTTPRec")
     val res = gson.fromJson(servingResult, clazz)
-    val result = RecommenderTensorFlowServingModel.predictionToKeyValueArray(record, res)
+    val (keys, values) =
+      RecommenderTensorFlowServingModel.predictionToKeyValueArray(record, res)
+    val result = ModelKeyDoubleValueArrayResult(keys = keys, values = values)
     println(s"execution result $result")
   }
 }
@@ -37,9 +39,9 @@ object RecommenderTensorFlowServingModel {
         model = Array.empty[Int],
         recommendations = Array.empty[Array[Double]]))
 
-  def predictionToKeyValueArray(record: RecommenderRecord, tfpr: TFPredictionResult): Array[KeyValue] = {
+  def predictionToKeyValueArray(record: RecommenderRecord, tfpr: TFPredictionResult): (Array[String], Array[Double]) = {
     tfpr.outputs.recommendations.map(_(0)) // take first element in each subarray
-      .zip(record.products).map(r ⇒ KeyValue(r._2.toString, r._1))
+      .zip(record.products).map(r ⇒ (r._2.toString, r._1)).unzip
   }
 }
 

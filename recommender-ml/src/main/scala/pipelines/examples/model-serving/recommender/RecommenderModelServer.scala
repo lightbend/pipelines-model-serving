@@ -45,8 +45,9 @@ final case object RecommenderModelServer extends AkkaStreamlet {
       FlowWithPipelinesContext[RecommenderRecord].mapAsync(1) { record ⇒
         modelserver.ask(record).mapTo[Model.ModelReturn[TFPredictionResult]]
           .map { modelReturn ⇒
-            val array = RecommenderTensorFlowServingModel.predictionToKeyValueArray(record, modelReturn.modelOutput)
-            val result = ModelKeyDoubleValueArrayResult(values = array)
+            val (keys, values) =
+              RecommenderTensorFlowServingModel.predictionToKeyValueArray(record, modelReturn.modelOutput)
+            val result = ModelKeyDoubleValueArrayResult(keys = keys, values = values)
             RecommenderResult(record, result, modelReturn.modelResultMetadata)
           }
       }

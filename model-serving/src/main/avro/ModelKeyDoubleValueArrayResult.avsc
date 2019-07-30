@@ -2,22 +2,23 @@
   "namespace": "com.lightbend.modelserving.model",
   "name": "ModelKeyDoubleValueArrayResult",
   "type": "record",
-  "doc": "Use this type when the model output is an array of identifier-double pairs.",
+  "doc": "Use this type when the model output is an array of identifier-double pairs. WARNING: do not convert this to an array of a 'KeyValue' type, because it will trigger warnings about that type being unused when this schema is mixed into the application schemas.",
   "fields": [
+    {
+      "name": "keys",
+      "type": {
+        "type": "array",
+        "items": "string",
+        "default": []
+      }
+    },
     {
       "name": "values",
       "type": {
         "type": "array",
-        "items": {
-          "name": "KeyValue",
-          "type": "record",
-          "fields": [
-              {"name": "key",   "type": "string"},
-              {"name": "value", "type": "double"}
-          ]
-        }
-      },
-      "default": []
+        "items": "double",
+        "default": []
+      }
     }
   ]
 }

@@ -100,9 +100,7 @@ lazy val scalacTestCompileOptions = commonScalacOptions ++ Seq(
   "-Ywarn-extra-implicit",             // Warn when more than one implicit parameter section is defined.
   "-Ywarn-numeric-widen",              // Warn when numerics are widened.
   "-Ywarn-unused:implicits",           // Warn if an implicit parameter is unused.
-  // While the next one is VERY useful for code hygiene, Avro occasionally inserts import statements
-  // into generated code that trigger this warning :(  TODO: find a fix.
-  // "-Ywarn-unused:imports",             // Warn if an import selector is not referenced.
+  "-Ywarn-unused:imports",             // Warn if an import selector is not referenced.
   "-Ywarn-unused:locals",              // Warn if a local definition is unused.
   //"-Ywarn-unused:params",              // Warn if a value parameter is unused. (But there's no way to suppress warning when legitimate!!)
   "-Ywarn-unused:patvars",             // Warn if a variable bound in a pattern is unused.
