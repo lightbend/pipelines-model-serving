@@ -4,7 +4,7 @@ import scalariform.formatter.preferences._
 import Dependencies._
 
 lazy val thisVersion = "1.3.0"
-version := thisVersion
+version in ThisBuild := thisVersion
 fork := true
 
 // The following assumes an environment variable that defines the OpenShift cluster
@@ -48,7 +48,9 @@ lazy val airlineFlightsModelServingPipeline = (project in file("./airline-flight
     name := s"airline-flights-ml-$user",
     version := thisVersion,
     pipelinesDockerRegistry := dockerRegistry,
-    libraryDependencies ++= Seq(influx, scalaTest)
+    libraryDependencies ++= Seq(influx, scalaTest),
+    avroSpecificSourceDirectories in Compile ++=
+      Seq(new java.io.File("model-serving/src/main/avro"))
   )
   .settings(commonSettings)
   .dependsOn(pipelinesx, modelServing)

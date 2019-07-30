@@ -10,13 +10,14 @@ import com.lightbend.modelserving.model.ModelDescriptorUtil.implicits._
 import hex.ModelCategory
 import hex.genmodel.{ InMemoryMojoReaderBackend, MojoModel }
 import hex.genmodel.easy.EasyPredictModelWrapper
+import hex.genmodel.easy.prediction.BinomialModelPrediction
 
 /**
  * Abstraction for all H2O models.
  * @param descriptor about the model to construct. At this time, only loading the embedded "modelBytes" is supported.
  */
-abstract class H2OModel[RECORD, MODEL_OUTPUT, RESULT](descriptor: ModelDescriptor)
-  extends ModelBase[RECORD, MODEL_OUTPUT, RESULT](descriptor) with Serializable {
+abstract class H2OModel[RECORD, MODEL_OUTPUT](descriptor: ModelDescriptor)(makeDefaultModelOutput: () ⇒ MODEL_OUTPUT)
+  extends ModelBase[RECORD, MODEL_OUTPUT](descriptor)(makeDefaultModelOutput) with Serializable {
 
   assert(descriptor.modelBytes != None, s"Invalid descriptor ${descriptor.toRichString}")
 
@@ -77,4 +78,13 @@ object H2OModel {
 
   final case class H2OModelLoadError(descriptor: ModelDescriptor, cause: Throwable)
     extends RuntimeException(s"H2OModel failed to load model from descriptor ${descriptor.toRichString}", cause)
+
+  /**
+   * @return the label and probability extracted from the input.
+   */
+  def fromPrediction(prediction: BinomialModelPrediction): (String, Double) = {
+    val probs = prediction.classProbabilities
+    val probability = if (probs.length == 2) probs(1) else 0.0
+    (prediction.label, probability)
+  }
 }

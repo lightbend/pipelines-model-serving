@@ -2,7 +2,7 @@
     "namespace": "pipelines.examples.modelserving.airlineflights.data",
     "type": "record",
     "name": "AirlineFlightRecord",
-    "fields":[
+    "fields": [
       {
         "name": "year",
         "type": "int"

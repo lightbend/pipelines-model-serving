@@ -36,15 +36,6 @@ class WineTensorFlowBundledModel(descriptor: ModelDescriptor)
 object WineTensorFlowBundledModelFactory extends ModelFactory[WineRecord, WineResult] {
 
   def make(descriptor: ModelDescriptor): Either[String, Model[WineRecord, WineResult]] =
-    if (descriptor == Model.noopModelDescriptor) Right(noopModel)
-    else Right(new WineTensorFlowBundledModel(descriptor))
-
-  lazy val noopModel: Model[WineRecord, WineResult] =
-    new WineTensorFlowBundledModel(Model.noopModelDescriptor) with Model.NoopModel[WineRecord, Double, WineResult] {
-
-      override protected def init(): (Graph, Session, Signatures) = (null, null, Map.empty) // Ouch!
-      override protected def invokeModel(record: WineRecord): (String, Option[Double]) =
-        noopInvokeModel(record)
-    }
+    Right(new WineTensorFlowBundledModel(descriptor))
 }
 

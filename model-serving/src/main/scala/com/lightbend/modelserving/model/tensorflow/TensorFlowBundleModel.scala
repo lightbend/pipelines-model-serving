@@ -18,8 +18,8 @@ import org.tensorflow.framework.{ MetaGraphDef, SavedModel, SignatureDef, Tensor
  * This is a very simple implementation, assuming that the TensorFlow saved model bundle is local (constructor, get tags)
  * The realistic implementation has to use some shared data storage, for example, S3, Minio, etc.
  */
-abstract class TensorFlowBundleModel[RECORD, MODEL_OUTPUT, RESULT](descriptor: ModelDescriptor)
-  extends ModelBase[RECORD, MODEL_OUTPUT, RESULT](descriptor) with Serializable {
+abstract class TensorFlowBundleModel[RECORD, MODEL_OUTPUT](descriptor: ModelDescriptor)(makeDefaultModelOutput: () ⇒ MODEL_OUTPUT)
+  extends ModelBase[RECORD, MODEL_OUTPUT](descriptor)(makeDefaultModelOutput) with Serializable {
 
   assert(descriptor.modelBytes != None, s"Invalid descriptor ${descriptor.toRichString}")
 

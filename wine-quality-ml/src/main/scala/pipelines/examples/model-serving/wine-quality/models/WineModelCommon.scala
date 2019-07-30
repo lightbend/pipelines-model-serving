@@ -44,22 +44,3 @@ trait WineModelCommon extends ModelImplTrait[WineRecord, Double, WineResult] {
   }
 }
 
-/** Factory for a wine-specific "NOOP" model. */
-object WineModelCommonNoopFactory extends ModelFactory[WineRecord, WineResult] {
-
-  val log = StdoutStderrLogger(this.getClass())
-
-  def make(descriptor: ModelDescriptor): Either[String, Model[WineRecord, WineResult]] = {
-    if (descriptor != Model.noopModelDescriptor) {
-      log.warn(s"WineModelCommonNoopFactory.make called but not with the NOOP Model Descriptor. Creating a NoopModel anyway. Descriptor = ${descriptor.toRichString}")
-    }
-    Right(noopModel)
-  }
-
-  lazy val noopModel: Model[WineRecord, WineResult] =
-    new ModelBase[WineRecord, Double, WineResult](Model.noopModelDescriptor) with Model.NoopModel[WineRecord, Double, WineResult] with WineModelCommon {
-      override protected def invokeModel(record: WineRecord): (String, Option[Double]) =
-        noopInvokeModel(record)
-    }
-}
-

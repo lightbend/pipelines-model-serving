@@ -50,9 +50,4 @@ object ModelServingStats {
       description = descriptor.description)
 
   val unknown = new ModelServingStats()
-
-  val noop = new ModelServingStats(
-    modelType = ModelType.UNKNOWN,
-    modelName = "NoopModel",
-    description = "No model is currently available; a NOOP Model in use.")
 }

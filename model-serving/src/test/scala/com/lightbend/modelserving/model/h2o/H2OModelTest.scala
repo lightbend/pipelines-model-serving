@@ -1,12 +1,11 @@
 package com.lightbend.modelserving.model.h2o
 
-import com.lightbend.modelserving.model.{ ModelDescriptor, ModelServingStats, ScoreMetadata }
+import com.lightbend.modelserving.model.{ Model, ModelDescriptor, ModelServingStats }
 import hex.genmodel.easy.RowData
 import hex.genmodel.easy.prediction.BinomialModelPrediction
 import pipelinesx.test.OutputInterceptor
 import org.scalatest.{ FunSpec, BeforeAndAfterAll }
 import java.io.FileInputStream
-import java.lang.{ Double ⇒ JDouble }
 
 // TODO: Uses the Airline model as an example, but needs to be made more generic.
 class H2OModelTest extends FunSpec with BeforeAndAfterAll with OutputInterceptor {
@@ -39,37 +38,12 @@ class H2OModelTest extends FunSpec with BeforeAndAfterAll with OutputInterceptor
     row
   }
 
-  // Modifies the input!
-  def toResult(row: RowData, prediction: BinomialModelPrediction): RowData = {
-    val probs = prediction.classProbabilities
-    val probability = if (probs.length == 2) probs(1) else 0.0
-    row.put("delayPredictionLabel", prediction.label)
-    row.put("delayPredictionProbability", new JDouble(probability))
-    row
-  }
-
   final class TestH2OModel(descriptor: ModelDescriptor)
-    extends H2OModel[RowData, BinomialModelPrediction, RowData](descriptor) {
+    extends H2OModel[RowData, BinomialModelPrediction](descriptor)(() ⇒ new BinomialModelPrediction()) {
 
-    override protected def invokeModel(record: RowData): (String, Option[BinomialModelPrediction]) = {
+    override protected def invokeModel(record: RowData): Either[String, BinomialModelPrediction] = {
       val prediction = h2oModel.predict(record)
-      ("", Some(prediction.asInstanceOf[BinomialModelPrediction]))
-    }
-    protected def initFrom(record: RowData): RowData = record // we just modify the input!
-    protected def setScoreAndMetadata(
-        out:      RowData,
-        score:    Option[BinomialModelPrediction],
-        metadata: ScoreMetadata): RowData = {
-
-      score match {
-        case Some(bmp) ⇒ toResult(out, bmp)
-        case None      ⇒ fail("something failed!")
-      }
-      out.put("errors", metadata.errors)
-      out.put("modelType", metadata.modelType)
-      out.put("modelName", metadata.modelName)
-      out.put("duration", metadata.duration)
-      out
+      Right(prediction.asInstanceOf[BinomialModelPrediction])
     }
   }
 
@@ -86,11 +60,14 @@ class H2OModelTest extends FunSpec with BeforeAndAfterAll with OutputInterceptor
         val descriptor = H2OModel.defaultDescriptor
           .copy(modelBytes = Some(buffer), modelSourceLocation = Some(modelPath))
         val testH2OModel = new TestH2OModel(descriptor)
-        val (servingResult, _) = testH2OModel.score(row1, ModelServingStats())
-        assert("" == servingResult.get("errors").toString)
-        val probability = servingResult.get("delayPredictionProbability").asInstanceOf[JDouble].doubleValue
-        assert("YES" == servingResult.get("delayPredictionLabel").toString)
+        val stats = ModelServingStats()
+        val Model.ModelReturn(bmp, resultMetadata, servingStats) =
+          testH2OModel.score(row1, stats)
+        assert("" == resultMetadata.get("errors").toString)
+        val (label, probability) = H2OModel.fromPrediction(bmp)
+        assert("YES" == label)
         assert(0.6 <= probability && probability <= 0.7)
+        assert(stats.scoreCount + 1 == servingStats.scoreCount)
       }
     }
 

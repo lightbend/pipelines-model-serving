@@ -1,10 +1,12 @@
 package pipelines.examples.modelserving.airlineflights.models
 
 import com.lightbend.modelserving.model.{ Model, ModelDescriptor, ModelServingStats, ModelType }
+import com.lightbend.modelserving.model.h2o.H2OModel
 import com.lightbend.modelserving.model.persistence.FilePersistence
 import org.scalatest.FlatSpec
-import pipelines.examples.modelserving.airlineflights.data.{ AirlineFlightRecord, AirlineFlightResult }
+import pipelines.examples.modelserving.airlineflights.data.AirlineFlightRecord
 import pipelinesx.test.OutputInterceptor
+import hex.genmodel.easy.prediction.BinomialModelPrediction
 
 // TODO: Most of this logic is really about FilePersistence, so move this logic to
 // that project...
@@ -45,20 +47,14 @@ class AirlineH2OProcessorTest extends FlatSpec with OutputInterceptor {
     securityDelay = 0,
     lateAircraftDelay = 0)
 
-  val fp = FilePersistence[AirlineFlightRecord, AirlineFlightResult](
+  val fp = FilePersistence[AirlineFlightRecord, BinomialModelPrediction](
     AirlineFlightH2OModelFactory, "test-persistence")
 
-  def assertResult(result: AirlineFlightResult): Unit = {
+  def assertResult(result: Model.ModelReturn[BinomialModelPrediction]): Unit = {
     assert("" == result.modelResultMetadata.errors)
-    val probability = result.modelResult.delayPredictionProbability
-    assert("YES" == result.modelResult.delayPredictionLabel)
+    val (label, probability) = H2OModel.fromPrediction(result.modelOutput)
+    assert("YES" == label)
     assert(0.6 <= probability && probability <= 0.7)
-  }
-  def assertNoopResult(result: AirlineFlightResult): Unit = {
-    assert(result.modelResultMetadata.errors.length > 0)
-    val probability = result.modelResult.delayPredictionProbability
-    assert("Unknown" == result.modelResult.delayPredictionLabel)
-    assert(0.01 >= probability)
   }
 
   "Loading a valid model for the first time" should "succeed" in {
@@ -67,7 +63,7 @@ class AirlineH2OProcessorTest extends FlatSpec with OutputInterceptor {
         case Right(m)    ⇒ m
         case Left(error) ⇒ fail(error)
       }
-      val (result, _) = model.score(input, ModelServingStats())
+      val result = model.score(input, ModelServingStats())
       assertResult(result)
     }
   }
@@ -99,26 +95,17 @@ class AirlineH2OProcessorTest extends FlatSpec with OutputInterceptor {
       val restoredModel = fp.restoreState(savePath) match {
         case Left(error) ⇒ fail(error)
         case Right(m) ⇒ m match {
-          case m2: Model[AirlineFlightRecord, AirlineFlightResult] ⇒ m2
-          case _                                                   ⇒ fail(s"Unexpected model kind: $m")
+          case m2: Model[AirlineFlightRecord, BinomialModelPrediction] ⇒ m2
+          case _                                                       ⇒ fail(s"Unexpected model kind: $m")
         }
       }
       assert(original.descriptor == restoredModel.descriptor)
-      val (result, _) = restoredModel.score(input, ModelServingStats())
+      val result = restoredModel.score(input, ModelServingStats())
       assertResult(result)
     }
   }
 
-  "AirlineFlightH2OModelFactory.noopModel" should "safely stub scoring calls" in {
-    val noop = AirlineFlightH2OModelFactory.create(Model.noopModelDescriptor) match {
-      case Left(errors) ⇒ fail(errors)
-      case Right(model) ⇒ model
-    }
-    val (result, _) = noop.score(input, ModelServingStats())
-    assertNoopResult(result)
-  }
-
-  private def createModel(name: String): Either[String, Model[AirlineFlightRecord, AirlineFlightResult]] = {
+  private def createModel(name: String): Either[String, Model[AirlineFlightRecord, BinomialModelPrediction]] = {
     val is = this.getClass.getClassLoader.getResourceAsStream(filePath)
     val mojo = new Array[Byte](is.available)
     is.read(mojo)

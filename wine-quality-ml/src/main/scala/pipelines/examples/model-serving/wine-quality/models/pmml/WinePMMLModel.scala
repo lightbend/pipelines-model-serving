@@ -42,13 +42,5 @@ class WinePMMLModel(descriptor: ModelDescriptor)
 object WinePMMLModelFactory extends ModelFactory[WineRecord, WineResult] {
 
   def make(descriptor: ModelDescriptor): Either[String, Model[WineRecord, WineResult]] =
-    if (descriptor == Model.noopModelDescriptor) Right(noopModel)
-    else Right(new WinePMMLModel(descriptor))
-
-  lazy val noopModel: Model[WineRecord, WineResult] =
-    new WinePMMLModel(Model.noopModelDescriptor) with Model.NoopModel[WineRecord, Double, WineResult] {
-      override protected def init(): Unit = {}
-      override protected def invokeModel(record: WineRecord): (String, Option[Double]) =
-        noopInvokeModel(record)
-    }
+    Right(new WinePMMLModel(descriptor))
 }

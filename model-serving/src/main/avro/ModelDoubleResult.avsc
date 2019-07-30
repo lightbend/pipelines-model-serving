@@ -1,0 +1,13 @@
+{
+  "namespace": "com.lightbend.modelserving.model",
+  "name": "ModelDoubleResult",
+  "type": "record",
+  "doc": "Use this type when the model output 'value' is a double.",
+  "fields": [
+    {
+      "name": "value",
+      "type": "double",
+      "default": 0.0
+    }
+  ]
+}

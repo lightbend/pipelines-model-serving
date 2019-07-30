@@ -11,9 +11,9 @@ import scalaj.http.Http // TODO: Replace with a Lightbend library??
  * implement supporting methods (data transforms), based on his own model. Serializability here is required for Spark.
  */
 
-abstract class TensorFlowServingModel[INRECORD, OUTRECORD, HTTPREQUEST, HTTPRESULT](
-    descriptor: ModelDescriptor)
-  extends ModelBase[INRECORD, HTTPRESULT, OUTRECORD](descriptor) with Serializable {
+abstract class TensorFlowServingModel[INRECORD, HTTPREQUEST, HTTPRESULT](
+    descriptor: ModelDescriptor)(makeDefaultModelOutput: () ⇒ HTTPRESULT)
+  extends ModelBase[INRECORD, HTTPRESULT](descriptor)(makeDefaultModelOutput) with Serializable {
 
   assert(descriptor.modelBytes != None, s"Invalid descriptor ${descriptor.toRichString}")
 
@@ -30,16 +30,15 @@ abstract class TensorFlowServingModel[INRECORD, OUTRECORD, HTTPREQUEST, HTTPRESU
   def getHTTPRequest(input: INRECORD): HTTPREQUEST
 
   /** Score a record with the model */
-  override protected def invokeModel(input: INRECORD): (String, Option[HTTPRESULT]) = {
+  override protected def invokeModel(input: INRECORD): Either[String, HTTPRESULT] = {
     // Post request
     val result = Http(path).postData(gson.toJson(getHTTPRequest(input))).header("content-type", "application/json").asString
-    val prediction = Some(gson.fromJson(result.body, clazz))
+    val prediction = gson.fromJson(result.body, clazz)
     result.code match {
       case 200 ⇒ // Success
-        ("", prediction)
+        Right(prediction)
       case _ ⇒ // Error
-        (s"Error processing serving request - code ${result.code}, error ${result.body}",
-          prediction)
+        Left(s"Error processing serving request - code ${result.code}, error ${result.body}")
     }
   }
 }

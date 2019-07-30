@@ -16,8 +16,8 @@ import org.jpmml.model.PMMLUtil
  * Abstract class for any PMML model processing. It has to be extended by the user
  * implement score method, based on his own model. Serializability here is required for Spark
  */
-abstract class PMMLModel[RECORD, MODEL_OUTPUT, RESULT](descriptor: ModelDescriptor)
-  extends ModelBase[RECORD, MODEL_OUTPUT, RESULT](descriptor) with Serializable {
+abstract class PMMLModel[RECORD, MODEL_OUTPUT](descriptor: ModelDescriptor)(makeDefaultModelOutput: () ⇒ MODEL_OUTPUT)
+  extends ModelBase[RECORD, MODEL_OUTPUT](descriptor)(makeDefaultModelOutput) with Serializable {
 
   assert(descriptor.modelBytes != None, s"Invalid descriptor ${descriptor.toRichString}")
 

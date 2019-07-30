@@ -3,7 +3,8 @@ package pipelines.examples.modelserving.airlineflights
 import models.AirlineFlightH2OModelFactory
 import pipelines.examples.modelserving.airlineflights.data.{ AirlineFlightRecord, AirlineFlightResult }
 import com.lightbend.modelserving.model.actor.ModelServingActor
-import com.lightbend.modelserving.model.{ ModelDescriptor, ModelType }
+import com.lightbend.modelserving.model.{ Model, ModelDescriptor, ModelLabelProbabilityResult, ModelType }
+import com.lightbend.modelserving.model.h2o.H2OModel
 import com.lightbend.modelserving.model.util.MainBase
 
 import akka.Done
@@ -17,12 +18,13 @@ import pipelines.akkastream.AkkaStreamlet
 import pipelines.akkastream.scaladsl.{ FlowWithPipelinesContext, RunnableGraphStreamletLogic }
 import pipelines.streamlets.StreamletShape
 import pipelines.streamlets.avro.{ AvroInlet, AvroOutlet }
+import hex.genmodel.easy.prediction.BinomialModelPrediction
 
 final case object AirlineFlightModelServer extends AkkaStreamlet {
 
   val in0 = AvroInlet[AirlineFlightRecord]("in-0")
   val in1 = AvroInlet[ModelDescriptor]("in-1")
-  val out = AvroOutlet[AirlineFlightResult]("out", _.uniqueCarrier)
+  val out = AvroOutlet[AirlineFlightResult]("out", _.inputRecord.uniqueCarrier)
   final override val shape = StreamletShape.withInlets(in0, in1).withOutlets(out)
 
   implicit val askTimeout: Timeout = Timeout(30.seconds)
@@ -30,8 +32,8 @@ final case object AirlineFlightModelServer extends AkkaStreamlet {
   /** Uses the actor system as an argument to support testing outside of the streamlet. */
   def makeModelServer(sys: ActorSystem): ActorRef = {
     sys.actorOf(
-      ModelServingActor.props[AirlineFlightRecord, AirlineFlightResult](
-        "airlines", AirlineFlightH2OModelFactory))
+      ModelServingActor.props[AirlineFlightRecord, BinomialModelPrediction](
+        "airlines", AirlineFlightH2OModelFactory, () ⇒ new BinomialModelPrediction))
   }
 
   override final def createLogic = new RunnableGraphStreamletLogic() {
@@ -43,8 +45,16 @@ final case object AirlineFlightModelServer extends AkkaStreamlet {
     val modelServer = makeModelServer(context.system)
 
     protected def dataFlow =
-      FlowWithPipelinesContext[AirlineFlightRecord].mapAsync(1) {
-        record ⇒ modelServer.ask(record).mapTo[AirlineFlightResult]
+      FlowWithPipelinesContext[AirlineFlightRecord].mapAsync(1) { record ⇒
+        modelServer.ask(record).mapTo[Model.ModelReturn[BinomialModelPrediction]]
+          .map { modelReturn ⇒
+            val bmp: BinomialModelPrediction = modelReturn.modelOutput
+            val (label, probability) = H2OModel.fromPrediction(bmp)
+            AirlineFlightResult(
+              modelResult = ModelLabelProbabilityResult(label, probability),
+              modelResultMetadata = modelReturn.modelResultMetadata,
+              inputRecord = record)
+          }
       }
 
     protected def modelFlow =

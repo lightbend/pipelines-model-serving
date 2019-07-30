@@ -1,6 +1,7 @@
 package com.lightbend.modelserving.model
 
 import org.scalatest.FunSpec
+import scala.concurrent.duration._
 
 class MultiModelFactoryTest extends FunSpec {
 
@@ -9,8 +10,15 @@ class MultiModelFactoryTest extends FunSpec {
       if (desc.modelType == whichOne) {
         val m = new Model[String, String] {
           val descriptor: ModelDescriptor = desc
-          def score(record: String, stats: ModelServingStats): (String, ModelServingStats) =
-            (record, stats)
+          def score(record: String, stats: ModelServingStats): Model.ModelReturn[String] = {
+            val mrm = ModelResultMetadata(
+              modelType = ModelType.UNKNOWN.ordinal,
+              modelName = "Unknown",
+              errors = "",
+              startTime = 0,
+              duration = 1)
+            Model.ModelReturn(record.length.toString, mrm, stats.incrementUsage(1.milliseconds))
+          }
         }
         Right(m)
       } else {
@@ -28,22 +36,18 @@ class MultiModelFactoryTest extends FunSpec {
   val tensorFlowServingDescriptor = ModelDescriptorUtil.unknown.copy(modelType = ModelType.TENSORFLOWSERVING)
   val h2oDescriptor = ModelDescriptorUtil.unknown.copy(modelType = ModelType.H2O)
 
-  def makeMF(addUnknown: Boolean = false): MultiModelFactory[String, String] = {
+  def makeMF(): MultiModelFactory[String, String] = {
     val map = Map(
       ModelType.PMML -> testPMMLFactory,
       ModelType.TENSORFLOW -> testTensorFlowFactory,
       ModelType.H2O -> testH2OFactory)
-    val map2 =
-      if (addUnknown) map + (ModelType.UNKNOWN -> testUnknownFactory)
-      else map
-    new MultiModelFactory[String, String](map2)
+    new MultiModelFactory[String, String](map)
   }
 
-  def goodTest(addUnknown: Boolean = false): Unit = {
-    val mmf = makeMF(addUnknown)
+  def goodTest(): Unit = {
+    val mmf = makeMF()
     val ds = Seq(pmmlDescriptor, tensorFlowDescriptor, h2oDescriptor)
-    val ds2 = if (addUnknown) ModelDescriptorUtil.unknown +: ds else ds
-    ds2.foreach { descriptor ⇒
+    ds.foreach { descriptor ⇒
       mmf.create(descriptor) match {
         case Right(model) ⇒ assert(descriptor.modelType == model.descriptor.modelType)
         case Left(errors) ⇒ fail(errors)
@@ -64,15 +68,6 @@ class MultiModelFactoryTest extends FunSpec {
         mmf.create(tensorFlowServingDescriptor) match {
           case Left(errors@_) ⇒ // okay
           case Right(model@_) ⇒ fail("Should have failed, but didn't!")
-        }
-      }
-
-      it("to return a NoopModel when ModelType.UNKNOWN is specified, the map requires an entry for it") {
-        goodTest(true)
-        val mmf = makeMF(false)
-        mmf.create(ModelDescriptorUtil.unknown) match {
-          case Left(errors@_) ⇒ // okay
-          case Right(model)   ⇒ fail(s"should not have returned a model: $model")
         }
       }
     }

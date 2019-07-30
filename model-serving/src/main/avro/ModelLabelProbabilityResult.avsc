@@ -1,0 +1,18 @@
+{
+  "namespace": "com.lightbend.modelserving.model",
+  "name": "ModelLabelProbabilityResult",
+  "type": "record",
+  "doc": "Use this type when the model output is a classification label and a probability.",
+  "fields": [
+    {
+      "name": "label",
+      "type": "string",
+      "default": ""
+    },
+    {
+      "name": "probability",
+      "type": "double",
+      "default": 0.0
+    }
+  ]
+}

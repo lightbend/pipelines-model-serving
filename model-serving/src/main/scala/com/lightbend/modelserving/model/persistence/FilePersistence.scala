@@ -69,15 +69,21 @@ final case class FilePersistence[RECORD, RESULT](
     val dir = new File(baseDirPath)
     if (!dir.exists()) dir.mkdir()
     val file = new File(dir, fileName)
-    if (!file.exists()) file.createNewFile()
-    val fos = new FileOutputStream(file)
-    val lock = obtainLock(fos.getChannel(), false)
-    lock match {
-      case null ⇒
-        Left(s"Failed to get lock for output stream for file $file")
-      case _ ⇒
-        val os = new ObjectOutputStream(fos)
-        Right(os -> fos)
+    val fileDir = file.getParentFile()
+    // make sure all the parent directories exist.
+    if (dir.exists() || fileDir.mkdirs()) {
+      if (!file.exists()) file.createNewFile()
+      val fos = new FileOutputStream(file)
+      val lock = obtainLock(fos.getChannel(), false)
+      lock match {
+        case null ⇒
+          Left(s"Failed to get lock for output stream for file $file")
+        case _ ⇒
+          val os = new ObjectOutputStream(fos)
+          Right(os -> fos)
+      }
+    } else {
+      Left(s"Could not create the parent directories ($fileDir) for file: $file")
     }
   } catch {
     case scala.util.control.NonFatal(th) ⇒

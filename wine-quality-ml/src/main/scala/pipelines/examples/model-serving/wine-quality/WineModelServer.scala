@@ -19,6 +19,7 @@ import pipelines.streamlets.avro.{ AvroInlet, AvroOutlet }
 import com.lightbend.modelserving.model.actor.ModelServingActor
 import com.lightbend.modelserving.model.{ ModelDescriptor, ModelType, MultiModelFactory }
 import com.lightbend.modelserving.model.util.MainBase
+import com.lightbend.modelserving.model.persistence.FilePersistence
 
 final case object WineModelServer extends AkkaStreamlet {
 
@@ -27,9 +28,14 @@ final case object WineModelServer extends AkkaStreamlet {
   val out = AvroOutlet[WineResult]("out", _.lot_id)
   final override val shape = StreamletShape.withInlets(in0, in1).withOutlets(out)
 
+  // Declare the volume mount: 
+  private val persistentDataMount =
+    VolumeMount("persistence-data-mount", "/data", ReadWriteMany)
+  override def volumeMounts = Vector(persistentDataMount) 
+  FilePersistence.setMountPoint(persistentDataMount.path) 
+
   val modelFactory = MultiModelFactory(
     Map(
-      ModelType.UNKNOWN -> WinePMMLModelFactory, // it can handle construction of a NoopModel!
       ModelType.PMML -> WinePMMLModelFactory,
       ModelType.TENSORFLOW -> WineTensorFlowModelFactory,
       ModelType.TENSORFLOWSAVED -> WineTensorFlowBundledModelFactory))

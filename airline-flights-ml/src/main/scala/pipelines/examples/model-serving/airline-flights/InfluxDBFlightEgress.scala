@@ -33,8 +33,8 @@ final case object InfluxDBAirlineFlightRecordEgress extends AkkaStreamlet {
 
 object AirlineFlightResultInfluxDBWriter extends InfluxDBUtil.Writer[AirlineFlightResult] {
   def addFields(point: Point.Builder, record: AirlineFlightResult): Point.Builder = {
-    point.addField("prediction_label", record.modelResult.delayPredictionLabel)
-    point.addField("delay_probability", record.modelResult.delayPredictionProbability)
+    point.addField("prediction_label", record.modelResult.label)
+    point.addField("delay_probability", record.modelResult.probability)
     point
   }
 }
