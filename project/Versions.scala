@@ -35,4 +35,8 @@ object Versions {
   val sprayJsonVersion      = "1.3.5"
 
   val apacheCommonsCompress = "1.18"
+
+  val akkaVersion           = "2.5.23"
+
+  val akkaMgmtVersion       = "1.0.1"
 }

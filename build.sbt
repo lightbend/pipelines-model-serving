@@ -20,31 +20,12 @@ lazy val wineModelServingPipeline = (project in file("./wine-quality-ml"))
   .enablePlugins(PipelinesApplicationPlugin)
   .enablePlugins(PipelinesAkkaStreamsLibraryPlugin)
   .settings(
-    name := s"wine-quality-ml-$user",
+    name := s"wine-quality-ml",
     version := thisVersion,
-    pipelinesDockerRegistry := dockerRegistry
+    pipelinesDockerRegistry := Some("docker-registry-default.gsa2.lightbend.com")
   )
   .dependsOn(util, data, dataModel, modelLibrary, dataIngestors, modelServingFlow, modelServingEgress)
 
-lazy val recommenderModelServingPipeline = (project in file("./recommender-ml"))
-  .enablePlugins(PipelinesApplicationPlugin)
-  .enablePlugins(PipelinesAkkaStreamsLibraryPlugin)
-  .settings(
-    name := s"recommender-ml-$user",
-    version := thisVersion,
-    pipelinesDockerRegistry := dockerRegistry
-  )
-  .dependsOn(util, data, dataModel, modelLibrary, dataIngestors, modelServingFlow, modelServingEgress)
-
-lazy val airlineFlightsModelServingPipeline = (project in file("./airline-flights-ml"))
-  .enablePlugins(PipelinesApplicationPlugin)
-  .enablePlugins(PipelinesAkkaStreamsLibraryPlugin)
-  .settings(
-    name := s"airline-flights-ml-$user",
-    version := thisVersion,
-    pipelinesDockerRegistry := dockerRegistry
-  )
-  .dependsOn(util, data, dataModel, modelLibrary, dataIngestors, modelServingFlow, modelServingEgress)
 
 lazy val util = (project in file("./util"))
   .enablePlugins(PipelinesLibraryPlugin)
@@ -73,7 +54,9 @@ lazy val modelLibrary = (project in file("./model-library"))
   .enablePlugins(PipelinesAkkaStreamsLibraryPlugin)
   .settings(
     name := "model-library",
-    libraryDependencies ++= Seq(tensorflow, tensorflowProto,pmml,pmmlextensions, h2o, bijection,json2avro, gson, scalajHTTP),
+    libraryDependencies ++= Seq(tensorflow, tensorflowProto,pmml,pmmlextensions, h2o, bijection,
+      json2avro, gson, scalajHTTP, akkaDistData, akkaManagement, akkaClusterHttp, akkaClusterBoot,
+      akkaDiscovery, akkaDiscK8s),
     (sourceGenerators in Compile) += (avroScalaGenerateSpecific in Compile).taskValue,
   )
   .dependsOn(util, data, dataModel)

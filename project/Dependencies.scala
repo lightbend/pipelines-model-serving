@@ -15,8 +15,14 @@ object Dependencies {
   val h2o             = "ai.h2o"                          % "h2o-genmodel"              % h2oVersion
   val influx          = "org.influxdb"                    % "influxdb-java"             % influxVersion
   val gson            = "com.google.code.gson"            % "gson"                      % gsonVersion
-  val compress        = "org.apache.commons"              % "commons-compress"          %apacheCommonsCompress
+  val compress        = "org.apache.commons"              % "commons-compress"          % apacheCommonsCompress
   val scalajHTTP      = "org.scalaj"                     %% "scalaj-http"               % scalajHTTPVersion
+  val akkaDistData    = "com.typesafe.akka"              %% "akka-distributed-data"     % akkaVersion
+  val akkaManagement  = "com.lightbend.akka.management" %% "akka-management"                   % akkaMgmtVersion
+  val akkaClusterHttp = "com.lightbend.akka.management" %% "akka-management-cluster-http"      % akkaMgmtVersion
+  val akkaClusterBoot = "com.lightbend.akka.management" %% "akka-management-cluster-bootstrap" % akkaMgmtVersion
+  val akkaDiscovery   = "com.typesafe.akka" %% "akka-discovery" % akkaVersion
+  val akkaDiscK8s     = "com.lightbend.akka.discovery"  %% "akka-discovery-kubernetes-api"     % akkaMgmtVersion
 
   val slf4jAPI        = "org.slf4j"                       % "slf4j-api"                 % slf4jVersion
   // val slf4jSimple     = "org.slf4j"                       % "slf4j-simple"              % slf4jVersion
