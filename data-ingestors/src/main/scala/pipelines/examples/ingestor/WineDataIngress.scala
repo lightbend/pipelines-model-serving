@@ -19,7 +19,7 @@ import pipelines.logging.{ Logger, LoggingUtil }
  */
 final case object WineDataIngress extends AkkaStreamlet {
 
-  val out = AvroOutlet[WineRecord]("out", _.dataType)
+  val out = AvroOutlet[WineRecord]("out", t ⇒ System.nanoTime().toString)
 
   final override val shape = StreamletShape(out)
 
