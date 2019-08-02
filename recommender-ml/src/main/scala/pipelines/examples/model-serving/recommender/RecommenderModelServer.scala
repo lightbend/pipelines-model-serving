@@ -1,20 +1,21 @@
 package pipelines.examples.modelserving.recommender
 
-import pipelines.examples.modelserving.recommender.data.{ RecommenderRecord, RecommenderResult }
-import pipelines.examples.modelserving.recommender.models.tensorflow.{ RecommenderTensorFlowServingModel, RecommenderTensorFlowServingModelFactory, TFPredictionResult }
+import pipelines.examples.modelserving.recommender.data.{RecommenderRecord, RecommenderResult}
+import pipelines.examples.modelserving.recommender.models.tensorflow.{RecommenderTensorFlowServingModel, RecommenderTensorFlowServingModelFactory, TFPredictionResult}
 import com.lightbend.modelserving.model.actor.ModelServingActor
-import com.lightbend.modelserving.model.{ Model, ModelDescriptor, ModelType }
+import com.lightbend.modelserving.model.{Model, ModelDescriptor, ModelType}
 import com.lightbend.modelserving.model.util.MainBase
 import akka.Done
 import akka.actor.ActorSystem
 import akka.pattern.ask
 import akka.stream.scaladsl.Sink
 import akka.util.Timeout
+import com.lightbend.modelserving.model.persistence.FilePersistence
 import pipelines.akkastream.AkkaStreamlet
-import pipelines.akkastream.scaladsl.{ FlowWithPipelinesContext, RunnableGraphStreamletLogic }
+import pipelines.akkastream.scaladsl.{FlowWithPipelinesContext, RunnableGraphStreamletLogic}
 import pipelines.examples.modelserving.recommender.result.ModelKeyDoubleValueArrayResult
-import pipelines.streamlets.StreamletShape
-import pipelines.streamlets.avro.{ AvroInlet, AvroOutlet }
+import pipelines.streamlets.{ReadWriteMany, StreamletShape, VolumeMount}
+import pipelines.streamlets.avro.{AvroInlet, AvroOutlet}
 
 import scala.concurrent.duration._
 import scala.concurrent.Await
@@ -26,6 +27,12 @@ final case object RecommenderModelServer extends AkkaStreamlet {
   val in1 = AvroInlet[ModelDescriptor]("in-1")
   val out = AvroOutlet[RecommenderResult]("out", _.inputRecord.user.toString)
   final override val shape = StreamletShape.withInlets(in0, in1).withOutlets(out)
+
+  // Declare the volume mount: 
+  private val persistentDataMount =
+    VolumeMount("persistence-data-mount", "/data", ReadWriteMany)
+  override def volumeMounts = Vector(persistentDataMount)
+  FilePersistence.setGlobalMountPoint(persistentDataMount.path)
 
   override final def createLogic = new RunnableGraphStreamletLogic() {
 

@@ -15,16 +15,13 @@ abstract class TensorFlowServingModel[INRECORD, HTTPREQUEST, HTTPRESULT](
     descriptor: ModelDescriptor)(makeDefaultModelOutput: () ⇒ HTTPRESULT)
   extends ModelBase[INRECORD, HTTPRESULT](descriptor)(makeDefaultModelOutput) with Serializable {
 
-  assert(descriptor.modelBytes != None, s"Invalid descriptor ${descriptor.toRichString}")
+  assert(descriptor.modelSourceLocation != None, s"Invalid descriptor ${descriptor.toRichString}")
 
   val gson = new Gson
   val clazz: Class[HTTPRESULT]
 
   // Convert input into file path
-  // TODO: Put this in the 'modelSourceLocation' field instead!
-  protected def init(): String = new String(descriptor.modelBytes.get)
-
-  var path = init()
+  val path = descriptor.modelSourceLocation.get
 
   /** Convert incoming request to HTTP */
   def getHTTPRequest(input: INRECORD): HTTPREQUEST
@@ -32,13 +29,18 @@ abstract class TensorFlowServingModel[INRECORD, HTTPREQUEST, HTTPRESULT](
   /** Score a record with the model */
   override protected def invokeModel(input: INRECORD): Either[String, HTTPRESULT] = {
     // Post request
-    val result = Http(path).postData(gson.toJson(getHTTPRequest(input))).header("content-type", "application/json").asString
-    val prediction = gson.fromJson(result.body, clazz)
-    result.code match {
-      case 200 ⇒ // Success
-        Right(prediction)
-      case _ ⇒ // Error
-        Left(s"Error processing serving request - code ${result.code}, error ${result.body}")
+    try {
+      val result = Http(path).postData(gson.toJson(getHTTPRequest(input))).header("content-type", "application/json").asString
+      val prediction = gson.fromJson(result.body, clazz)
+      result.code match {
+        case 200 ⇒ // Success
+          Right(prediction)
+        case _ ⇒ // Error
+          Left(s"Error processing serving request - code ${result.code}, error ${result.body}")
+      }
+    }catch {
+      case t:Throwable =>
+        Left(t.getMessage)
     }
   }
 }

@@ -2,23 +2,24 @@ package pipelines.examples.modelserving.airlineflights
 
 import models.AirlineFlightH2OModelFactory
 import com.lightbend.modelserving.model.actor.ModelServingActor
-import com.lightbend.modelserving.model.{ Model, ModelDescriptor, ModelType }
+import com.lightbend.modelserving.model.{Model, ModelDescriptor, ModelType}
 import com.lightbend.modelserving.model.h2o.H2OModel
 import com.lightbend.modelserving.model.util.MainBase
 import akka.Done
-import akka.actor.{ ActorRef, ActorSystem }
+import akka.actor.{ActorRef, ActorSystem}
 import akka.pattern.ask
 import akka.stream.scaladsl.Sink
 import akka.util.Timeout
+import com.lightbend.modelserving.model.persistence.FilePersistence
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import pipelines.akkastream.AkkaStreamlet
-import pipelines.akkastream.scaladsl.{ FlowWithPipelinesContext, RunnableGraphStreamletLogic }
-import pipelines.streamlets.StreamletShape
-import pipelines.streamlets.avro.{ AvroInlet, AvroOutlet }
+import pipelines.akkastream.scaladsl.{FlowWithPipelinesContext, RunnableGraphStreamletLogic}
+import pipelines.streamlets.{ReadWriteMany, StreamletShape, VolumeMount}
+import pipelines.streamlets.avro.{AvroInlet, AvroOutlet}
 import hex.genmodel.easy.prediction.BinomialModelPrediction
-import pipelines.examples.modelserving.airlineflights.data.{ AirlineFlightRecord, AirlineFlightResult }
+import pipelines.examples.modelserving.airlineflights.data.{AirlineFlightRecord, AirlineFlightResult}
 import pipelines.examples.modelserving.airlineflights.result.ModelLabelProbabilityResult
 
 final case object AirlineFlightModelServer extends AkkaStreamlet {
@@ -27,6 +28,12 @@ final case object AirlineFlightModelServer extends AkkaStreamlet {
   val in1 = AvroInlet[ModelDescriptor]("in-1")
   val out = AvroOutlet[AirlineFlightResult]("out", _.inputRecord.uniqueCarrier)
   final override val shape = StreamletShape.withInlets(in0, in1).withOutlets(out)
+
+  // Declare the volume mount: 
+  private val persistentDataMount =
+    VolumeMount("persistence-data-mount", "/data", ReadWriteMany)
+  override def volumeMounts = Vector(persistentDataMount)
+  FilePersistence.setGlobalMountPoint(persistentDataMount.path)
 
   implicit val askTimeout: Timeout = Timeout(30.seconds)
 
