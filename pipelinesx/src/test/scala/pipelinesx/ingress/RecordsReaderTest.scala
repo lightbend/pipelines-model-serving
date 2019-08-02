@@ -50,6 +50,7 @@ class RecordsReaderTest extends FunSpec with BeforeAndAfterAll with OutputInterc
           // A different exception is thrown earlier if failIfMissing takes its default value of true
           ignoreOutput {
             RecordsReader.fromFileSystem(Nil, failIfMissing = false)(identityR)
+            ()
           }
         }
       }
@@ -57,6 +58,7 @@ class RecordsReaderTest extends FunSpec with BeforeAndAfterAll with OutputInterc
       it("Loads one or more file resources from the file system") {
         ignoreOutput {
           assert(RecordsReader.fromFileSystem(testGoodRecordsFiles)(identityR).next() != null)
+          ()
         }
       }
 
@@ -64,6 +66,7 @@ class RecordsReaderTest extends FunSpec with BeforeAndAfterAll with OutputInterc
         intercept[RecordsReader.FailedToLoadResources[_]] {
           ignoreOutput {
             RecordsReader.fromFileSystem(Seq(new File("foobar")))(identityR)
+            ()
           }
         }
       }
@@ -75,6 +78,7 @@ class RecordsReaderTest extends FunSpec with BeforeAndAfterAll with OutputInterc
           ignoreOutput {
             // A different exception is thrown earlier if failIfMissing takes its default value of true
             RecordsReader.fromClasspath(Nil, failIfMissing = false)(identityR)
+            ()
           }
         }
       }
@@ -82,6 +86,7 @@ class RecordsReaderTest extends FunSpec with BeforeAndAfterAll with OutputInterc
       it("Loads one or more file resources from the classpath") {
         ignoreOutput {
           assert(RecordsReader.fromClasspath(testGoodRecordsResources)(identityR).next() != null)
+          ()
         }
       }
 
@@ -89,6 +94,7 @@ class RecordsReaderTest extends FunSpec with BeforeAndAfterAll with OutputInterc
         intercept[RecordsReader.FailedToLoadResources[_]] {
           ignoreOutput {
             RecordsReader.fromClasspath(Seq("foobar"))(identityR)
+            ()
           }
         }
       }
@@ -100,13 +106,17 @@ class RecordsReaderTest extends FunSpec with BeforeAndAfterAll with OutputInterc
           ignoreOutput {
             // A different exception is thrown earlier if failIfMissing takes its default value of true
             RecordsReader.fromURLs(Nil, failIfMissing = false)(identityR)
+            ()
           }
         }
       }
 
       it("Loads one or more file resources from the URL") {
         ignoreOutput {
-          assert(RecordsReader.fromURLs(testGoodRecordsURLs)(identityR).next() != null)
+          assert(
+            RecordsReader.fromURLs(testGoodRecordsURLs)(identityR).next() != null
+          )
+          ()
         }
       }
 
@@ -114,6 +124,7 @@ class RecordsReaderTest extends FunSpec with BeforeAndAfterAll with OutputInterc
         intercept[RecordsReader$FailedToLoadResources] {
           ignoreOutput {
             RecordsReader.fromURLs(testBadRecordsURLs)(identityR)
+            ()
           }
         }
       }
@@ -124,6 +135,7 @@ class RecordsReaderTest extends FunSpec with BeforeAndAfterAll with OutputInterc
         intercept[RecordsReader$InvalidConfiguration] {
           ignoreOutput {
             RecordsReader.fromConfiguration("bad")(identityR)
+            ()
           }
         }
       }
@@ -132,6 +144,7 @@ class RecordsReaderTest extends FunSpec with BeforeAndAfterAll with OutputInterc
         intercept[RecordsReader$InvalidConfiguration] {
           ignoreOutput {
             RecordsReader.fromConfiguration("records-reader-test-without-data-sources")(identityR)
+            ()
           }
         }
       }
@@ -140,6 +153,7 @@ class RecordsReaderTest extends FunSpec with BeforeAndAfterAll with OutputInterc
         intercept[RecordsReader$InvalidConfiguration] {
           ignoreOutput {
             RecordsReader.fromConfiguration("records-reader-test-without-which-source")(identityR)
+            ()
           }
         }
       }
@@ -148,11 +162,13 @@ class RecordsReaderTest extends FunSpec with BeforeAndAfterAll with OutputInterc
         intercept[RecordsReader$InvalidConfiguration] {
           ignoreOutput {
             RecordsReader.fromConfiguration("records-reader-test-empty-which-source")(identityR)
+            ()
           }
         }
         intercept[RecordsReader$InvalidConfiguration] {
           ignoreOutput {
             RecordsReader.fromConfiguration("records-reader-test-invalid-which-source")(identityR)
+            ()
           }
         }
       }
@@ -162,6 +178,7 @@ class RecordsReaderTest extends FunSpec with BeforeAndAfterAll with OutputInterc
           intercept[RecordsReader$InvalidConfiguration] {
             ignoreOutput {
               RecordsReader.fromConfiguration(s"records-reader-test-$x-without-$x")(identityR)
+              ()
             }
           }
         }
@@ -170,6 +187,7 @@ class RecordsReaderTest extends FunSpec with BeforeAndAfterAll with OutputInterc
           intercept[RecordsReader$InvalidConfiguration] {
             ignoreOutput {
               RecordsReader.fromConfiguration(s"records-reader-test-$x-with-empty-$x")(identityR)
+              ()
             }
           }
         }
@@ -179,6 +197,7 @@ class RecordsReaderTest extends FunSpec with BeforeAndAfterAll with OutputInterc
         intercept[RecordsReader$InvalidConfiguration] {
           ignoreOutput {
             RecordsReader.fromConfiguration("records-reader-test-classpath-with-empty-paths")(identityR)
+            ()
           }
         }
       }
@@ -187,6 +206,7 @@ class RecordsReaderTest extends FunSpec with BeforeAndAfterAll with OutputInterc
         intercept[RecordsReader$ConfigurationError] {
           ignoreOutput {
             RecordsReader.fromConfiguration("records-reader-test-classpath-with-invalid-paths")(identityR)
+            ()
           }
         }
       }
@@ -195,6 +215,7 @@ class RecordsReaderTest extends FunSpec with BeforeAndAfterAll with OutputInterc
         intercept[RecordsReader$InvalidConfiguration] {
           ignoreOutput {
             RecordsReader.fromConfiguration("records-reader-test-filesystem-with-empty-paths-and-dir-paths")(identityR)
+            ()
           }
         }
       }
@@ -205,6 +226,7 @@ class RecordsReaderTest extends FunSpec with BeforeAndAfterAll with OutputInterc
         ignoreOutput {
           assert(colonDelimitedLine ==
             RecordsReader.fromConfiguration("records-reader-test-filesystem-with-nonempty-dir-paths-empty-file-name-regex")(identityR).next())
+          ()
         }
       }
 
@@ -212,6 +234,7 @@ class RecordsReaderTest extends FunSpec with BeforeAndAfterAll with OutputInterc
         ignoreOutput {
           assert(colonDelimitedLine ==
             RecordsReader.fromConfiguration("records-reader-test-filesystem-with-nonempty-dir-paths-nonempty-matching-file-name-regex")(identityR).next())
+          ()
         }
       }
 
@@ -219,6 +242,7 @@ class RecordsReaderTest extends FunSpec with BeforeAndAfterAll with OutputInterc
         intercept[RecordsReader$FailedToLoadResources] {
           ignoreOutput {
             RecordsReader.fromConfiguration("records-reader-test-filesystem-with-nonempty-dir-paths-nonempty-nonmatching-file-name-regex")(identityR).next()
+            ()
           }
         }
       }
@@ -227,6 +251,7 @@ class RecordsReaderTest extends FunSpec with BeforeAndAfterAll with OutputInterc
         ignoreOutput {
           assert((1,"1,") ==
             RecordsReader.fromConfiguration("records-reader-test-filesystem-with-nonempty-paths-and-dir-paths")(identityR).next())
+          ()
         }
       }
 
@@ -234,11 +259,13 @@ class RecordsReaderTest extends FunSpec with BeforeAndAfterAll with OutputInterc
         intercept[RecordsReader$ConfigurationError] {
           ignoreOutput {
             RecordsReader.fromConfiguration("records-reader-test-urls-with-empty-base-urls")(identityR).next()
+            ()
           }
         }
         intercept[RecordsReader$ConfigurationError] {
           ignoreOutput {
             RecordsReader.fromConfiguration("records-reader-test-urls-with-empty-files")(identityR).next()
+            ()
           }
         }
       }
@@ -246,18 +273,21 @@ class RecordsReaderTest extends FunSpec with BeforeAndAfterAll with OutputInterc
       it("loads one or more file resources from the CLASSPATH when the configuration specifies that source") {
         ignoreOutput {
           assert(RecordsReader.fromConfiguration("records-reader-test-classpath")(identityR).next() != null)
+          ()
         }
       }
 
       it("loads one or more file resources from the file system when the configuration specifies that source") {
         ignoreOutput {
           assert(RecordsReader.fromConfiguration("records-reader-test-filesystem")(identityR).next() != null)
+          ()
         }
       }
 
       it("loads one or more file resources from URLs when the configuration specifies that source") {
         ignoreOutput {
           assert(RecordsReader.fromConfiguration("records-reader-test-urls")(identityR).next() != null)
+          ()
         }
       }
     }
@@ -289,6 +319,7 @@ class RecordsReaderTest extends FunSpec with BeforeAndAfterAll with OutputInterc
           (6, "six"))
         val expected = (expected1 ++ expected1).zipWithIndex.map { case (tup, i) => ((i + 1).toLong, tup) }
         assert(actual == expected)
+        ()
       }
     }
 
@@ -313,6 +344,7 @@ class RecordsReaderTest extends FunSpec with BeforeAndAfterAll with OutputInterc
           val reader = makeReader
           (0 until 5).foreach(_ ⇒ reader.next())
         }
+        ()
       }
     }
 

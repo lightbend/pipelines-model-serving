@@ -9,7 +9,7 @@
       },
       {
         "name": "modelResult",
-        "type": "com.lightbend.modelserving.model.ModelDoubleResult"
+        "type": "pipelines.examples.modelserving.winequality.result.ModelDoubleResult"
       },
       {
         "name": "modelResultMetadata",

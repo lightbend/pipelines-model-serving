@@ -16,6 +16,7 @@ class AirlineH2OProcessorTest extends FlatSpec with OutputInterceptor {
   val savePath = "airline-model-state.dat"
   val name = "test name"
   val description = "test description"
+
   val input = AirlineFlightRecord(
     year = 1990,
     month = 1,
@@ -55,6 +56,7 @@ class AirlineH2OProcessorTest extends FlatSpec with OutputInterceptor {
     val (label, probability) = H2OModel.fromPrediction(result.modelOutput)
     assert("YES" == label)
     assert(0.6 <= probability && probability <= 0.7)
+    ()
   }
 
   "Loading a valid model for the first time" should "succeed" in {
@@ -81,6 +83,7 @@ class AirlineH2OProcessorTest extends FlatSpec with OutputInterceptor {
 
       assert(Right(true) == fp.saveState(original, savePath))
       assert(fp.stateExists(savePath) == true, s"${fp.statePath("airline")} should exist, but doesn't!")
+      ()
     }
   }
 

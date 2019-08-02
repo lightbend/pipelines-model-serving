@@ -1,5 +1,5 @@
 {
-  "namespace": "com.lightbend.modelserving.model",
+  "namespace": "pipelines.examples.modelserving.airlineflights.result",
   "name": "ModelLabelProbabilityResult",
   "type": "record",
   "doc": "Use this type when the model output is a classification label and a probability.",

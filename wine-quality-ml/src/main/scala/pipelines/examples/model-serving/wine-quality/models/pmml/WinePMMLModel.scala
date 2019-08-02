@@ -16,21 +16,26 @@ class WinePMMLModel(descriptor: ModelDescriptor)
     // Clear arguments (from previous run)
     arguments.clear()
     // Populate input based on record
-    inputFields.asScala.foreach { field ⇒
+    inputFields.asScala.foreach(field ⇒
       arguments.put(
         field.getName,
         field.prepare(record.get(field.getName.getValue.replaceAll(" ", "_"))))
-    }
+    )
 
     // Calculate Output
-    val result = evaluator.evaluate(arguments.asJava)
-
-    // Prepare output
-    val d = result.get(tname) match {
-      case c: Computable ⇒ c.getResult.toString.toDouble
-      case v: Any        ⇒ v.asInstanceOf[Double]
+    try {
+      val result = evaluator.evaluate(arguments.asJava)
+      // Prepare output
+      val d = result.get(tname) match {
+        case c: Computable ⇒ c.getResult.toString.toDouble
+        case v: Any        ⇒ v.asInstanceOf[Double]
+      }
+      Right(d)
+    } catch {
+      case t: Throwable ⇒
+        t.printStackTrace()
+        Left(t.getMessage)
     }
-    Right(d)
   }
 }
 

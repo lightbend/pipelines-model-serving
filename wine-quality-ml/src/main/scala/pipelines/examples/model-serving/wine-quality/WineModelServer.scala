@@ -1,25 +1,25 @@
 package pipelines.examples.modelserving.winequality
 
-import data.{ WineRecord, WineResult }
+import pipelines.examples.modelserving.winequality.data.{ WineRecord, WineResult }
 import models.pmml.WinePMMLModelFactory
-import models.tensorflow.{ WineTensorFlowModelFactory, WineTensorFlowBundledModelFactory }
-
+import models.tensorflow.{ WineTensorFlowBundledModelFactory, WineTensorFlowModelFactory }
 import akka.Done
 import akka.actor.ActorSystem
 import akka.stream.scaladsl.Sink
 import akka.pattern.ask
 import akka.util.Timeout
+
 import scala.concurrent.duration._
 import scala.concurrent.Await
-
 import pipelines.akkastream.AkkaStreamlet
 import pipelines.akkastream.scaladsl.{ FlowWithPipelinesContext, RunnableGraphStreamletLogic }
 import pipelines.streamlets.{ ReadWriteMany, StreamletShape, VolumeMount }
 import pipelines.streamlets.avro.{ AvroInlet, AvroOutlet }
 import com.lightbend.modelserving.model.actor.ModelServingActor
-import com.lightbend.modelserving.model.{ Model, ModelDescriptor, ModelDoubleResult, ModelType, MultiModelFactory }
+import com.lightbend.modelserving.model.{ Model, ModelDescriptor, ModelType, MultiModelFactory }
 import com.lightbend.modelserving.model.util.MainBase
 import com.lightbend.modelserving.model.persistence.FilePersistence
+import pipelines.examples.modelserving.winequality.result.ModelDoubleResult
 
 final case object WineModelServer extends AkkaStreamlet {
 

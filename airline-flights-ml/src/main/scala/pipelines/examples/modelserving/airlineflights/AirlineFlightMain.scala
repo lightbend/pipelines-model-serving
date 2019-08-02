@@ -1,12 +1,12 @@
 package pipelines.examples.modelserving.airlineflights
 
-import pipelines.examples.modelserving.airlineflights.data.{ AirlineFlightRecord, AirlineFlightResult }
 import pipelinesx.ingress.RecordsReader
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import akka.pattern.ask
 import akka.util.Timeout
 import akka.actor.ActorSystem
+import pipelines.examples.modelserving.airlineflights.data.{ AirlineFlightRecord, AirlineFlightResult }
 
 /**
  * For testing the logic outside of Pipelines. Try -h or --help for information

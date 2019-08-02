@@ -11,8 +11,8 @@
     },
     {
       "name": "modelType",
-      "type": "int",
-      "default": "0"
+      "type": "string",
+      "default": "UNKNOWN"
     },
     {
       "name": "modelName",

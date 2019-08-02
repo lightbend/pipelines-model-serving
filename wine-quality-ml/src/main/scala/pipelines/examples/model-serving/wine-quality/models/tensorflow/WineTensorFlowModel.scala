@@ -15,17 +15,21 @@ class WineTensorFlowModel(descriptor: ModelDescriptor)
 
   /** Score a wine record with the model */
   override protected def invokeModel(record: WineRecord): Either[String, Double] = {
-    // Create modelInput tensor
-    val modelInput = toTensor(record)
-    // Serve model using TensorFlow APIs
-    val result = session.runner.feed("dense_1_input", modelInput).fetch("dense_3/Sigmoid").run().get(0)
-    // Get result shape
-    val rshape = result.shape
-    // Map output tensor to shape
-    val rMatrix = Array.ofDim[Float](rshape(0).asInstanceOf[Int], rshape(1).asInstanceOf[Int])
-    result.copyTo(rMatrix)
-    // Get result
-    Right(rMatrix(0).indices.maxBy(rMatrix(0)).toDouble)
+    try {
+      // Create modelInput tensor
+      val modelInput = toTensor(record)
+      // Serve model using TensorFlow APIs
+      val result = session.runner.feed("dense_1_input", modelInput).fetch("dense_3/Sigmoid").run().get(0)
+      // Get result shape
+      val rshape = result.shape
+      // Map output tensor to shape
+      val rMatrix = Array.ofDim[Float](rshape(0).asInstanceOf[Int], rshape(1).asInstanceOf[Int])
+      result.copyTo(rMatrix)
+      // Get result
+      Right(rMatrix(0).indices.maxBy(rMatrix(0)).toDouble)
+    } catch {
+      case t: Throwable ⇒ Left(t.getMessage)
+    }
   }
 }
 

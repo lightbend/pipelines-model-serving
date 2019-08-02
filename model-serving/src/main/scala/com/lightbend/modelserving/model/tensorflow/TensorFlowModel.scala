@@ -16,20 +16,11 @@ abstract class TensorFlowModel[RECORD, MODEL_OUTPUT](descriptor: ModelDescriptor
 
   type Signatures = Map[String, Signature]
 
-  // setup is different for each TensorFlow model kind, so we hide these differences
-  // behind a protected method init below.
-  private def setup(): (Graph, Session, Signatures) = {
-    // Model graph
-    val graph = new Graph
-    graph.importGraphDef(descriptor.modelBytes.get)
-    // Create TensorFlow session
-    val session = new Session(graph)
-    (graph, session, Map.empty)
-  }
-
-  protected def init(): (Graph, Session, Signatures) = setup()
-
-  val (graph, session, _) = init()
+  // Model graph
+  val graph = new Graph
+  graph.importGraphDef(descriptor.modelBytes.get)
+  // Create TensorFlow session
+  val session = new Session(graph)
 
   override def cleanup(): Unit = {
     try {

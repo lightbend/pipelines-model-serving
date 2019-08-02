@@ -57,7 +57,7 @@ abstract class ModelBase[INRECORD, MODEL_OUTPUT](
     val duration = (System.currentTimeMillis() - start).milliseconds
     val resultMetadata = ModelResultMetadata(
       modelName = descriptor.modelName,
-      modelType = descriptor.modelType.ordinal,
+      modelType = descriptor.modelType.toString,
       startTime = start.milliseconds.length,
       duration = duration.length,
       errors = errors)

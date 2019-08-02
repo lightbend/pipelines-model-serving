@@ -1,7 +1,6 @@
 package com.lightbend.modelserving.model.pmml
 
 import java.io._
-import java.util
 import scala.collection._
 
 import com.lightbend.modelserving.model.{ ModelBase, ModelDescriptor }
@@ -21,34 +20,23 @@ abstract class PMMLModel[RECORD, MODEL_OUTPUT](descriptor: ModelDescriptor)(make
 
   assert(descriptor.modelBytes != None, s"Invalid descriptor ${descriptor.toRichString}")
 
-  protected var arguments: mutable.Map[FieldName, FieldValue] = _
-  protected var pmml: PMML = _
-  protected var evaluator: ModelEvaluator[_ <: org.dmg.pmml.Model] = _
-  protected var inputFields: util.List[InputField] = _
-  protected var target: TargetField = _
-  protected var tname: FieldName = _
+  val arguments = mutable.Map[FieldName, FieldValue]()
 
-  private def setup(): Unit = {
-    arguments = mutable.Map[FieldName, FieldValue]()
-    // Marshall PMML
+  // Marshall PMML
+  val pmml = PMMLUtil.unmarshal(new ByteArrayInputStream(descriptor.modelBytes.get))
 
-    pmml = PMMLUtil.unmarshal(new ByteArrayInputStream(descriptor.modelBytes.get))
-    // Optimize model// Optimize model
-    PMMLModel.optimize(pmml)
-    // Create and verify evaluator
-    evaluator = ModelEvaluatorFactory.newInstance.newModelEvaluator(pmml)
-    evaluator.verify()
-    // Get input/target fields
-    inputFields = evaluator.getInputFields
-    target = evaluator.getTargetFields.get(0)
-    tname = target.getName
-  }
+  // Optimize model// Optimize model
+  PMMLModel.optimize(pmml)
 
-  /**
-   * Let setup remain private to each class in the hierarchy, but permit
-   * overrides of init.
-   */
-  protected def init(): Unit = setup()
+  // Create and verify evaluator
+
+  val evaluator = ModelEvaluatorFactory.newInstance.newModelEvaluator(pmml)
+  evaluator.verify()
+
+  // Get input/target fields
+  val inputFields = evaluator.getInputFields
+  val target = evaluator.getTargetFields.get(0)
+  val tname = target.getName
 }
 
 object PMMLModel {

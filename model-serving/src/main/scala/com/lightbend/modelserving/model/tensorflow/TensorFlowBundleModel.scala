@@ -9,7 +9,7 @@ import com.lightbend.modelserving.model.{ ModelBase, ModelDescriptor }
 import com.lightbend.modelserving.model.ModelDescriptorUtil.implicits._
 
 import com.google.protobuf.Descriptors
-import org.tensorflow.{ Graph, SavedModelBundle, Session }
+import org.tensorflow.SavedModelBundle
 import org.tensorflow.framework.{ MetaGraphDef, SavedModel, SignatureDef, TensorInfo, TensorShapeProto }
 
 /**
@@ -21,33 +21,23 @@ import org.tensorflow.framework.{ MetaGraphDef, SavedModel, SignatureDef, Tensor
 abstract class TensorFlowBundleModel[RECORD, MODEL_OUTPUT](descriptor: ModelDescriptor)(makeDefaultModelOutput: () ⇒ MODEL_OUTPUT)
   extends ModelBase[RECORD, MODEL_OUTPUT](descriptor)(makeDefaultModelOutput) with Serializable {
 
-  assert(descriptor.modelBytes != None, s"Invalid descriptor ${descriptor.toRichString}")
+  assert(descriptor.modelSourceLocation != None, s"Invalid descriptor ${descriptor.toRichString}")
 
   type Signatures = Map[String, Signature]
 
-  // setup is different for each TensorFlow model kind, so we hide these differences
-  // behind a protected method init below.
-  private def setup(): (Graph, Session, Signatures) = {
-    // Convert input into file path
-    // TODO: this should really be in the modelSourceLocation field!
-    val path = new String(descriptor.modelBytes.get)
-    // get tags. We assume here that the first tag is the one we use
-    val tags: Seq[String] = getTags(path)
-    val bundle = SavedModelBundle.load(path, tags(0))
-    val graph = bundle.graph
-    // get metatagraph and signature
-    val metaGraphDef = MetaGraphDef.parseFrom(bundle.metaGraphDef)
-    val signatureMap = metaGraphDef.getSignatureDefMap.asScala
-    //  parse signature, so that we can use definitions (if necessary) programmatically in score method
-    val signatures = parseSignatures(signatureMap)
-    // Create TensorFlow session
-    val session = bundle.session
-    (graph, session, signatures)
-  }
-
-  protected def init(): (Graph, Session, Signatures) = setup()
-
-  val (graph, session, signatures) = init()
+  // Convert input into file path
+  val path = descriptor.modelSourceLocation.get
+  // get tags. We assume here that the first tag is the one we use
+  val tags: Seq[String] = getTags(path)
+  val bundle = SavedModelBundle.load(path, tags(0))
+  val graph = bundle.graph
+  // get metatagraph and signature
+  val metaGraphDef = MetaGraphDef.parseFrom(bundle.metaGraphDef)
+  val signatureMap = metaGraphDef.getSignatureDefMap.asScala
+  //  parse signature, so that we can use definitions (if necessary) programmatically in score method
+  val signatures = parseSignatures(signatureMap)
+  // Create TensorFlow session
+  val session = bundle.session
 
   override def cleanup(): Unit = {
     try {

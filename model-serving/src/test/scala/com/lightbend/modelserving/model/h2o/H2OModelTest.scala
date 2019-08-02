@@ -68,6 +68,7 @@ class H2OModelTest extends FunSpec with BeforeAndAfterAll with OutputInterceptor
         assert("YES" == label)
         assert(0.6 <= probability && probability <= 0.7)
         assert(stats.scoreCount + 1 == servingStats.scoreCount)
+        ()
       }
     }
 
@@ -75,6 +76,7 @@ class H2OModelTest extends FunSpec with BeforeAndAfterAll with OutputInterceptor
       intercept[AssertionError] {
         ignoreOutput {
           new TestH2OModel(H2OModel.defaultDescriptor)
+          ()
         }
       }
     }

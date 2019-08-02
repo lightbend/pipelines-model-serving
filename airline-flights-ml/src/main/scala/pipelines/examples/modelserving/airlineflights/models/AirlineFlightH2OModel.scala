@@ -9,6 +9,7 @@ import hex.genmodel.easy.prediction.BinomialModelPrediction
 class AirlineFlightH2OModel(descriptor: ModelDescriptor)
   extends H2OModel[AirlineFlightRecord, BinomialModelPrediction](
     descriptor)(() ⇒ new BinomialModelPrediction()) {
+  println(s"Creating AirlineFlightH2OModel ${descriptor.description}")
 
   /** Convert input record to raw data for serving. */
   protected def toRow(record: AirlineFlightRecord): RowData = {
@@ -27,8 +28,12 @@ class AirlineFlightH2OModel(descriptor: ModelDescriptor)
   /** Score a record with the model */
   override protected def invokeModel(input: AirlineFlightRecord): Either[String, BinomialModelPrediction] = {
     val row = toRow(input)
-    val prediction = h2oModel.predict(row).asInstanceOf[BinomialModelPrediction]
-    Right(prediction)
+    try {
+      val prediction = h2oModel.predict(row).asInstanceOf[BinomialModelPrediction]
+      Right(prediction)
+    } catch {
+      case t: Throwable ⇒ Left(t.getMessage)
+    }
   }
 }
 
@@ -37,8 +42,6 @@ class AirlineFlightH2OModel(descriptor: ModelDescriptor)
  */
 object AirlineFlightH2OModelFactory extends ModelFactory[AirlineFlightRecord, BinomialModelPrediction] {
 
-  protected def make(
-      descriptor: ModelDescriptor): Either[String, Model[AirlineFlightRecord, BinomialModelPrediction]] =
+  protected def make(descriptor: ModelDescriptor): Either[String, Model[AirlineFlightRecord, BinomialModelPrediction]] =
     Right(new AirlineFlightH2OModel(descriptor))
-
 }

@@ -1,6 +1,6 @@
 package com.lightbend.modelserving.model.persistence
 
-import java.io.{ File, FileInputStream, FileOutputStream, ObjectInputStream, ObjectOutputStream }
+import java.io.{ File, FileInputStream, FileOutputStream, DataInputStream, DataOutputStream }
 import java.nio.channels.{ FileChannel, FileLock }
 
 import com.lightbend.modelserving.model.{ Model, ModelDescriptorUtil, ModelFactory }
@@ -49,14 +49,14 @@ final case class FilePersistence[RECORD, RESULT](
 
   // Gets an exclusive lock on the file
   // Both are returned so we can close the channels for the file...
-  private def getInputStream(fileName: String): Either[String, (ObjectInputStream, FileInputStream)] = try {
+  private def getInputStream(fileName: String): Either[String, (DataInputStream, FileInputStream)] = try {
     val file = new File(statePath(fileName))
     val fis = new FileInputStream(file)
     val lock = obtainLock(fis.getChannel(), true)
     lock match {
       case null ⇒ Left(s"Failed to get lock for input stream for file $file")
       case _ ⇒
-        val is = new ObjectInputStream(fis)
+        val is = new DataInputStream(fis)
         Right(is -> fis)
     }
   } catch {
@@ -65,7 +65,7 @@ final case class FilePersistence[RECORD, RESULT](
   }
 
   // Both are returned so we can close the channels for the file...
-  private def getOutputStream(fileName: String): Either[String, (ObjectOutputStream, FileOutputStream)] = try {
+  private def getOutputStream(fileName: String): Either[String, (DataOutputStream, FileOutputStream)] = try {
     val dir = new File(baseDirPath)
     if (!dir.exists()) dir.mkdir()
     val file = new File(dir, fileName)
@@ -79,7 +79,7 @@ final case class FilePersistence[RECORD, RESULT](
         case null ⇒
           Left(s"Failed to get lock for output stream for file $file")
         case _ ⇒
-          val os = new ObjectOutputStream(fos)
+          val os = new DataOutputStream(fos)
           Right(os -> fos)
       }
     } else {
@@ -152,7 +152,10 @@ object FilePersistence {
   var mountPointRoot: String = "persistence"
 
   def setGlobalMountPoint(mount: String): Unit = {
-    mountPointRoot = mount
+    mountPointRoot = mount + "/persistence"
   }
+
+  def apply[RECORD, RESULT](modelFactory: ModelFactory[RECORD, RESULT]): FilePersistence[RECORD, RESULT] =
+    new FilePersistence[RECORD, RESULT](modelFactory, mountPointRoot)
 
 }

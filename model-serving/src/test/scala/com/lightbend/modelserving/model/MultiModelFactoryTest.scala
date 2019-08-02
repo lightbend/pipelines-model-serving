@@ -12,7 +12,7 @@ class MultiModelFactoryTest extends FunSpec {
           val descriptor: ModelDescriptor = desc
           def score(record: String, stats: ModelServingStats): Model.ModelReturn[String] = {
             val mrm = ModelResultMetadata(
-              modelType = ModelType.UNKNOWN.ordinal,
+              modelType = ModelType.UNKNOWN.toString,
               modelName = "Unknown",
               errors = "",
               startTime = 0,

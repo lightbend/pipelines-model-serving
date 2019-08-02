@@ -1,4 +1,4 @@
-package pipelines.examples.modelserving.airlineflights.airlineflights
+package pipelines.examples.modelserving.airlineflights
 
 import pipelines.examples.modelserving.airlineflights.data._
 import pipelines.streamlets.StreamletShape

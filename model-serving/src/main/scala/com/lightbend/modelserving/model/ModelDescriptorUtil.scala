@@ -15,7 +15,7 @@
 
 package com.lightbend.modelserving.model
 
-import java.io.{ ObjectInputStream, ObjectOutputStream }
+import java.io.{ DataInputStream, DataOutputStream }
 
 object ModelDescriptorUtil {
 
@@ -99,30 +99,45 @@ object ModelDescriptorUtil {
   /**
    * Write an instance to a stream.
    */
-  def write(descriptor: ModelDescriptor, output: ObjectOutputStream): Unit = {
+  def write(descriptor: ModelDescriptor, output: DataOutputStream): Unit = {
     output.writeUTF(descriptor.modelName)
     output.writeUTF(descriptor.description)
-    output.writeObject(descriptor.modelType)
-    output.writeObject(
-      if (descriptor.modelBytes == None) Array.empty[Byte] else descriptor.modelBytes.get)
-    output.writeUTF(descriptor.modelSourceLocation.getOrElse(""))
+    output.writeUTF(descriptor.modelType.toString)
+    descriptor.modelBytes match {
+      case Some(bytes) ⇒
+        output.writeLong(bytes.length.toLong)
+        output.write(bytes)
+      case _ ⇒
+        output.writeLong(0)
+    }
+    descriptor.modelSourceLocation match {
+      case Some(location) ⇒
+        output.writeUTF(location)
+      case _ ⇒
+        output.writeUTF("")
+    }
   }
 
   /**
    * Read an instance from a stream.
    */
-  def read(input: ObjectInputStream): ModelDescriptor = {
+  def read(input: DataInputStream): ModelDescriptor = {
       def loc() = {
         val locationString = input.readUTF()
         if (locationString.length == 0) None else Some(locationString)
       }
       def bytes() = {
-        val bs = input.readObject().asInstanceOf[Array[Byte]]
-        if (bs.length == 0) None else Some(bs)
+        input.readLong().toInt match {
+          case length if length > 0 ⇒
+            val bytes = new Array[Byte](length)
+            input.read(bytes)
+            Some(bytes)
+          case _ ⇒ None
+        }
       }
     val modelName = input.readUTF()
     val description = input.readUTF()
-    val modelType = input.readObject().asInstanceOf[ModelType]
+    val modelType = ModelType.valueOf(input.readUTF())
     val modelBytes = bytes()
     val location = loc()
     ModelDescriptor(modelName, description, modelType, modelBytes, location)

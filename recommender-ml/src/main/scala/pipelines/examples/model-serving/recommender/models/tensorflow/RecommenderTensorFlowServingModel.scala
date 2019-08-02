@@ -1,9 +1,10 @@
 package pipelines.examples.modelserving.recommender.models.tensorflow
 
 import pipelines.examples.modelserving.recommender.data.RecommenderRecord
-import com.lightbend.modelserving.model.{ Model, ModelFactory, ModelDescriptor, ModelDescriptorUtil, ModelKeyDoubleValueArrayResult }
+import com.lightbend.modelserving.model.{ Model, ModelDescriptor, ModelDescriptorUtil, ModelFactory }
 import com.lightbend.modelserving.model.tensorflow.TensorFlowServingModel
 import com.google.gson.Gson
+import pipelines.examples.modelserving.recommender.result.ModelKeyDoubleValueArrayResult
 
 class RecommenderTensorFlowServingModel(descriptor: ModelDescriptor)
   extends TensorFlowServingModel[RecommenderRecord, TFRequest, TFPredictionResult](

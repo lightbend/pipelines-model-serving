@@ -1,5 +1,5 @@
 {
-  "namespace": "com.lightbend.modelserving.model",
+  "namespace": "pipelines.examples.modelserving.recommender.result",
   "name": "ModelKeyDoubleValueArrayResult",
   "type": "record",
   "doc": "Use this type when the model output is an array of identifier-double pairs. WARNING: do not convert this to an array of a 'KeyValue' type, because it will trigger warnings about that type being unused when this schema is mixed into the application schemas.",

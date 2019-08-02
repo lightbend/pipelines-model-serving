@@ -49,11 +49,15 @@ trait ModelFactory[INRECORD, OUTRECORD] {
 final case class MultiModelFactory[INRECORD, OUTRECORD](
     modelFactories: Map[ModelType, ModelFactory[INRECORD, OUTRECORD]])
   extends ModelFactory[INRECORD, OUTRECORD] {
-
   /**
    * Determine which model factory to use from the descriptor and create the model with it.
+   *
+   * Define this method for concrete subclasses.
+   * It's protected; end users call "create", while implementers define "make".
+   *
+   * @param descriptor used to construct the model.
    */
-  protected def make(descriptor: ModelDescriptor): Either[String, Model[INRECORD, OUTRECORD]] = try {
+  override protected def make(descriptor: ModelDescriptor): Either[String, Model[INRECORD, OUTRECORD]] = try {
     modelFactories.get(descriptor.modelType) match {
       case Some(factory) ⇒ factory.create(descriptor)
       case None ⇒

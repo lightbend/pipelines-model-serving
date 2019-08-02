@@ -22,7 +22,7 @@ class ModelServingActor[RECORD, MODEL_OUTPUT](
   val log = Logging(context.system, this)
   log.info(s"Creating ModelServingActor for $label")
 
-  protected val filePersistence = FilePersistence[RECORD, MODEL_OUTPUT](modelFactory)
+  protected val filePersistence = FilePersistence.apply[RECORD, MODEL_OUTPUT](modelFactory)
 
   protected var currentModel: Option[Model[RECORD, MODEL_OUTPUT]] = None
   protected var currentStats: ModelServingStats = ModelServingStats.unknown
@@ -37,7 +37,7 @@ class ModelServingActor[RECORD, MODEL_OUTPUT](
             modelType = model.descriptor.modelType,
             modelName = model.descriptor.modelName,
             description = model.descriptor.description)
-          log.info(s"Restored model with descriptor ${model.descriptor}")
+          log.info(s"Restored model of type $label")
         case Left(unsuccessfulMessage) ⇒
           log.warning(unsuccessfulMessage)
       }

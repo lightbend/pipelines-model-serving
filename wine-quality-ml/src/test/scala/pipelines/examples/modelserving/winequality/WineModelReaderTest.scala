@@ -18,6 +18,7 @@ class WineModelReaderTest extends FunSpec with BeforeAndAfterAll with OutputInte
     it("Loads one or more model file resources from the classpath") {
       ignoreOutput {
         assert(WineModelReader(WineModelIngressUtil.wineModelsResources).next() != null)
+        ()
       }
     }
     it("Asserts if the input map of resources is empty") {
@@ -25,16 +26,19 @@ class WineModelReaderTest extends FunSpec with BeforeAndAfterAll with OutputInte
         intercept[AssertionError] {
           WineModelReader(Map.empty)
         }
+        ()
       }
     }
     it("Accepts an empty list of resources for a model type") {
       ignoreOutput {
         WineModelReader(Map(ModelType.TENSORFLOW -> Nil))
+        ()
       }
     }
     it("Warns if an empty list of resources is specified for a model type") {
       expectOutput(Array("WARNING: No resources specified for model type TENSORFLOW")) {
         WineModelReader(Map(ModelType.TENSORFLOW -> Nil))
+        ()
       }
     }
 
@@ -44,6 +48,7 @@ class WineModelReaderTest extends FunSpec with BeforeAndAfterAll with OutputInte
           intercept[IllegalArgumentException] {
             WineModelReader(Map(ModelType.PMML -> Seq("foobar"))).next()
           }
+          ()
         }
       }
 
@@ -66,6 +71,7 @@ class WineModelReaderTest extends FunSpec with BeforeAndAfterAll with OutputInte
           }
           assert(totalPMML == countPMML)
           assert(totalTensorFlow == countTensorFlow)
+          ()
         }
       }
     }

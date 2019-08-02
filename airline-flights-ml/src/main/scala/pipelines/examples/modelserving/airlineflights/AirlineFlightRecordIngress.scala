@@ -1,6 +1,5 @@
 package pipelines.examples.modelserving.airlineflights
 
-import pipelines.examples.modelserving.airlineflights.data._
 import akka.NotUsed
 import akka.stream.scaladsl.Source
 import pipelines.akkastream.scaladsl._
@@ -12,6 +11,7 @@ import pipelinesx.config.ConfigUtil
 import pipelinesx.config.ConfigUtil.implicits._
 import scala.concurrent.duration._
 import com.lightbend.modelserving.model.util.MainBase
+import pipelines.examples.modelserving.airlineflights.data.AirlineFlightRecord
 
 /**
  * Load Airline flight data at a rate specified in the application configuration.

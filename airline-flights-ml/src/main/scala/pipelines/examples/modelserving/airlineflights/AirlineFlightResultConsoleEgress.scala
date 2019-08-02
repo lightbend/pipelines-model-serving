@@ -1,10 +1,10 @@
 package pipelines.examples.modelserving.airlineflights
 
-import pipelines.examples.modelserving.airlineflights.data._
 import pipelines.streamlets.StreamletShape
 import pipelines.streamlets.avro.AvroInlet
 import pipelines.akkastream.AkkaStreamlet
 import pipelinesx.egress.ConsoleEgressLogic
+import pipelines.examples.modelserving.airlineflights.data.AirlineFlightResult
 
 final case object AirlineFlightResultConsoleEgress extends AkkaStreamlet {
   val in = AvroInlet[AirlineFlightResult]("in")

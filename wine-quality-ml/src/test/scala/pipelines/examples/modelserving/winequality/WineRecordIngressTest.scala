@@ -81,6 +81,7 @@ class WineRecordIngressTest extends FunSpec with BeforeAndAfterAll with OutputIn
         })
 
         out.probe.expectMsg(Completed)
+        ()
       }
     }
   }

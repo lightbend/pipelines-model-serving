@@ -9,7 +9,7 @@
       },
       {
         "name": "modelResult",
-        "type": "com.lightbend.modelserving.model.ModelKeyDoubleValueArrayResult"
+        "type": "pipelines.examples.modelserving.recommender.result.ModelKeyDoubleValueArrayResult"
       },
       {
         "name": "modelResultMetadata",
