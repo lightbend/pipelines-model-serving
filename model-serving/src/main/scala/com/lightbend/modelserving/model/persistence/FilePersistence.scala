@@ -9,7 +9,7 @@ import pipelinesx.logging.LoggingUtil
 
 /**
  * Persists the state information to a file for quick recovery.
- * @param modelManager that encapsulates handling of Model I/O, etc.
+ * @param modelFactory that encapsulates handling of Model I/O, etc.
  * @param baseDirPath where to write the persistent models. TODO: relying on the global variable for the default is error prone.
  */
 final case class FilePersistence[RECORD, RESULT](
@@ -29,7 +29,7 @@ final case class FilePersistence[RECORD, RESULT](
 
   private def obtainLock(fileChannel: FileChannel, shared: Boolean): FileLock =
     getLock(fileChannel, shared) match {
-      case lck if (lck._2) ⇒
+      case lck if lck._2 ⇒
         lck._1 match {
           case null ⇒ // retry after wait
             Thread.sleep(10)
@@ -40,8 +40,8 @@ final case class FilePersistence[RECORD, RESULT](
       case _ ⇒ null
     }
 
-  def fileName(path: String): String = FilePersistence.streamlet + path
-  def statePath(path: String): String = baseDirPath + "/" + fileName(path)
+  def fileName(path: String): String = s"${FilePersistence.streamlet}_$path"
+  def statePath(path: String): String = s"$baseDirPath /${fileName(path)}"
 
   def stateExists(path: String): Boolean = {
     val file = new File(statePath(path))
