@@ -1,0 +1,14 @@
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: persistence-data-mount
+  namespace: {{ .Values.application }}
+  labels:
+    app.kubernetes.io/name: flink-operator
+spec:
+  storageClassName: {{ .Values.storage.storageclass }}
+  accessModes:
+    - "ReadWriteMany"
+  resources:
+    requests:
+      storage: {{ .Values.storage.storagesize | quote }}

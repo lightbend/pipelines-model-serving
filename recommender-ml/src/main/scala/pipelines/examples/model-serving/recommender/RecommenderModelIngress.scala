@@ -39,8 +39,8 @@ protected final class ModelDescriptorFinder(
     val location = serverLocations(i)
     new ModelDescriptor(
       modelType = ModelType.TENSORFLOWSERVING,
-      modelName = "Tensorflow Model",
-      description = "For model Serving",
+      modelName = "Recommender Model",
+      description = "Recommender TF serving model Serving",
       modelBytes = None,
       modelSourceLocation = Some(location))
   }
@@ -60,7 +60,7 @@ protected final class ModelDescriptorFinder(
 object RecommenderModelIngressUtil {
 
   lazy val recommenderServerLocations: Vector[String] =
-    ConfigUtil.default.getOrFail[Seq[String]]("recommender.service-urls").toVector
+    ConfigUtil.default.getOrElse[Seq[String]]("recommender.service-urls")(Seq("http://tfserving.recommender-ml-boris.svc.cluster.local:8501/v1/models/recommender/versions/1:predict")).toVector
   lazy val modelFrequencySeconds: FiniteDuration =
     ConfigUtil.default.getOrElse[Int]("recommender.model-frequency-seconds")(120).seconds
 

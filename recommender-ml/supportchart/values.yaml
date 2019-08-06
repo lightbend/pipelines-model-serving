@@ -1,0 +1,11 @@
+# application name is a namespace
+application: "recommender-ml-boris"
+# persistence storage
+storage:
+  storageclass: "glusterfs-storage"
+  storagesize: 10Gi
+# docker images
+image:
+  server: tensorflow/serving
+  pullPolicy: Always
+  version: 1.14.0

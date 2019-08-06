@@ -11,9 +11,9 @@ fork := true
 // domain name and uses the default registry prefix. Adapt for your environment or
 // simply use this (The "Some" is required):
 // lazy val dockerRegistry = Some("registry-on-my.server.name")
-lazy val dockerRegistry =
-  sys.env.get("OPENSHIFT_CLUSTER_DOMAIN").map(
-    server => s"docker-registry-default.$server")
+//lazy val dockerRegistry =
+//  sys.env.get("OPENSHIFT_CLUSTER_DOMAIN").map(
+//    server => s"docker-registry-default.$server")
 
 val user = sys.props.getOrElse("user.name", "unknown-user")
 
@@ -25,7 +25,7 @@ lazy val wineModelServingPipeline = (project in file("./wine-quality-ml"))
   .settings(
     name := s"wine-quality-ml-$user",
     version := thisVersion,
-    pipelinesDockerRegistry := dockerRegistry,
+    pipelinesDockerRegistry := Some("docker-registry-default.fiorano.lightbend.com"),
     libraryDependencies ++= Seq(influx, scalaTest),
     avroSpecificSourceDirectories in Compile ++=
       Seq(new java.io.File("model-serving/src/main/avro"))
@@ -41,7 +41,7 @@ lazy val recommenderModelServingPipeline = (project in file("./recommender-ml"))
   .settings(
     name := s"recommender-ml-$user",
     version := thisVersion,
-    pipelinesDockerRegistry := dockerRegistry,
+    pipelinesDockerRegistry := Some("docker-registry-default.fiorano.lightbend.com"),
     libraryDependencies ++= Seq(scalaTest),
     avroSpecificSourceDirectories in Compile ++=
       Seq(new java.io.File("model-serving/src/main/avro"))
@@ -57,7 +57,7 @@ lazy val airlineFlightsModelServingPipeline = (project in file("./airline-flight
   .settings(
     name := s"airline-flights-ml-$user",
     version := thisVersion,
-    pipelinesDockerRegistry := dockerRegistry,
+    pipelinesDockerRegistry := Some("docker-registry-default.fiorano.lightbend.com"),
     libraryDependencies ++= Seq(influx, scalaTest),
     avroSpecificSourceDirectories in Compile ++=
       Seq(new java.io.File("model-serving/src/main/avro"))

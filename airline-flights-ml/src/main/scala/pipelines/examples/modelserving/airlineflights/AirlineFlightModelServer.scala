@@ -2,11 +2,11 @@ package pipelines.examples.modelserving.airlineflights
 
 import models.AirlineFlightH2OModelFactory
 import com.lightbend.modelserving.model.actor.ModelServingActor
-import com.lightbend.modelserving.model.{Model, ModelDescriptor, ModelType}
+import com.lightbend.modelserving.model.{ Model, ModelDescriptor, ModelType }
 import com.lightbend.modelserving.model.h2o.H2OModel
 import com.lightbend.modelserving.model.util.MainBase
 import akka.Done
-import akka.actor.{ActorRef, ActorSystem}
+import akka.actor.{ ActorRef, ActorSystem }
 import akka.pattern.ask
 import akka.stream.scaladsl.Sink
 import akka.util.Timeout
@@ -15,11 +15,11 @@ import com.lightbend.modelserving.model.persistence.FilePersistence
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import pipelines.akkastream.AkkaStreamlet
-import pipelines.akkastream.scaladsl.{FlowWithPipelinesContext, RunnableGraphStreamletLogic}
-import pipelines.streamlets.{ReadWriteMany, StreamletShape, VolumeMount}
-import pipelines.streamlets.avro.{AvroInlet, AvroOutlet}
+import pipelines.akkastream.scaladsl.{ FlowWithPipelinesContext, RunnableGraphStreamletLogic }
+import pipelines.streamlets.{ ReadWriteMany, StreamletShape, VolumeMount }
+import pipelines.streamlets.avro.{ AvroInlet, AvroOutlet }
 import hex.genmodel.easy.prediction.BinomialModelPrediction
-import pipelines.examples.modelserving.airlineflights.data.{AirlineFlightRecord, AirlineFlightResult}
+import pipelines.examples.modelserving.airlineflights.data.{ AirlineFlightRecord, AirlineFlightResult }
 import pipelines.examples.modelserving.airlineflights.result.ModelLabelProbabilityResult
 
 final case object AirlineFlightModelServer extends AkkaStreamlet {
@@ -39,6 +39,8 @@ final case object AirlineFlightModelServer extends AkkaStreamlet {
 
   /** Uses the actor system as an argument to support testing outside of the streamlet. */
   def makeModelServer(sys: ActorSystem): ActorRef = {
+
+    FilePersistence.setStreamletName(context.streamletRef)
     sys.actorOf(
       ModelServingActor.props[AirlineFlightRecord, BinomialModelPrediction](
         "airlines", AirlineFlightH2OModelFactory, () ⇒ new BinomialModelPrediction))

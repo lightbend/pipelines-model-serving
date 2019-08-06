@@ -79,11 +79,59 @@ influxdb : {
 
 > NOTE: You can also override these config values on the command-line, as discussed below.
 
-### Setup Kubeflow - Recommender Example
+### Setup TF serving - Recommender Example
 
-Kubeflow is used for the recommender example.
+Running the TensorFlow Docker image is the easiest way to use TensorFlow Serving. The full details are [here](https://medium.com/tensorflow/serving-ml-quickly-with-tensorflow-serving-and-docker-7df7094aa008).
+Here we will discuss 2 installations - local for unit testing and on the cluster for pipeline testing.
 
-Instructions - TBD
+#### Local testing
+
+In order to test locally, first load tensorflow serving docker image
+````
+docker pull tensorflow/serving:1.14.0
+````
+
+Now you can start the image using the following command:
+
+````
+docker run -p 8501:8501 --name tfserving_recommender --mount type=bind,source=<location of data/recommender/model>,target=/models/recommender -e MODEL_NAME=recommender -t tensorflow/serving:1.14.0
+````
+
+Once the image is up and running, you can visit the available [REST APIs](https://www.tensorflow.org/serving/api_rest), to get information about deployed model, for example:
+
+* http://localhost:8501/v1/models/recommender/versions/1 to get the status of the deployed model
+* http://localhost:8501/v1/models/recommender/versions/1/metadata to get metadata about deployed model.
+
+Rest APIs are also used to serve the model:
+
+```bash
+curl -X POST http://localhost:8501/v1/models/recommender/versions/1:predict -d '{"signature_name":"serving_default","inputs": {"products": [[1],[2]],"users" : [[25], [3]]}}'
+```
+
+This returns the following result:
+
+```json
+{
+    "outputs": {
+        "model-version": [
+            "1"
+        ],
+        "recommendations": [
+            [
+                0.0940792412
+            ],
+            [
+                0.0264799967
+            ]
+        ]
+    }
+```
+Once local install is imn place, you can run local test
+
+#### Kubernetes testing
+
+Use provided [Helm chart](recommender-ml/supportchart) to start an instance of TF-serving in the cluster.
+Then you can use created service to access it 
 
 ## Build and Deploy the Applications
 

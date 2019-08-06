@@ -44,6 +44,7 @@ final case object WineModelServer extends AkkaStreamlet {
 
     implicit val askTimeout: Timeout = Timeout(30.seconds)
 
+    FilePersistence.setStreamletName(context.streamletRef)
     val modelserver = context.system.actorOf(
       ModelServingActor.props[WineRecord, Double](
         "wine",

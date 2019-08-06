@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: awsaccess
+  namespace: {{ .Values.application }}
+data:
+  AWS_ACCESS_KEY_ID: QUtJQVY0VUNPS1hEV0pMU1RETlY=
+  AWS_SECRET_ACCESS_KEY: OUtIRzJTNlowMWlaK1RRQVRvRmlML244NnVwdUx3RmVXVTZDNmtVOQ==

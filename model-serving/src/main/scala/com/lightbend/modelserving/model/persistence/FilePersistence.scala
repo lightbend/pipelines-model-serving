@@ -40,7 +40,8 @@ final case class FilePersistence[RECORD, RESULT](
       case _ ⇒ null
     }
 
-  def statePath(path: String): String = baseDirPath + "/" + path
+  def fileName(path: String): String = FilePersistence.streamlet + path
+  def statePath(path: String): String = baseDirPath + "/" + fileName(path)
 
   def stateExists(path: String): Boolean = {
     val file = new File(statePath(path))
@@ -49,8 +50,8 @@ final case class FilePersistence[RECORD, RESULT](
 
   // Gets an exclusive lock on the file
   // Both are returned so we can close the channels for the file...
-  private def getInputStream(fileName: String): Either[String, (DataInputStream, FileInputStream)] = try {
-    val file = new File(statePath(fileName))
+  private def getInputStream(filename: String): Either[String, (DataInputStream, FileInputStream)] = try {
+    val file = new File(statePath(filename))
     val fis = new FileInputStream(file)
     val lock = obtainLock(fis.getChannel(), true)
     lock match {
@@ -61,33 +62,29 @@ final case class FilePersistence[RECORD, RESULT](
     }
   } catch {
     case scala.util.control.NonFatal(th) ⇒
-      Left(throwableMsg(s"getInputStream failed: Does input ${statePath(fileName)} exist?", th))
+      Left(throwableMsg(s"getInputStream failed: Does input ${statePath(filename)} exist?", th))
   }
 
   // Both are returned so we can close the channels for the file...
-  private def getOutputStream(fileName: String): Either[String, (DataOutputStream, FileOutputStream)] = try {
+  private def getOutputStream(filename: String): Either[String, (DataOutputStream, FileOutputStream)] = try {
     val dir = new File(baseDirPath)
-    if (!dir.exists()) dir.mkdir()
-    val file = new File(dir, fileName)
-    val fileDir = file.getParentFile()
     // make sure all the parent directories exist.
-    if (dir.exists() || fileDir.mkdirs()) {
-      if (!file.exists()) file.createNewFile()
-      val fos = new FileOutputStream(file)
-      val lock = obtainLock(fos.getChannel(), false)
-      lock match {
-        case null ⇒
-          Left(s"Failed to get lock for output stream for file $file")
-        case _ ⇒
-          val os = new DataOutputStream(fos)
-          Right(os -> fos)
-      }
-    } else {
-      Left(s"Could not create the parent directories ($fileDir) for file: $file")
+    if (!dir.exists()) dir.mkdir()
+    val file = new File(dir, fileName(filename))
+    // make sure the file exist.
+    if (!file.exists()) file.createNewFile()
+    val fos = new FileOutputStream(file)
+    val lock = obtainLock(fos.getChannel(), false)
+    lock match {
+      case null ⇒
+        Left(s"Failed to get lock for output stream for file $file")
+      case _ ⇒
+        val os = new DataOutputStream(fos)
+        Right(os -> fos)
     }
   } catch {
     case scala.util.control.NonFatal(th) ⇒
-      Left(throwableMsg(s"getOutputStream failed: Is the ${statePath(fileName)} location writable?", th))
+      Left(throwableMsg(s"getOutputStream failed: Is the ${statePath(filename)} location writable?", th))
   }
   /**
    * Restore the state from a file system. Use [[stateExists]] first to determine
@@ -150,12 +147,13 @@ final case class FilePersistence[RECORD, RESULT](
 
 object FilePersistence {
   var mountPointRoot: String = "persistence"
+  var streamlet: String = ""
 
   def setGlobalMountPoint(mount: String): Unit = {
     mountPointRoot = mount + "/persistence"
   }
 
-  def apply[RECORD, RESULT](modelFactory: ModelFactory[RECORD, RESULT]): FilePersistence[RECORD, RESULT] =
-    new FilePersistence[RECORD, RESULT](modelFactory, mountPointRoot)
-
+  def setStreamletName(name: String): Unit = {
+    streamlet = name
+  }
 }
