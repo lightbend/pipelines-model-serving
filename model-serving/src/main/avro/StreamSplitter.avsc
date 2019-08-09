@@ -1,0 +1,22 @@
+{
+  "namespace": "com.lightbend.modelserving.splitter",
+  "type": "record",
+  "name": "StreamSplitter",
+  "doc": "Defines how the messages should be split",
+  "fields":[
+    {
+      "name": "split",
+      "type": {
+        "type": "array",
+        "items":{
+           "name":"OutputPercentage",
+           "type":"record",
+               "fields":[
+                   {"name":"output", "type":"int"},
+                   {"name":"percentage", "type":"int"}
+               ]
+          }
+       }
+    }
+  ]
+}

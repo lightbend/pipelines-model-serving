@@ -1,0 +1,12 @@
+{
+  "namespace": "com.lightbend.modelserving.merger",
+  "type": "record",
+  "name": "StreamMerger",
+  "doc": "Defines timeout for streams merger",
+  "fields":[
+    {
+      "name": "timeout",
+      "type": "long"
+    }
+  ]
+}

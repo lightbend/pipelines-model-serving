@@ -1,11 +1,15 @@
 package com.lightbend.modelserving.model.persistence
 
-import java.io.{ File, FileInputStream, FileOutputStream, DataInputStream, DataOutputStream }
+import java.io.{ DataInputStream, DataOutputStream, File, FileInputStream, FileOutputStream }
 import java.nio.channels.{ FileChannel, FileLock }
 
+import com.lightbend.modelserving.merger.StreamMerger
 import com.lightbend.modelserving.model.{ Model, ModelDescriptorUtil, ModelFactory }
 import com.lightbend.modelserving.model.ModelDescriptorUtil.implicits._
+import com.lightbend.modelserving.splitter.{ OutputPercentage, StreamSplitter }
 import pipelinesx.logging.LoggingUtil
+
+import scala.collection.mutable.ListBuffer
 
 /**
  * Persists the state information to a file for quick recovery.
@@ -87,7 +91,7 @@ final case class FilePersistence[RECORD, RESULT](
       Left(throwableMsg(s"getOutputStream failed: Is the ${statePath(filename)} location writable?", th))
   }
   /**
-   * Restore the state from a file system. Use [[stateExists]] first to determine
+   * Restore the model server state from a file system. Use [[stateExists]] first to determine
    * if there is state to restore, as this method returns an error string if the
    * state isn't already persisted.
    * @return either an error string or the model and related data.
@@ -115,7 +119,59 @@ final case class FilePersistence[RECORD, RESULT](
     }
 
   /**
-   * Save the state to a file system.
+   * Restore the state of a splitter from a file system. Use [[stateExists]] first to determine
+   * if there is state to restore, as this method returns an error string if the
+   * state isn't already persisted.
+   * @return either an error string or the splitter.
+   */
+  def restoreSplitState(
+      fileName: String): Either[String, StreamSplitter] = getInputStream(fileName) match {
+    case Right((is, fis)) ⇒
+      try {
+        val ninputs = is.readLong().toInt
+        val inputs = new ListBuffer[OutputPercentage]()
+        0 to ninputs - 1 foreach (i ⇒ {
+          val output = is.readLong().toInt
+          val percentage = is.readLong().toInt
+          inputs += new OutputPercentage(output, percentage)
+        })
+        Right(new StreamSplitter(inputs))
+      } catch {
+        case t: Throwable ⇒
+          Left(throwableMsg(s"Error restoring state for data type $fileName.", t))
+      } finally {
+        is.close()
+        fis.getChannel.close()
+      }
+    case Left(error) ⇒
+      Left(s"Error restoring state for data type; failed to get the input streams for data type $fileName. $error")
+  }
+
+  /**
+   * Restore the state of a merger from a file system. Use [[stateExists]] first to determine
+   * if there is state to restore, as this method returns an error string if the
+   * state isn't already persisted.
+   * @return either an error string or the merger.
+   */
+  def restoreMergerState(
+      fileName: String): Either[String, StreamMerger] = getInputStream(fileName) match {
+    case Right((is, fis)) ⇒
+      try {
+        val tmout = is.readLong()
+        Right(new StreamMerger(tmout))
+      } catch {
+        case t: Throwable ⇒
+          Left(throwableMsg(s"Error restoring state for data type $fileName.", t))
+      } finally {
+        is.close()
+        fis.getChannel.close()
+      }
+    case Left(error) ⇒
+      Left(s"Error restoring state for data type; failed to get the input streams for data type $fileName. $error")
+  }
+
+  /**
+   * Save the state of the model server to a file system.
    * @param model to persist.
    * @param filePath the location to write the state, _relative_ to the "baseDirPath".
    * @return either an error string or true.
@@ -141,8 +197,67 @@ final case class FilePersistence[RECORD, RESULT](
     }
   }
 
-  private def throwableMsg(msg: String, th: Throwable): String =
-    msg + " " + LoggingUtil.throwableToString(th)
+  /**
+   * Save the state of a splitter to a file system.
+   * @param splitter to persist.
+   * @param filePath the location to write the state, _relative_ to the "baseDirPath".
+   * @return either an error string or true.
+   */
+  def saveState(
+      splitter: StreamSplitter,
+      filePath: String): Either[String, Boolean] = {
+    getOutputStream(filePath) match {
+      case Right((os, fos)) ⇒
+        try {
+          os.writeLong(splitter.split.size.toLong)
+          splitter.split.foreach(record ⇒ {
+            os.writeLong(record.output.toLong)
+            os.writeLong(record.percentage.toLong)
+          })
+
+          Right(true)
+        } catch {
+          case t: Throwable ⇒
+            Left(throwableMsg(s"Error saving state for data type $filePath.", t))
+        } finally {
+          os.flush()
+          os.close()
+          fos.getChannel.close()
+        }
+      case Left(error) ⇒
+        Left(s"Error saving state for data type $filePath. $error")
+    }
+  }
+
+  /**
+   * Save the state of a merger to a file system.
+   * @param merger to persist.
+   * @param filePath the location to write the state, _relative_ to the "baseDirPath".
+   * @return either an error string or true.
+   */
+  def saveState(
+      merger:   StreamMerger,
+      filePath: String): Either[String, Boolean] = {
+    getOutputStream(filePath) match {
+      case Right((os, fos)) ⇒
+        try {
+          os.writeLong(merger.timeout)
+          Right(true)
+        } catch {
+          case t: Throwable ⇒
+            Left(throwableMsg(s"Error saving state for data type $filePath.", t))
+        } finally {
+          os.flush()
+          os.close()
+          fos.getChannel.close()
+        }
+      case Left(error) ⇒
+        Left(s"Error saving state for data type $filePath. $error")
+    }
+  }
+
+  private def throwableMsg(msg: String, th: Throwable): String = msg + " " + LoggingUtil.throwableToString(th)
+
 }
 
 object FilePersistence {

@@ -26,6 +26,14 @@ lazy val wineModelServingPipeline = (project in file("./wine-quality-ml"))
     name := s"wine-quality-ml-$user",
     version := thisVersion,
     pipelinesDockerRegistry := Some("docker-registry-default.fiorano.lightbend.com"),
+  )
+  .settings(commonSettings)
+  .dependsOn(wineModelServingPipelineImplementation)
+
+lazy val wineModelServingPipelineImplementation = (project in file("./wine-quality-ml_implementation"))
+  .enablePlugins(PipelinesApplicationPlugin)
+  .enablePlugins(PipelinesAkkaStreamsLibraryPlugin)
+  .settings(
     libraryDependencies ++= Seq(influx, scalaTest),
     avroSpecificSourceDirectories in Compile ++=
       Seq(new java.io.File("model-serving/src/main/avro"))
@@ -42,6 +50,14 @@ lazy val recommenderModelServingPipeline = (project in file("./recommender-ml"))
     name := s"recommender-ml-$user",
     version := thisVersion,
     pipelinesDockerRegistry := Some("docker-registry-default.fiorano.lightbend.com"),
+  )
+  .settings(commonSettings)
+  .dependsOn(recommenderModelServingPipelineImplementation)
+
+lazy val recommenderModelServingPipelineImplementation = (project in file("./recommender-ml-implementation"))
+  .enablePlugins(PipelinesApplicationPlugin)
+  .enablePlugins(PipelinesAkkaStreamsLibraryPlugin)
+  .settings(
     libraryDependencies ++= Seq(scalaTest),
     avroSpecificSourceDirectories in Compile ++=
       Seq(new java.io.File("model-serving/src/main/avro"))
@@ -58,6 +74,14 @@ lazy val airlineFlightsModelServingPipeline = (project in file("./airline-flight
     name := s"airline-flights-ml-$user",
     version := thisVersion,
     pipelinesDockerRegistry := Some("docker-registry-default.fiorano.lightbend.com"),
+  )
+  .settings(commonSettings)
+  .dependsOn(airlineFlightsModelServingPipelineImplementation)
+
+lazy val airlineFlightsModelServingPipelineImplementation = (project in file("./airline-flights-ml-implementation"))
+  .enablePlugins(PipelinesApplicationPlugin)
+  .enablePlugins(PipelinesAkkaStreamsLibraryPlugin)
+  .settings(
     libraryDependencies ++= Seq(influx, scalaTest),
     avroSpecificSourceDirectories in Compile ++=
       Seq(new java.io.File("model-serving/src/main/avro"))
@@ -65,6 +89,29 @@ lazy val airlineFlightsModelServingPipeline = (project in file("./airline-flight
   .settings(commonSettings)
   .dependsOn(pipelinesx, modelServing)
 
+lazy val wineModelServingBlueGreenPipeline = (project in file("./wine-quality-ml_bluegreen"))
+  .enablePlugins(PipelinesApplicationPlugin)
+  .enablePlugins(PipelinesAkkaStreamsLibraryPlugin)
+  .settings(
+    name := s"wine-quality-bluegreen-ml-$user",
+    version := thisVersion,
+    pipelinesDockerRegistry := Some("docker-registry-default.fiorano.lightbend.com"),
+  )
+  .settings(commonSettings)
+  .dependsOn(wineModelServingPipelineBlueGreenImplementation)
+
+lazy val wineModelServingPipelineBlueGreenImplementation = (project in file("./wine-quality-ml_implementation_bluegreen"))
+  .enablePlugins(PipelinesApplicationPlugin)
+  .enablePlugins(PipelinesAkkaStreamsLibraryPlugin)
+  .settings(
+    avroSpecificSourceDirectories in Compile ++=
+      Seq(new java.io.File("model-serving/src/main/avro"))
+  )
+  .settings(commonSettings)
+  .dependsOn(wineModelServingPipelineImplementation)
+
+
+// Supporting projects
 lazy val pipelinesx = (project in file("./pipelinesx"))
   .enablePlugins(PipelinesLibraryPlugin)
   .enablePlugins(PipelinesAkkaStreamsLibraryPlugin)
