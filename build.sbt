@@ -21,7 +21,6 @@ val user = sys.props.getOrElse("user.name", "unknown-user")
 // below. See the README for details.
 lazy val wineModelServingPipeline = (project in file("./wine-quality-ml"))
   .enablePlugins(PipelinesApplicationPlugin)
-  .enablePlugins(PipelinesAkkaStreamsLibraryPlugin)
   .settings(
     name := s"wine-quality-ml-$user",
     version := thisVersion,
@@ -31,7 +30,6 @@ lazy val wineModelServingPipeline = (project in file("./wine-quality-ml"))
   .dependsOn(wineModelServingPipelineImplementation)
 
 lazy val wineModelServingPipelineImplementation = (project in file("./wine-quality-ml_implementation"))
-  .enablePlugins(PipelinesApplicationPlugin)
   .enablePlugins(PipelinesAkkaStreamsLibraryPlugin)
   .settings(
     libraryDependencies ++= Seq(influx, scalaTest),
@@ -45,7 +43,6 @@ lazy val wineModelServingPipelineImplementation = (project in file("./wine-quali
 // below. See the README for details.
 lazy val recommenderModelServingPipeline = (project in file("./recommender-ml"))
   .enablePlugins(PipelinesApplicationPlugin)
-  .enablePlugins(PipelinesAkkaStreamsLibraryPlugin)
   .settings(
     name := s"recommender-ml-$user",
     version := thisVersion,
@@ -55,7 +52,6 @@ lazy val recommenderModelServingPipeline = (project in file("./recommender-ml"))
   .dependsOn(recommenderModelServingPipelineImplementation)
 
 lazy val recommenderModelServingPipelineImplementation = (project in file("./recommender-ml-implementation"))
-  .enablePlugins(PipelinesApplicationPlugin)
   .enablePlugins(PipelinesAkkaStreamsLibraryPlugin)
   .settings(
     libraryDependencies ++= Seq(scalaTest),
@@ -69,7 +65,6 @@ lazy val recommenderModelServingPipelineImplementation = (project in file("./rec
 // below. See the README for details.
 lazy val airlineFlightsModelServingPipeline = (project in file("./airline-flights-ml"))
   .enablePlugins(PipelinesApplicationPlugin)
-  .enablePlugins(PipelinesAkkaStreamsLibraryPlugin)
   .settings(
     name := s"airline-flights-ml-$user",
     version := thisVersion,
@@ -79,7 +74,6 @@ lazy val airlineFlightsModelServingPipeline = (project in file("./airline-flight
   .dependsOn(airlineFlightsModelServingPipelineImplementation)
 
 lazy val airlineFlightsModelServingPipelineImplementation = (project in file("./airline-flights-ml-implementation"))
-  .enablePlugins(PipelinesApplicationPlugin)
   .enablePlugins(PipelinesAkkaStreamsLibraryPlugin)
   .settings(
     libraryDependencies ++= Seq(influx, scalaTest),
@@ -91,7 +85,6 @@ lazy val airlineFlightsModelServingPipelineImplementation = (project in file("./
 
 lazy val wineModelServingBlueGreenPipeline = (project in file("./wine-quality-ml_bluegreen"))
   .enablePlugins(PipelinesApplicationPlugin)
-  .enablePlugins(PipelinesAkkaStreamsLibraryPlugin)
   .settings(
     name := s"wine-quality-bluegreen-ml-$user",
     version := thisVersion,
@@ -101,7 +94,6 @@ lazy val wineModelServingBlueGreenPipeline = (project in file("./wine-quality-ml
   .dependsOn(wineModelServingPipelineBlueGreenImplementation)
 
 lazy val wineModelServingPipelineBlueGreenImplementation = (project in file("./wine-quality-ml_implementation_bluegreen"))
-  .enablePlugins(PipelinesApplicationPlugin)
   .enablePlugins(PipelinesAkkaStreamsLibraryPlugin)
   .settings(
     avroSpecificSourceDirectories in Compile ++=
@@ -113,7 +105,6 @@ lazy val wineModelServingPipelineBlueGreenImplementation = (project in file("./w
 
 lazy val wineModelServingSpeculativePipeline = (project in file("./wine-quality-ml_speculative"))
   .enablePlugins(PipelinesApplicationPlugin)
-  .enablePlugins(PipelinesAkkaStreamsLibraryPlugin)
   .settings(
     name := s"wine-quality-speculative-ml-$user",
     version := thisVersion,
@@ -123,7 +114,6 @@ lazy val wineModelServingSpeculativePipeline = (project in file("./wine-quality-
   .dependsOn(wineModelServingPipelineSpeculativeImplementation)
 
 lazy val wineModelServingPipelineSpeculativeImplementation = (project in file("./wine-quality-ml_implementation_speculative"))
-  .enablePlugins(PipelinesApplicationPlugin)
   .enablePlugins(PipelinesAkkaStreamsLibraryPlugin)
   .settings(
     avroSpecificSourceDirectories in Compile ++=
