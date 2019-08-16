@@ -1,0 +1,12 @@
+{
+  "namespace": "com.lightbend.modelserving.speculative",
+  "type": "record",
+  "name": "StartSpeculative",
+  "doc": "Start message for speculative processing",
+  "fields":[
+    {
+        "name": "uuid",
+        "type": "string"
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "namespace": "pipelines.examples.modelserving.winequality.speculative",
+  "type": "record",
+  "name": "WineRecordRun",
+  "doc": "Added uuid here to group requests.",
+  "fields":[
+    {
+      "name": "uuid",
+      "type": "string"
+    },
+    {
+      "name": "inputRecord",
+      "type": "pipelines.examples.modelserving.winequality.data.WineRecord"
+    }
+  ]
+}

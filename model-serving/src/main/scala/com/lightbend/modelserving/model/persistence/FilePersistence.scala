@@ -3,9 +3,9 @@ package com.lightbend.modelserving.model.persistence
 import java.io.{ DataInputStream, DataOutputStream, File, FileInputStream, FileOutputStream }
 import java.nio.channels.{ FileChannel, FileLock }
 
-import com.lightbend.modelserving.merger.StreamMerger
 import com.lightbend.modelserving.model.{ Model, ModelDescriptorUtil, ModelFactory }
 import com.lightbend.modelserving.model.ModelDescriptorUtil.implicits._
+import com.lightbend.modelserving.speculative.SpeculativeStreamMerger
 import com.lightbend.modelserving.splitter.{ OutputPercentage, StreamSplitter }
 import pipelinesx.logging.LoggingUtil
 
@@ -154,11 +154,12 @@ final case class FilePersistence[RECORD, RESULT](
    * @return either an error string or the merger.
    */
   def restoreMergerState(
-      fileName: String): Either[String, StreamMerger] = getInputStream(fileName) match {
+      fileName: String): Either[String, SpeculativeStreamMerger] = getInputStream(fileName) match {
     case Right((is, fis)) ⇒
       try {
         val tmout = is.readLong()
-        Right(new StreamMerger(tmout))
+        val results = is.readLong().toInt
+        Right(new SpeculativeStreamMerger(tmout, results))
       } catch {
         case t: Throwable ⇒
           Left(throwableMsg(s"Error restoring state for data type $fileName.", t))
@@ -236,12 +237,13 @@ final case class FilePersistence[RECORD, RESULT](
    * @return either an error string or true.
    */
   def saveState(
-      merger:   StreamMerger,
+      merger:   SpeculativeStreamMerger,
       filePath: String): Either[String, Boolean] = {
     getOutputStream(filePath) match {
       case Right((os, fos)) ⇒
         try {
           os.writeLong(merger.timeout)
+          os.writeLong(merger.results.toLong)
           Right(true)
         } catch {
           case t: Throwable ⇒

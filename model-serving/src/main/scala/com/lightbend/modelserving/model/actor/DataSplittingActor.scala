@@ -50,7 +50,7 @@ class DataSplittingActor(
       val definition = StreamSplitterUtil.splitdefinition(splitter)
       outlets = definition._1
       boundaries = GetWithProbability.calculateBoundaries(definition._2)
-      // persist new model
+      // persist new splitter
       filePersistence.saveState(splitter, label) match {
         case Left(error)  ⇒ log.error(error)
         case Right(true)  ⇒ log.info(s"Successfully saved state for splitter $splitter using location $label")

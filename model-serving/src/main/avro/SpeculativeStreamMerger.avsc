@@ -1,0 +1,16 @@
+{
+  "namespace": "com.lightbend.modelserving.speculative",
+  "type": "record",
+  "name": "SpeculativeStreamMerger",
+  "doc": "Defines timeout for streams speculative merger",
+  "fields":[
+    {
+      "name": "timeout",
+      "type": "long"
+    },
+    {
+      "name": "results",
+      "type": "int"
+     }
+  ]
+}

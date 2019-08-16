@@ -105,11 +105,33 @@ lazy val wineModelServingPipelineBlueGreenImplementation = (project in file("./w
   .enablePlugins(PipelinesAkkaStreamsLibraryPlugin)
   .settings(
     avroSpecificSourceDirectories in Compile ++=
-      Seq(new java.io.File("model-serving/src/main/avro"))
+      Seq(new java.io.File("model-serving/src/main/avro"),
+        new java.io.File("wine-quality-ml_implementation/src/main/avro"))
   )
   .settings(commonSettings)
   .dependsOn(wineModelServingPipelineImplementation)
 
+lazy val wineModelServingSpeculativePipeline = (project in file("./wine-quality-ml_speculative"))
+  .enablePlugins(PipelinesApplicationPlugin)
+  .enablePlugins(PipelinesAkkaStreamsLibraryPlugin)
+  .settings(
+    name := s"wine-quality-speculative-ml-$user",
+    version := thisVersion,
+    pipelinesDockerRegistry := Some("docker-registry-default.fiorano.lightbend.com"),
+  )
+  .settings(commonSettings)
+  .dependsOn(wineModelServingPipelineSpeculativeImplementation)
+
+lazy val wineModelServingPipelineSpeculativeImplementation = (project in file("./wine-quality-ml_implementation_speculative"))
+  .enablePlugins(PipelinesApplicationPlugin)
+  .enablePlugins(PipelinesAkkaStreamsLibraryPlugin)
+  .settings(
+    avroSpecificSourceDirectories in Compile ++=
+      Seq(new java.io.File("model-serving/src/main/avro"),
+        new java.io.File("wine-quality-ml_implementation/src/main/avro"))
+  )
+  .settings(commonSettings)
+  .dependsOn(wineModelServingPipelineImplementation)
 
 // Supporting projects
 lazy val pipelinesx = (project in file("./pipelinesx"))
@@ -147,7 +169,7 @@ lazy val scalacTestCompileOptions = commonScalacOptions ++ Seq(
   "-Ywarn-extra-implicit",             // Warn when more than one implicit parameter section is defined.
   "-Ywarn-numeric-widen",              // Warn when numerics are widened.
   "-Ywarn-unused:implicits",           // Warn if an implicit parameter is unused.
-  "-Ywarn-unused:imports",             // Warn if an import selector is not referenced.
+  //"-Ywarn-unused:imports",             // Warn if an import selector is not referenced.
   "-Ywarn-unused:locals",              // Warn if a local definition is unused.
   //"-Ywarn-unused:params",              // Warn if a value parameter is unused. (But there's no way to suppress warning when legitimate!!)
   "-Ywarn-unused:patvars",             // Warn if a variable bound in a pattern is unused.
