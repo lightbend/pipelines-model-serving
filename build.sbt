@@ -139,7 +139,7 @@ lazy val pipelinesx = (project in file("./pipelinesx"))
   .enablePlugins(PipelinesAkkaStreamsLibraryPlugin)
   .settings(
     name := "pipelinesx",
-    libraryDependencies ++= logging ++ Seq(/*alpakkaKafka,*/ bijection, json2avro, influx, scalaTest)
+    libraryDependencies ++= logging ++ Seq(bijection, json2avro, influx, scalaTest)
   )
   .settings(commonSettings)
 
@@ -147,7 +147,8 @@ lazy val modelServing = (project in file("./model-serving"))
   .enablePlugins(PipelinesAkkaStreamsLibraryPlugin)
   .settings(
     name := "model-serving",
-    libraryDependencies ++= Seq(tensorflow, tensorflowProto, pmml, pmmlextensions, h2o, bijection, json2avro, gson, scalajHTTP, scalaTest)
+    libraryDependencies ++= Seq(tensorflow, tensorflowProto, pmml, pmmlextensions, h2o, bijection, json2avro, gson, scalajHTTP,
+      scalaTest)
   )
   .settings(commonSettings)
   .dependsOn(pipelinesx)
@@ -164,12 +165,12 @@ lazy val commonScalacOptions = Seq(
   )
 
 lazy val scalacTestCompileOptions = commonScalacOptions ++ Seq(
-  "-Xfatal-warnings",
+//  "-Xfatal-warnings",                // Avro generates unused imports, so this is commented out not to break build
   "-Ywarn-dead-code",                  // Warn when dead code is identified.
   "-Ywarn-extra-implicit",             // Warn when more than one implicit parameter section is defined.
   "-Ywarn-numeric-widen",              // Warn when numerics are widened.
   "-Ywarn-unused:implicits",           // Warn if an implicit parameter is unused.
-  //"-Ywarn-unused:imports",             // Warn if an import selector is not referenced.
+  "-Ywarn-unused:imports",             // Warn if an import selector is not referenced.
   "-Ywarn-unused:locals",              // Warn if a local definition is unused.
   //"-Ywarn-unused:params",              // Warn if a value parameter is unused. (But there's no way to suppress warning when legitimate!!)
   "-Ywarn-unused:patvars",             // Warn if a variable bound in a pattern is unused.

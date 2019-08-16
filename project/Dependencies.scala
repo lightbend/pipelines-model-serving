@@ -19,9 +19,7 @@ object Dependencies {
   val scalajHTTP      = "org.scalaj"                     %% "scalaj-http"               % scalajHTTPVersion
 
   val slf4jAPI        = "org.slf4j"                       % "slf4j-api"                 % slf4jVersion
-  // val slf4jSimple     = "org.slf4j"                       % "slf4j-simple"              % slf4jVersion
   val slf4jLog4J      = "org.slf4j"                       % "slf4j-log4j12"             % slf4jVersion
-  // val scalaLogging    = "com.typesafe.scala-logging"     %% "scala-logging"             % scalaLoggingVersion
   val logback         = "ch.qos.logback"                  % "logback-classic"           % logbackClassicVersion
 
   val scalaTest       = "org.scalatest"                  %% "scalatest"                 % scaltestVersion    % "test"
