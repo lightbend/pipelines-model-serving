@@ -1,10 +1,12 @@
 # Pipelines Machine Learning Examples
 
-This project contains three example pipelines:
+This project contains several example pipelines:
 
 1. Judge the quality of wine using models that are served within a streamlet process.
 2. Make product recommendations using models that are served _as a service_ using Kubeflow.
 3. Predict air traffic delays using an H2O embedded "MOJO" model.
+4. Wine quality canary deployment, allowing to specify percentage of traffic send to each model serving implementation
+5. Speculative wine quality deployment, allowing servicing several models in parallel and picking result based on individual results.
 
 In addition, it contains prototypes for reusable "contrib" libraries for Pipelines:
 
@@ -137,13 +139,15 @@ Then you can use created service to access it
 
 If you run any of the following commands in the "root" project (`pipelines-model-serving`), you'll get errors about multiple blueprint files being disallowed by Pipelines.
 
-So, decide which of the three projects you want to build and deploy, then change to that project in `sbt` and run `buildAndPublish`.
+So, decide which of the five projects you want to build and deploy, then change to that project in `sbt` and run `buildAndPublish`.
 
 Specifically, from the `sbt` prompt, do _one_ of the following first:
 
 1. Wine quality: `project wineModelServingPipeline` (corresponding to the directory `wine-quality-ml`)
 2. Airline flights: `project airlineFlightsModelServingPipeline` (corresponding to the directory `airline-flights-ml`)
 3. Recommender: `project recommenderModelServingPipeline` (corresponding to the directory `recommender-ml`)
+4. Canary deployment: `project wineModelServingBlueGreenPipeline` (corresponding to the directory `wine-quality-ml_bluegreen`)
+5. Speculative service deployment: `project wineModelServingSpeculativePipeline` (corresponding to the directory `wine-quality-ml_speculative`)
 
 Now build the project:
 
@@ -158,19 +162,44 @@ The image name will be based on one of the following strings, where `USER` will 
 * Wine app: `wine-quality-ml-USER`
 * Airline app: `airline-flights-ml-USER`
 * Recommender app: `recommender-ml-USER`
+* Canary deployment app: `wine-quality-bluegreen-ml-USER`
+* Speculative serving app: `wine-quality-speculative-ml-USER`
+
+Note that current implementations are leveraging persistence based on files. This means that 
+prior to deploying an application, a PVC for usage by this application has to be created. This PVC has to be created
+in the namespace, where application is deployed (which corresponds to an application name) and should support RWX access (use  glusterfs-storage class on OpenShift).
+This can be done either directly creating PVC using OpenShift console or leveraging the following yaml file:
+````
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: persistence-data-mount          // Choose other name
+spec:
+  storageClassName: glusterfs-storage
+  accessModes:
+  - "ReadWriteMany"
+  resources:
+    requests:
+      storage: "10Gi"
+````
+
 
 The full image identifier is printed as part of the output of the `buildAndPublish` command. It includes the Docker registry URL for your cluster and the auto-generated tag for the image. Copy and past that text for the deployment command next, replacing the placeholder `IMAGE` shown with the text. Note: this command uses `kubectl`, so it is run on a separate shell window:
-
 ```shell
-kubectl pipelines deploy IMAGE
+kubectl pipelines deploy IMAGE --volume-mount model-serving.persistence-data-mount=persistence-data-mount
 ```
+> NOTE volume mount here need to be defined for every streamlet that is using this persistence. For example, canary deployment example contains 3 streamlets using persistence. Consequently deployment command looks like following
+````
+kubectl pipelines deploy -u $(oc whoami) -p $(oc whoami -t) docker-registry-default.fiorano.lightbend.com/lightbend/wine-quality-bluegreen-ml-boris:193-9cb5dfe  --volume-mount model-serving1.persistence-data-mount=persistence-data-mount --volume-mount model-serving2.persistence-data-mount=persistence-data-mount --volume-mount winedata-splitter.persistence-data-mount=persistence-data-mount
+````
+>Here '-u $(oc whoami) -p $(oc whoami -t)' is optional and ensures that login to the registry is correct.
 
 > NOTE: If you are on OpenShift and prefer the `oc` command, replace `kubectl` with `oc plugin`.
 
 For the airline and wine apps, you can also override InfluxDB parameters on the command line (or any other configuration parameters, really). For the wine app, it would look as follows, where any or all of the configuration flags could be given. Here, the default values are shown on the right hand sides of the equal signs:
 
 ```shell
-kubectl pipelines deploy IMAGE \
+kubectl pipelines deploy IMAGE --volume-mount model-serving.persistence-data-mount=persistence-data-mount \
   wine-quality.influxdb.host="influxdb.influxdb.svc" \
   wine-quality.influxdb.port="8086" \
   wine-quality.influxdb.database="wine_ml"
@@ -179,7 +208,7 @@ kubectl pipelines deploy IMAGE \
 Similarly, for the airline app:
 
 ```shell
-kubectl pipelines deploy IMAGE \
+kubectl pipelines deploy IMAGE --volume-mount model-serving.persistence-data-mount=persistence-data-mount \
   airline-flights.influxdb.host="influxdb.influxdb.svc" \
   airline-flights.influxdb.port="8086" \
   airline-flights.influxdb.database="airline_ml"
@@ -205,6 +234,8 @@ avroSpecificSourceDirectories in Compile ++=
 ```
 
 So, when that project's `*.avsc` files are parsed, the shared files in `model-serving` will also be parsed, _again_, and the output code will be compiled into that project's jar file. This means that when the app is deployed, there will be _two_ copies of the class files for these shared classes. This is "safe", because the classes are identical, but not very "clean". Hence, a future version of this code will need to eliminate this duplication.
+Additional issue with this is that Avro generator might add `unused imports` corresponding to the included
+Avro schemas. That is why the project disables `-Xfatal-warnings` 
 
 ### Ingress with "Canned" Data
 
