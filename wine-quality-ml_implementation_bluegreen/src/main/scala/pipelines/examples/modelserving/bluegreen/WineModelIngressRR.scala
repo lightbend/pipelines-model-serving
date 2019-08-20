@@ -1,9 +1,7 @@
 package pipelines.examples.modelserving.bluegreen
 
 import akka.NotUsed
-import akka.stream.ClosedShape
-import akka.stream.contrib.PartitionWith
-import akka.stream.scaladsl.{ GraphDSL, Keep, RunnableGraph, Source }
+import akka.stream.scaladsl.Source
 import pipelines.streamlets.avro.AvroOutlet
 import pipelines.akkastream.AkkaStreamlet
 import pipelines.akkastream.scaladsl.RunnableGraphStreamletLogic
@@ -12,9 +10,10 @@ import pipelinesx.config.ConfigUtil.implicits._
 
 import scala.concurrent.duration._
 import scala.collection.JavaConverters._
-import com.lightbend.modelserving.model.{ ModelDescriptor, ModelType }
+import com.lightbend.modelserving.model.{ModelDescriptor, ModelType}
 import pipelines.examples.modelserving.winequality.WineModelReader
 import pipelines.streamlets.StreamletShape
+import pipelinesx.ingress.RoundRobinInputSplitter
 
 /**
  * One at a time every two minutes, loads a PMML or TensorFlow model and
@@ -31,32 +30,14 @@ final case object WineModelIngressRR extends AkkaStreamlet {
     def runnableGraph = {
       val outlet0 = atMostOnceSink(out0)
       val outlet1 = atMostOnceSink(out1)
-      RunnableGraph.fromGraph(
-        GraphDSL.create(outlet0, outlet1)(Keep.left) { implicit builder: GraphDSL.Builder[NotUsed] ⇒ (il, ir) ⇒
-          import GraphDSL.Implicits._
-
-          val partitionWith = PartitionWith[Either[ModelDescriptor, ModelDescriptor], ModelDescriptor, ModelDescriptor] {
-            case Left(e)  ⇒ Left(e)
-            case Right(e) ⇒ Right(e)
-          }
-          val partitioner = builder.add(partitionWith)
-
-          // format: OFF
-          WineModelIngressRRUtil.makeSource() ~>  partitioner.in
-          partitioner.out0 ~> il
-          partitioner.out1 ~> ir
-          // format: ON
-
-          ClosedShape
-        }
-      )
+      new RoundRobinInputSplitter[ModelDescriptor](outlet0, outlet1) {
+        def source = WineModelIngressRRUtil.makeSource()
+      }.runnableGraph()
     }
   }
 }
 
 object WineModelIngressRRUtil {
-
-  private var counter = -1
 
   lazy val modelFrequencySeconds: FiniteDuration =
     ConfigUtil.default
@@ -77,20 +58,11 @@ object WineModelIngressRRUtil {
         }
 
   def makeSource(
-      modelsResources: Map[ModelType, Seq[String]] = wineModelsResources,
-      frequency:       FiniteDuration              = modelFrequencySeconds): Source[Either[ModelDescriptor, ModelDescriptor], NotUsed] = {
+        modelsResources: Map[ModelType, Seq[String]] = wineModelsResources,
+        frequency:       FiniteDuration              = modelFrequencySeconds): Source[ModelDescriptor, NotUsed] = {
     val recordsReader = WineModelReader(modelsResources)
-
     Source.repeat(recordsReader)
-      .map(reader ⇒ {
-        val value = reader.next()
-        counter = counter + 1
-        if (counter > 1) counter = 0
-        counter match {
-          case 0 ⇒ Left(value)
-          case _ ⇒ Right(value)
-        }
-      })
+      .map(reader ⇒ reader.next())
       .throttle(1, frequency)
   }
 }

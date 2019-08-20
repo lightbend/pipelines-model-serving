@@ -2,8 +2,6 @@ package pipelines.examples.modelserving.bluegreen
 
 import pipelines.examples.modelserving.winequality.data.WineRecord
 import akka._
-import akka.stream._
-import akka.stream.contrib._
 import akka.stream.scaladsl._
 import akka.util.Timeout
 import akka.pattern.ask
@@ -12,10 +10,11 @@ import scala.concurrent.duration._
 import pipelines.streamlets._
 import pipelines.akkastream._
 import pipelines.akkastream.scaladsl._
-import pipelines.streamlets.avro.{ AvroInlet, AvroOutlet }
-import com.lightbend.modelserving.model.actor.{ DataSplittingActor, RecordWithOutlet }
+import pipelines.streamlets.avro.{AvroInlet, AvroOutlet}
+import com.lightbend.modelserving.model.actor.{DataSplittingActor, RecordWithOutlet}
 import com.lightbend.modelserving.model.persistence.FilePersistence
 import com.lightbend.modelserving.splitter.StreamSplitter
+import pipelinesx.ingress.InputTrafficSplitter
 
 final case object ModelSplitter extends AkkaStreamlet {
 
@@ -39,6 +38,7 @@ final case object ModelSplitter extends AkkaStreamlet {
     val datasplitter = context.system.actorOf(
       DataSplittingActor.props("splitter"))
 
+
     def runnableGraph() = {
 
       val outlet0 = atLeastOnceSink(out0)
@@ -46,26 +46,7 @@ final case object ModelSplitter extends AkkaStreamlet {
 
       atLeastOnceSource(in1).via(configFlow).runWith(Sink.ignore)
       val dt = atLeastOnceSource(in0).via(dataFlow)
-
-      RunnableGraph.fromGraph(
-        GraphDSL.create(outlet0, outlet1)(Keep.left) { implicit builder: GraphDSL.Builder[NotUsed] ⇒ (il, ir) ⇒
-          import GraphDSL.Implicits._
-
-          val partitionWith = PartitionWith[(Either[WineRecord, WineRecord], PipelinesContext), (WineRecord, PipelinesContext), (WineRecord, PipelinesContext)] {
-            case (Left(e), offset)  ⇒ Left((e, offset))
-            case (Right(e), offset) ⇒ Right((e, offset))
-          }
-          val partitioner = builder.add(partitionWith)
-
-          // format: OFF
-          dt ~>  partitioner.in
-          partitioner.out0 ~> il
-          partitioner.out1 ~> ir
-          // format: ON
-
-          ClosedShape
-        }
-      )
+      new InputTrafficSplitter[WineRecord](dt, outlet0, outlet1) {}.runnableGraph()
     }
 
     protected def dataFlow() =
