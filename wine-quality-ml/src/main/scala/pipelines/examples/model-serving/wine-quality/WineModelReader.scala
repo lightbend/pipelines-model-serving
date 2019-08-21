@@ -4,7 +4,7 @@ import pipelinesx.ingress.ByteArrayReader
 import com.lightbend.modelserving.model.{ ModelDescriptor, ModelType }
 
 /**
- * Provides an infinite stream of wine records, repeatedly reading them from
+ * Provides an infinite stream of wine models, repeatedly reading them from
  * the specified resource.
  */
 final case class WineModelReader(resourceNames: Map[ModelType, Seq[String]]) {
