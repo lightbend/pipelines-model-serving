@@ -28,7 +28,8 @@ project/activator-sbt*
 .*.swp
 .metals
 .bloop
-airline-flights-ml/persistence/
 tmp/
 
-
+airline-flights-ml/persistence/
+airline-flights-ml/test-persistence/
+persistence/
