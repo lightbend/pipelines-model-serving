@@ -22,20 +22,23 @@ object ByteArrayReader {
   // HACK: If the resource doesn't exist and doesn't start with '/', try adding it!
   // If it doesn't exist but _has_ the leading '/', try removing it!
   def fromClasspath(path: String): Either[String, Array[Byte]] = {
-      def fixPath(): Either[String, String] = {
-        val clazz = getClass
-        if (clazz.getResource(path) != null) Right(path)
-        else if (path.startsWith("/")) {
-          val path2 = path.substring(1)
-          if (clazz.getResource(path2) != null) {
-            logger.warn(s"It was necessary to remove the leading '/' from the beginning of the CLASSPATH path $path")
-            Right(path2)
-          } else Left(s"CLASSPATH resource $path and $path2 do not exist!")
-        } else if (clazz.getResource("/" + path) != null) {
-          logger.warn(s"It was necessary to add a '/' to the beginning of the CLASSPATH path $path")
-          Right("/" + path)
-        } else Left(s"CLASSPATH resource $path and /$path do not exist!")
-      }
+    val errFmt = "CLASSPATH resource paths %s and %s do not exist!"
+    val slashFmt = "It was necessary to %s leading '/' %s the beginning of the CLASSPATH path %s"
+
+    def fixPath(): Either[String, String] = {
+      val clazz = getClass
+      if (clazz.getResource(path) != null) Right(path)
+      else if (path.startsWith("/")) {
+        val path2 = path.substring(1)
+        if (clazz.getResource(path2) != null) {
+          logger.warn(slashFmt.format("remove the", "from", path))
+          Right(path2)
+        } else Left(errFmt.format(path, path2))
+      } else if (clazz.getResource("/" + path) != null) {
+        logger.warn(slashFmt.format("add a", "to", path))
+        Right("/" + path)
+      } else Left(errFmt.format(path, "/"+path))
+    }
 
     fixPath() match {
       case Left(error) ⇒ Left(error)
