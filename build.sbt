@@ -96,6 +96,7 @@ lazy val wineModelServingBlueGreenPipeline = (project in file("./wine-quality-ml
 lazy val wineModelServingPipelineBlueGreenImplementation = (project in file("./wine-quality-ml_implementation_bluegreen"))
   .enablePlugins(PipelinesAkkaStreamsLibraryPlugin)
   .settings(
+    libraryDependencies ++= Seq(influx, scalaTest),
     avroSpecificSourceDirectories in Compile ++=
       Seq(new java.io.File("model-serving/src/main/avro"),
         new java.io.File("wine-quality-ml_implementation/src/main/avro"))
@@ -116,6 +117,7 @@ lazy val wineModelServingSpeculativePipeline = (project in file("./wine-quality-
 lazy val wineModelServingPipelineSpeculativeImplementation = (project in file("./wine-quality-ml_implementation_speculative"))
   .enablePlugins(PipelinesAkkaStreamsLibraryPlugin)
   .settings(
+    libraryDependencies ++= Seq(influx, scalaTest),
     avroSpecificSourceDirectories in Compile ++=
       Seq(new java.io.File("model-serving/src/main/avro"),
         new java.io.File("wine-quality-ml_implementation/src/main/avro"))

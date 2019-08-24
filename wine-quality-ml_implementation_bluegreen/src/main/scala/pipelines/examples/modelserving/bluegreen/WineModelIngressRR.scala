@@ -10,7 +10,7 @@ import pipelinesx.config.ConfigUtil.implicits._
 
 import scala.concurrent.duration._
 import scala.collection.JavaConverters._
-import com.lightbend.modelserving.model.{ModelDescriptor, ModelType}
+import com.lightbend.modelserving.model.{ ModelDescriptor, ModelType }
 import pipelines.examples.modelserving.winequality.WineModelReader
 import pipelines.streamlets.StreamletShape
 import pipelinesx.ingress.RoundRobinInputSplitter
@@ -58,8 +58,8 @@ object WineModelIngressRRUtil {
         }
 
   def makeSource(
-        modelsResources: Map[ModelType, Seq[String]] = wineModelsResources,
-        frequency:       FiniteDuration              = modelFrequencySeconds): Source[ModelDescriptor, NotUsed] = {
+      modelsResources: Map[ModelType, Seq[String]] = wineModelsResources,
+      frequency:       FiniteDuration              = modelFrequencySeconds): Source[ModelDescriptor, NotUsed] = {
     val recordsReader = WineModelReader(modelsResources)
     Source.repeat(recordsReader)
       .map(reader ⇒ reader.next())

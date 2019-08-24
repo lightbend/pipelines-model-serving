@@ -13,5 +13,5 @@ class IntermediateModelResultsMerger extends AkkaStreamlet {
   val out = AvroOutlet[WineResultRun]("out", _.result.inputRecord.lot_id)
 
   final override val shape = StreamletShape.withInlets(in0, in1).withOutlets(out)
-  override final def createLogic = new MergeLogic(Vector(in0, in1), out)
+  override final def createLogic = new MergeLogic[WineResultRun](Vector(in0, in1), out)
 }

@@ -46,23 +46,20 @@ final case object SpeculativeWineModelCollector extends AkkaStreamlet {
         decider))
 
     def runnableGraph() = {
-      atLeastOnceSource(in0).via(dataFlow).to(atLeastOnceSink(out))
       atLeastOnceSource(in1).via(configFlow).runWith(Sink.ignore)
       atLeastOnceSource(in2).via(startFlow).runWith(Sink.ignore)
-      makeSource().via(timeFlow).to(atMostOnceSink(out))
+      atMostOnceSource(in0).via(dataFlow).merge(makeSource().via(timeFlow)).to(atMostOnceSink(out))
     }
 
     protected def dataFlow =
-      FlowWithPipelinesContext[WineResultRun].mapAsync(1) { record ⇒
+      Flow[WineResultRun].mapAsync(1) { record ⇒
         splieeterCollector.ask(record).mapTo[Option[WineResult]]
-          .collect { case Some(result) ⇒ result }
-      }
+      }.collect { case Some(result) ⇒ result }
 
     protected def timeFlow =
       Flow[Long].mapAsync(1) { record ⇒
         splieeterCollector.ask(record).mapTo[Option[WineResult]]
-          .collect { case Some(result) ⇒ result }
-      }
+      }.collect { case Some(result) ⇒ result }
 
     protected def configFlow =
       FlowWithPipelinesContext[SpeculativeStreamMerger].mapAsync(1) {

@@ -23,7 +23,7 @@ class SpeculativeModelServingCollectorActor[MODEL_OUTPUT](
   log.info(s"Creating Speculative Model serving collector Actor for $label")
 
   var timeout = SERVERTIMEOUT
-  var required = 1
+  var required = 2
 
   val currentProcessing = collection.mutable.Map[String, CurrentProcessing[MODEL_OUTPUT]]()
 
@@ -77,7 +77,7 @@ class SpeculativeModelServingCollectorActor[MODEL_OUTPUT](
         }
       }
       if (!submitted) {
-        sender() != None
+        sender() ! None
         ()
       }
 
@@ -93,11 +93,11 @@ class SpeculativeModelServingCollectorActor[MODEL_OUTPUT](
               processResult(uuid, current) // We are done
             case _ ⇒
               currentProcessing += (uuid -> current) // Keep going
-              sender() != None
+              sender() ! None
               ()
           }
         case _ ⇒ // It is already removed
-          sender() != None
+          sender() ! None
           ()
       }
   }

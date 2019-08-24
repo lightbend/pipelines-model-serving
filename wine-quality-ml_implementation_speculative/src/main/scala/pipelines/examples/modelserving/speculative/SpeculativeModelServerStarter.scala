@@ -2,9 +2,6 @@ package pipelines.examples.modelserving.speculative
 
 import java.util.UUID
 
-import akka.NotUsed
-import akka.stream.ClosedShape
-import akka.stream.scaladsl.{ GraphDSL, Keep, RunnableGraph }
 import com.lightbend.modelserving.speculative.StartSpeculative
 import pipelines.akkastream.AkkaStreamlet
 import pipelines.akkastream.scaladsl.RunnableGraphStreamletLogic
@@ -24,19 +21,10 @@ final case object SpeculativeModelServerStarter extends AkkaStreamlet {
 
     def runnableGraph() = {
 
-      val outlet0 = atLeastOnceSink(out0)
-      val outlet1 = atLeastOnceSink(out1)
-
-      RunnableGraph.fromGraph(
-        GraphDSL.create(outlet0, outlet1)(Keep.left) { implicit builder: GraphDSL.Builder[NotUsed] ⇒ (wine, start) ⇒
-          import GraphDSL.Implicits._
-
-          val guid = UUID.randomUUID().toString
-          atLeastOnceSource(in).map(record ⇒ WineRecordRun(guid, record)) ~> wine
-          atLeastOnceSource(in).map(_ ⇒ StartSpeculative(guid)) ~> start
-          ClosedShape
-        }
-      )
+      atMostOnceSource(in)
+        .map(WineRecordRun(UUID.randomUUID().toString, _))
+        .alsoTo(atMostOnceSink(out0))
+        .map(r ⇒ StartSpeculative(r.uuid)).to(atMostOnceSink(out1))
     }
   }
 }
