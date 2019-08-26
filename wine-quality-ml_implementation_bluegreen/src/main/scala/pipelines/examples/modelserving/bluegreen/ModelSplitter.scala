@@ -2,7 +2,6 @@ package pipelines.examples.modelserving.bluegreen
 
 import pipelines.examples.modelserving.winequality.data.WineRecord
 import akka._
-import akka.stream.scaladsl._
 import akka.util.Timeout
 import akka.pattern.ask
 
@@ -43,7 +42,7 @@ final case object ModelSplitter extends AkkaStreamlet {
       val outlet0 = atLeastOnceSink(out0)
       val outlet1 = atLeastOnceSink(out1)
 
-      atLeastOnceSource(in1).via(configFlow).runWith(Sink.ignore)
+      atLeastOnceSource(in1).via(configFlow).to(atLeastOnceSink)
       val dt = atLeastOnceSource(in0).via(dataFlow)
       new InputTrafficSplitter[WineRecord](dt, outlet0, outlet1) {}.runnableGraph()
     }

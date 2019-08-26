@@ -4,7 +4,6 @@ import pipelines.examples.modelserving.winequality.data.{ WineRecord, WineResult
 import models.pmml.WinePMMLModelFactory
 import models.tensorflow.{ WineTensorFlowBundledModelFactory, WineTensorFlowModelFactory }
 import akka.Done
-import akka.stream.scaladsl.Sink
 import akka.pattern.ask
 import akka.util.Timeout
 
@@ -49,7 +48,7 @@ final case object WineModelServer extends AkkaStreamlet {
         () ⇒ 0.0))
 
     def runnableGraph() = {
-      atLeastOnceSource(in1).via(modelFlow).runWith(Sink.ignore)
+      atLeastOnceSource(in1).via(modelFlow).to(atLeastOnceSink)
       atLeastOnceSource(in0).via(dataFlow).to(atLeastOnceSink(out))
     }
 

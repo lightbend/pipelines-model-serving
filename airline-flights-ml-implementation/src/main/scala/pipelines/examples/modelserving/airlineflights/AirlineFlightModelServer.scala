@@ -7,7 +7,6 @@ import com.lightbend.modelserving.model.h2o.H2OModel
 import akka.Done
 import akka.actor.{ ActorRef, ActorSystem }
 import akka.pattern.ask
-import akka.stream.scaladsl.Sink
 import akka.util.Timeout
 import com.lightbend.modelserving.model.persistence.FilePersistence
 
@@ -46,7 +45,7 @@ final case object AirlineFlightModelServer extends AkkaStreamlet {
 
   override final def createLogic = new RunnableGraphStreamletLogic() {
     def runnableGraph() = {
-      atLeastOnceSource(in1).via(modelFlow).runWith(Sink.ignore)
+      atLeastOnceSource(in1).via(modelFlow).runWith(atLeastOnceSink)
       atLeastOnceSource(in0).via(dataFlow).to(atLeastOnceSink(out))
     }
 

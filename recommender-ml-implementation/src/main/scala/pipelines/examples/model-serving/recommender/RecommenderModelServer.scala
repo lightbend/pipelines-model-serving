@@ -6,7 +6,6 @@ import com.lightbend.modelserving.model.actor.ModelServingActor
 import com.lightbend.modelserving.model.{ Model, ModelDescriptor }
 import akka.Done
 import akka.pattern.ask
-import akka.stream.scaladsl.Sink
 import akka.util.Timeout
 import com.lightbend.modelserving.model.persistence.FilePersistence
 import pipelines.akkastream.AkkaStreamlet
@@ -43,7 +42,7 @@ final case object RecommenderModelServer extends AkkaStreamlet {
         () ⇒ RecommenderTensorFlowServingModel.makeEmptyTFPredictionResult()))
 
     def runnableGraph() = {
-      atLeastOnceSource(in1).via(modelFlow).runWith(Sink.ignore)
+      atLeastOnceSource(in1).via(modelFlow).runWith(atLeastOnceSink)
       atLeastOnceSource(in0).via(dataFlow).to(atLeastOnceSink(out))
     }
 

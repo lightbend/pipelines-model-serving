@@ -2,7 +2,6 @@ package pipelines.examples.modelserving.speculative
 
 import akka.Done
 import akka.pattern.ask
-import akka.stream.scaladsl.Sink
 import akka.util.Timeout
 import com.lightbend.modelserving.model.actor.ModelServingActor
 import com.lightbend.modelserving.model.persistence.FilePersistence
@@ -51,7 +50,7 @@ final case object SpeculativeWineModelServer extends AkkaStreamlet {
         () ⇒ 0.0))
 
     def runnableGraph() = {
-      atLeastOnceSource(in1).via(modelFlow).runWith(Sink.ignore)
+      atLeastOnceSource(in1).via(modelFlow).to(atLeastOnceSink)
       atLeastOnceSource(in0).via(dataFlow).to(atLeastOnceSink(out))
     }
 
