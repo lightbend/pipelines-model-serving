@@ -18,7 +18,7 @@ object Versions {
 
   val alpakkaKafkaVersion   = "1.0.3"
 
-  val influxVersion         = "2.15"
+  val influxVersion         = "2.14"
 
   val slf4jVersion          = "1.7.26"
 
