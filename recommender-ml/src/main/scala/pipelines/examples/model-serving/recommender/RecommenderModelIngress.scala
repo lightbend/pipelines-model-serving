@@ -6,11 +6,11 @@ import pipelines.akkastream.AkkaStreamlet
 import pipelines.akkastream.scaladsl.{ RunnableGraphStreamletLogic }
 import pipelines.streamlets.avro.AvroOutlet
 import pipelines.streamlets.StreamletShape
-import pipelinesx.config.ConfigUtil
-import pipelinesx.config.ConfigUtil.implicits._
+import net.ceedubs.ficus.Ficus._
+import com.typesafe.config.{ Config, ConfigFactory }
 import scala.concurrent.duration._
-import com.lightbend.modelserving.model.{ ModelDescriptor, ModelType }
-import com.lightbend.modelserving.model.util.ModelMainBase
+import pipelinesx.modelserving.model.{ ModelDescriptor, ModelType }
+import pipelinesx.modelserving.model.util.ModelMainBase
 
 /**
  * Ingress of model updates. In this case, every two minutes we load and
@@ -59,10 +59,12 @@ protected final class ModelDescriptorFinder(
 
 object RecommenderModelIngressUtil {
 
+  private val config: Config = ConfigFactory.load()
+
   lazy val recommenderServerLocations: Vector[String] =
-    ConfigUtil.default.getOrElse[Seq[String]]("recommender.service-urls")(Seq("http://tfserving.recommender-ml-boris.svc.cluster.local:8501/v1/models/recommender/versions/1:predict")).toVector
+    config.as[Option[Seq[String]]]("recommender.service-urls").getOrElse(Seq("http://tfserving.recommender-ml-boris.svc.cluster.local:8501/v1/models/recommender/versions/1:predict")).toVector
   lazy val modelFrequencySeconds: FiniteDuration =
-    ConfigUtil.default.getOrElse[Int]("recommender.model-frequency-seconds")(120).seconds
+    config.as[Option[Int]]("recommender.model-frequency-seconds").getOrElse(120).seconds
 
   /** Helper method extracted from RecommenderModelIngress for easier unit testing. */
   def makeSource(

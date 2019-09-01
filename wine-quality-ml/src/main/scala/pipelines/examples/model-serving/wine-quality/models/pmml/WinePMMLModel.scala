@@ -1,7 +1,7 @@
 package pipelines.examples.modelserving.winequality.models.pmml
 
-import com.lightbend.modelserving.model.{ Model, ModelDescriptor, ModelFactory }
-import com.lightbend.modelserving.model.pmml.PMMLModel
+import pipelinesx.modelserving.model.{ Model, ModelDescriptor, ModelFactory }
+import pipelinesx.modelserving.model.pmml.PMMLModel
 import org.jpmml.evaluator.Computable
 import pipelines.examples.modelserving.winequality.data.WineRecord
 import scala.collection.JavaConverters._

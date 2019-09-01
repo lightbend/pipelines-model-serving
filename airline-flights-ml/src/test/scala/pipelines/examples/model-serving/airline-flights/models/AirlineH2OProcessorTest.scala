@@ -1,8 +1,8 @@
 package pipelines.examples.modelserving.airlineflights.models
 
-import com.lightbend.modelserving.model.{ Model, ModelDescriptor, ModelServingStats, ModelType }
-import com.lightbend.modelserving.model.h2o.H2OModel
-import com.lightbend.modelserving.model.persistence.ModelPersistence
+import pipelinesx.modelserving.model.{ Model, ModelDescriptor, ModelServingStats, ModelType }
+import pipelinesx.modelserving.model.h2o.H2OModel
+import pipelinesx.modelserving.model.persistence.ModelPersistence
 import org.scalatest.FlatSpec
 import pipelines.examples.modelserving.airlineflights.data.AirlineFlightRecord
 import pipelinesx.test.OutputInterceptor

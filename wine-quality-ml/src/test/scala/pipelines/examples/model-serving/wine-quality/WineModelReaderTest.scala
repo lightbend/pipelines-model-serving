@@ -1,7 +1,7 @@
 package pipelines.examples.modelserving.winequality
 
 import org.scalatest.{ FunSpec, BeforeAndAfterAll }
-import com.lightbend.modelserving.model.ModelType
+import pipelinesx.modelserving.model.ModelType
 import pipelinesx.test.OutputInterceptor
 
 class WineModelReaderTest extends FunSpec with BeforeAndAfterAll with OutputInterceptor {

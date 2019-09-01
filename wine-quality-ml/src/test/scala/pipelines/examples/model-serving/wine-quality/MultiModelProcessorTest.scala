@@ -2,7 +2,7 @@ package pipelines.examples.modelserving.winequality
 
 import java.io.{ ByteArrayOutputStream }
 
-import com.lightbend.modelserving.model.{ Model, ModelDescriptor, ModelServingStats, ModelType, MultiModelFactory }
+import pipelinesx.modelserving.model.{ Model, ModelDescriptor, ModelServingStats, ModelType, MultiModelFactory }
 import org.scalatest.FlatSpec
 import pipelines.examples.modelserving.winequality.data.WineRecord
 import pipelines.examples.modelserving.winequality.models.pmml.WinePMMLModelFactory

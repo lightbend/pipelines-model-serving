@@ -1,7 +1,7 @@
 package pipelines.examples.modelserving.winequality
 
 import pipelinesx.ingress.ByteArrayReader
-import com.lightbend.modelserving.model.{ ModelDescriptor, ModelType }
+import pipelinesx.modelserving.model.{ ModelDescriptor, ModelType }
 
 /**
  * Provides an infinite stream of wine models, repeatedly reading them from

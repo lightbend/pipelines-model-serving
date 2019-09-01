@@ -1,16 +1,16 @@
 package pipelines.examples.modelserving.airlineflights
 
 import models.AirlineFlightH2OModelFactory
-import com.lightbend.modelserving.model.actor.ModelServingActor
-import com.lightbend.modelserving.model.{ Model, ModelDescriptor, ModelType }
-import com.lightbend.modelserving.model.h2o.H2OModel
-import com.lightbend.modelserving.model.util.MainBase
+import pipelinesx.modelserving.model.actor.ModelServingActor
+import pipelinesx.modelserving.model.{ Model, ModelDescriptor, ModelType }
+import pipelinesx.modelserving.model.h2o.H2OModel
+import pipelinesx.modelserving.model.util.MainBase
 import akka.Done
 import akka.actor.{ ActorRef, ActorSystem }
 import akka.pattern.ask
 import akka.stream.scaladsl.Sink
 import akka.util.Timeout
-import com.lightbend.modelserving.model.persistence.ModelPersistence
+import pipelinesx.modelserving.model.persistence.ModelPersistence
 
 import java.io.File
 import scala.concurrent.Await

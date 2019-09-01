@@ -1,7 +1,7 @@
 package pipelinesx.ingress
 
-import pipelinesx.config.ConfigUtil
-import pipelinesx.config.ConfigUtil.implicits._
+import net.ceedubs.ficus.Ficus._
+import com.typesafe.config.{ Config, ConfigFactory }
 import pipelinesx.logging.{ LoggingUtil, MutableLogger }
 import scala.io.BufferedSource
 import java.io.{ File, FilenameFilter, FileInputStream, FileOutputStream, InputStream }
@@ -141,7 +141,7 @@ object RecordsReader {
 
   lazy val logger: MutableLogger = LoggingUtil.getLogger(RecordsReader.getClass)
 
-  lazy val config: ConfigUtil = ConfigUtil.default
+  private val config: Config = ConfigFactory.load()
 
   /**
    * Load resources from a file system.
@@ -297,7 +297,7 @@ object RecordsReader {
    */
   def determineSource(configKeyRoot: String): SourceKind = {
     val source = whichSource(configKeyRoot)
-    config.get[String](source) match {
+    config.as[Option[String]](source) match {
       case Some(flag) ⇒
         val f = flag.toLowerCase
         if (f.startsWith("file")) SourceKind.FileSystem
@@ -396,11 +396,11 @@ object RecordsReader {
     val fsp = configKeyRoot + ".data-sources.from-file-system.paths"
     val fsdp = configKeyRoot + ".data-sources.from-file-system.dir-paths"
     val fsfnr = configKeyRoot + ".data-sources.from-file-system.file-name-regex"
-    config.get[Seq[String]](fsp) match {
+    config.as[Option[Seq[String]]](fsp) match {
       case Some(list) if list.size > 0 ⇒ list.map(p ⇒ new File(p))
       case _ ⇒
-        val regexString = config.getOrElse[String](fsfnr)("")
-        config.get[Seq[String]](fsdp) match {
+        val regexString = config.as[Option[String]](fsfnr).getOrElse("")
+        config.as[Option[Seq[String]]](fsdp) match {
           case Some(dirs) if dirs.size > 0 ⇒
             val filter = makeFilenameFilter(regexString)
             dirs.foldLeft(Vector.empty[File]) {
@@ -413,7 +413,7 @@ object RecordsReader {
 
   protected def determineClasspathResourcesFromConfiguration(configKeyRoot: String): Seq[String] = {
     val cpp = configKeyRoot + ".data-sources.from-classpath.paths"
-    config.get[Seq[String]](cpp) match {
+    config.as[Option[Seq[String]]](cpp) match {
       case Some(list) if list.size > 0 ⇒ list
       case _                           ⇒ throw InvalidConfiguration(config, Seq(cpp))
     }
@@ -430,8 +430,8 @@ object RecordsReader {
 
     val bu = configKeyRoot + ".data-sources.from-urls.base-urls"
     val f = configKeyRoot + ".data-sources.from-urls.files"
-    val bu2 = config.get[Seq[String]](bu)
-    val f2 = config.get[Seq[String]](f)
+    val bu2 = config.as[Option[Seq[String]]](bu)
+    val f2 = config.as[Option[Seq[String]]](f)
     (bu2, f2) match {
       case (Some(urls), Some(files)) if urls.size > 0 ⇒
         if (files.size > 0) combine(urls, files) else urls.map(url ⇒ new URL(url))
@@ -458,9 +458,9 @@ object RecordsReader {
     extends RuntimeException(message, cause)
 
   /** If the keys were found with unexpected values, put the values in the message string. */
-  final case class InvalidConfiguration(config: ConfigUtil, keys: Seq[String], message: String = "")
+  final case class InvalidConfiguration(config: Config, keys: Seq[String], message: String = "")
     extends ConfigurationError(
-      s"The configuration loaded from application.conf, etc. was missing one or more expected keys or unexpected values were returned: ${seqToString(keys)}. $message", null) // config = ${config.toStringWithFormatting()}")
+      s"The configuration loaded from application.conf, etc. was missing one or more expected keys or unexpected values were returned: ${seqToString(keys)}. $message", null)
 
   protected val extraErrMsgs = Map(
     FileSystem -> "Do the paths exist?",

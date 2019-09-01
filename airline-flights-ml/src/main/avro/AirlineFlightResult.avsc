@@ -13,7 +13,7 @@
       },
       {
         "name": "modelResultMetadata",
-        "type": "com.lightbend.modelserving.model.ModelResultMetadata"
+        "type": "pipelinesx.modelserving.model.ModelResultMetadata"
       }
     ]
 }

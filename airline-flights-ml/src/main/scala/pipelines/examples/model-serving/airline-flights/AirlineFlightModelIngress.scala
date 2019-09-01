@@ -9,12 +9,12 @@ import pipelines.akkastream.AkkaStreamlet
 import pipelines.akkastream.scaladsl.RunnableGraphStreamletLogic
 import pipelines.streamlets.avro.AvroOutlet
 import pipelines.streamlets.StreamletShape
-import pipelinesx.config.ConfigUtil
-import pipelinesx.config.ConfigUtil.implicits._
+import net.ceedubs.ficus.Ficus._
+import com.typesafe.config.{ Config, ConfigFactory }
 
-import com.lightbend.modelserving.model.{ ModelDescriptor, ModelType }
-import com.lightbend.modelserving.model.ModelDescriptorUtil.implicits._
-import com.lightbend.modelserving.model.util.ModelMainBase
+import pipelinesx.modelserving.model.{ ModelDescriptor, ModelType }
+import pipelinesx.modelserving.model.ModelDescriptorUtil.implicits._
+import pipelinesx.modelserving.model.util.ModelMainBase
 
 /**
  * Ingress of model updates. In this case, every two minutes we load and
@@ -65,12 +65,14 @@ protected final class ModelDescriptorProvider() {
 
 object AirlineFlightModelIngressUtil {
 
+  private val config: Config = ConfigFactory.load()
+
   lazy val modelFrequencySeconds: FiniteDuration =
-    ConfigUtil.default.getOrElse[Int](
-      "airline-flights.model-frequency-seconds")(120).seconds
+    config.as[Option[Int]](
+      "airline-flights.model-frequency-seconds").getOrElse(120).seconds
   lazy val modelSources: Seq[String] =
-    ConfigUtil.default.getOrElse[Seq[String]](
-      "airline-flights.model-sources.from-classpath.paths")(Nil)
+    config.as[Option[Seq[String]]](
+      "airline-flights.model-sources.from-classpath.paths").getOrElse(Nil)
 
   /** Helper method extracted from AirlineFlightModelIngress for easier unit testing. */
   def makeSource(

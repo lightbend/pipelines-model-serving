@@ -39,7 +39,7 @@ class ConsoleEgressLogicTest extends FunSpec with BeforeAndAfterAll {
   describe("LogEgress") {
     // Currently ignored because this test simply doesn't work! No output is
     // captured in the byte array!
-    // Investigate whether or not FlowEgressLogic should be implemented with
+    // Investigate whether or not PrintEgressLogic should be implemented with
     // RunnableGraphStreamletLogic. Could that be the issue??
     ignore("Writes output to the user-specified output stream, stdout by default") {
       val data = Vector(TestData(1, "one"), TestData(2, "two"), TestData(3, "three"))

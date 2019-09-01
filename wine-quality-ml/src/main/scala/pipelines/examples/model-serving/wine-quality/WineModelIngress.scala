@@ -6,12 +6,11 @@ import pipelines.streamlets.avro.AvroOutlet
 import pipelines.streamlets.StreamletShape
 import pipelines.akkastream.AkkaStreamlet
 import pipelines.akkastream.scaladsl.{ RunnableGraphStreamletLogic }
-import pipelinesx.config.ConfigUtil
-import pipelinesx.config.ConfigUtil.implicits._
+import net.ceedubs.ficus.Ficus._
+import com.typesafe.config.{ Config, ConfigFactory }
 import scala.concurrent.duration._
-import scala.collection.JavaConverters._
-import com.lightbend.modelserving.model.{ ModelDescriptor, ModelType }
-import com.lightbend.modelserving.model.util.ModelMainBase
+import pipelinesx.modelserving.model.{ ModelDescriptor, ModelType }
+import pipelinesx.modelserving.model.util.ModelMainBase
 
 /**
  * One at a time every two minutes, loads a PMML or TensorFlow model and
@@ -31,23 +30,15 @@ final case object WineModelIngress extends AkkaStreamlet {
 
 object WineModelIngressUtil {
 
-  lazy val modelFrequencySeconds: FiniteDuration =
-    ConfigUtil.default
-      .getOrElse[Int]("wine-quality.model-frequency-seconds")(120).seconds
+  private val config: Config = ConfigFactory.load()
 
-  // TODO: Add this logic to ConfigUtil?.
+  lazy val modelFrequencySeconds: FiniteDuration =
+    config.as[Option[Int]]("wine-quality.model-frequency-seconds").getOrElse(120).seconds
+
+  // Ficus can't quite infer the Map with the ModelType key, so we use strings, ...
   lazy val wineModelsResources: Map[ModelType, Seq[String]] =
-    ConfigUtil.defaultConfig
-      .getObject("wine-quality.model-sources").entrySet.asScala.foldLeft(
-        Map.empty[ModelType, Seq[String]]) {
-          case (map, e) ⇒
-            val modelType = ModelType.valueOf(e.getKey.toUpperCase)
-            val list = e.getValue.valueType.toString match {
-              case "LIST"   ⇒ e.getValue.unwrapped.asInstanceOf[java.util.ArrayList[String]].toArray.map(_.toString)
-              case "STRING" ⇒ Array(e.getValue.unwrapped.toString)
-            }
-            map + (modelType -> list)
-        }
+    config.as[Map[String, Seq[String]]]("wine-quality.model-sources")
+      .map { case (key, value) ⇒ (ModelType.valueOf(key.toUpperCase), value) }
 
   def makeSource(
       modelsResources: Map[ModelType, Seq[String]] = wineModelsResources,

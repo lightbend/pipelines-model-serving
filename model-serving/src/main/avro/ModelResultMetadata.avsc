@@ -1,5 +1,5 @@
 {
-  "namespace": "com.lightbend.modelserving.model",
+  "namespace": "pipelinesx.modelserving.model",
   "name": "ModelResultMetadata",
   "type": "record",
   "doc": "Extra output, besides the 'score' itself, from the process of scoring with a model.",

@@ -1,8 +1,8 @@
 package pipelines.examples.modelserving.airlineflights.models
 
 import pipelines.examples.modelserving.airlineflights.data.AirlineFlightRecord
-import com.lightbend.modelserving.model.{ Model, ModelDescriptor, ModelFactory }
-import com.lightbend.modelserving.model.h2o.H2OModel
+import pipelinesx.modelserving.model.{ Model, ModelDescriptor, ModelFactory }
+import pipelinesx.modelserving.model.h2o.H2OModel
 import hex.genmodel.easy.RowData
 import hex.genmodel.easy.prediction.BinomialModelPrediction
 

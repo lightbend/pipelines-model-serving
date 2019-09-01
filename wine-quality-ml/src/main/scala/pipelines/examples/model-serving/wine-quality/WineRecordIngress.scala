@@ -9,11 +9,11 @@ import pipelines.streamlets.avro.AvroOutlet
 import pipelines.streamlets.StreamletShape
 import pipelines.examples.modelserving.winequality.data.WineRecord
 import pipelinesx.ingress.RecordsReader
-import pipelinesx.config.ConfigUtil
-import pipelinesx.config.ConfigUtil.implicits._
+import net.ceedubs.ficus.Ficus._
+import com.typesafe.config.{ Config, ConfigFactory }
 import pipelinesx.logging.{ Logger, LoggingUtil }
 import scala.concurrent.duration._
-import com.lightbend.modelserving.model.util.MainBase
+import pipelinesx.modelserving.model.util.MainBase
 
 /**
  * Reads wine records from a CSV file (which actually uses ";" as the separator),
@@ -35,9 +35,10 @@ object WineRecordIngressUtil {
 
   val rootConfigKey = "wine-quality"
 
+  private val config: Config = ConfigFactory.load()
+
   lazy val dataFrequencyMilliseconds: FiniteDuration =
-    ConfigUtil.default
-      .getOrElse[Int](rootConfigKey + ".data-frequency-milliseconds")(1).milliseconds
+    config.as[Option[Int]](rootConfigKey + ".data-frequency-milliseconds").getOrElse(1).milliseconds
 
   def makeSource(
       configRoot: String         = rootConfigKey,

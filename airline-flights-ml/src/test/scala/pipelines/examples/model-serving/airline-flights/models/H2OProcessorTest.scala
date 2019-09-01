@@ -2,8 +2,8 @@ package pipelines.examples.modelserving.airlineflights.models
 
 import java.io.ByteArrayOutputStream
 
-import com.lightbend.modelserving.model.h2o.H2OModel
-import com.lightbend.modelserving.model.{ Model, ModelDescriptor, ModelServingStats, ModelType }
+import pipelinesx.modelserving.model.h2o.H2OModel
+import pipelinesx.modelserving.model.{ Model, ModelDescriptor, ModelServingStats, ModelType }
 import hex.genmodel.easy.prediction.BinomialModelPrediction
 import org.scalatest.FlatSpec
 import pipelines.examples.modelserving.airlineflights.data.AirlineFlightRecord

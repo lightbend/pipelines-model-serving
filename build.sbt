@@ -3,7 +3,7 @@ import sbt.Keys._
 import scalariform.formatter.preferences._
 import Dependencies._
 
-lazy val thisVersion = "1.3.0"
+lazy val thisVersion = "1.4.0"
 version in ThisBuild := thisVersion
 fork := true
 

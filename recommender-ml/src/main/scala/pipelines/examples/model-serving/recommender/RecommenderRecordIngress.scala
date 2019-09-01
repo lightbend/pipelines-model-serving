@@ -10,9 +10,9 @@ import pipelines.streamlets.StreamletShape
 import scala.collection.mutable.ListBuffer
 import scala.util.Random
 import scala.concurrent.duration._
-import pipelinesx.config.ConfigUtil
-import pipelinesx.config.ConfigUtil.implicits._
-import com.lightbend.modelserving.model.util.MainBase
+import net.ceedubs.ficus.Ficus._
+import com.typesafe.config.{ Config, ConfigFactory }
+import pipelinesx.modelserving.model.util.MainBase
 
 /**
  * Ingress of data for recommendations. In this case, every second we
@@ -32,8 +32,10 @@ final case object RecommenderRecordIngress extends AkkaStreamlet {
 
 object RecommenderRecordIngressUtil {
 
+  private val config: Config = ConfigFactory.load()
+
   lazy val dataFrequencyMilliseconds: FiniteDuration =
-    ConfigUtil.default.getOrElse[Int]("recommender.data-frequency-milliseconds")(1).milliseconds
+    config.as[Option[Int]]("recommender.data-frequency-milliseconds").getOrElse(1).milliseconds
 
   def makeSource(
       frequency: FiniteDuration = dataFrequencyMilliseconds): Source[RecommenderRecord, NotUsed] = {

@@ -15,7 +15,7 @@ final case class ConsoleEgressLogic[IN](
     prefix: String,
     out:    PrintStream    = Console.out)(
     implicit
-    context: StreamletContext) extends FlowEgressLogic[IN](in) {
+    context: StreamletContext) extends PrintEgressLogic[IN](in) {
 
   def write(record: IN): Unit =
     out.println(prefix + record.toString)

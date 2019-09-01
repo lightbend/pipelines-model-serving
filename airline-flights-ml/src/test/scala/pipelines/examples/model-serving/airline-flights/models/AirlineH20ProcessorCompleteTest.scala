@@ -5,10 +5,10 @@ import java.io.ByteArrayOutputStream
 import akka.actor.ActorSystem
 import akka.util.Timeout
 import akka.pattern.ask
-import com.lightbend.modelserving.model.{ Model, ModelDescriptor, ModelType }
-import com.lightbend.modelserving.model.actor.ModelServingActor
-import com.lightbend.modelserving.model.h2o.H2OModel
-import com.lightbend.modelserving.model.persistence.ModelPersistence
+import pipelinesx.modelserving.model.{ Model, ModelDescriptor, ModelType }
+import pipelinesx.modelserving.model.actor.ModelServingActor
+import pipelinesx.modelserving.model.h2o.H2OModel
+import pipelinesx.modelserving.model.persistence.ModelPersistence
 import hex.genmodel.easy.prediction.BinomialModelPrediction
 import org.scalatest.FlatSpec
 import pipelines.examples.modelserving.airlineflights.data.AirlineFlightRecord

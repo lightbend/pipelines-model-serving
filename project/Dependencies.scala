@@ -17,6 +17,7 @@ object Dependencies {
   val gson            = "com.google.code.gson"            % "gson"                      % gsonVersion
   val compress        = "org.apache.commons"              % "commons-compress"          % apacheCommonsCompress
   val scalajHTTP      = "org.scalaj"                     %% "scalaj-http"               % scalajHTTPVersion
+  val ficus           = "com.iheart"                     %% "ficus"                     % ficusVersion
 
   val slf4jAPI        = "org.slf4j"                       % "slf4j-api"                 % slf4jVersion
   // val slf4jSimple     = "org.slf4j"                       % "slf4j-simple"              % slf4jVersion

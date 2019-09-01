@@ -16,10 +16,10 @@ import pipelines.akkastream.AkkaStreamlet
 import pipelines.akkastream.scaladsl.{ FlowWithPipelinesContext, RunnableGraphStreamletLogic }
 import pipelines.streamlets.{ ReadWriteMany, StreamletShape, VolumeMount }
 import pipelines.streamlets.avro.{ AvroInlet, AvroOutlet }
-import com.lightbend.modelserving.model.actor.ModelServingActor
-import com.lightbend.modelserving.model.{ Model, ModelDescriptor, ModelType, MultiModelFactory }
-import com.lightbend.modelserving.model.util.MainBase
-import com.lightbend.modelserving.model.persistence.ModelPersistence
+import pipelinesx.modelserving.model.actor.ModelServingActor
+import pipelinesx.modelserving.model.{ Model, ModelDescriptor, ModelType, MultiModelFactory }
+import pipelinesx.modelserving.model.util.MainBase
+import pipelinesx.modelserving.model.persistence.ModelPersistence
 import pipelines.examples.modelserving.winequality.result.ModelDoubleResult
 
 final case object WineModelServer extends AkkaStreamlet {

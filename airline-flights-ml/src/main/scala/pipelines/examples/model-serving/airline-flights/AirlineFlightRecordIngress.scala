@@ -7,10 +7,10 @@ import pipelines.akkastream.AkkaStreamlet
 import pipelines.streamlets.avro.AvroOutlet
 import pipelines.streamlets.StreamletShape
 import pipelinesx.ingress.RecordsReader
-import pipelinesx.config.ConfigUtil
-import pipelinesx.config.ConfigUtil.implicits._
+import net.ceedubs.ficus.Ficus._
+import com.typesafe.config.{ Config, ConfigFactory }
 import scala.concurrent.duration._
-import com.lightbend.modelserving.model.util.MainBase
+import pipelinesx.modelserving.model.util.MainBase
 import pipelines.examples.modelserving.airlineflights.data.AirlineFlightRecord
 
 /**
@@ -33,9 +33,10 @@ object AirlineFlightRecordIngressUtil {
 
   val rootConfigKey = "airline-flights"
 
+  private val config: Config = ConfigFactory.load()
+
   lazy val dataFrequencyMilliseconds: FiniteDuration =
-    ConfigUtil.default
-      .getOrElse[Int](rootConfigKey + ".data-frequency-milliseconds")(1).milliseconds
+    config.as[Option[Int]](rootConfigKey + ".data-frequency-milliseconds").getOrElse(1).milliseconds
 
   def makeSource(
       configRoot: String         = rootConfigKey,
