@@ -2,7 +2,6 @@ package pipelinesx.reader
 
 import net.ceedubs.ficus.Ficus._
 import com.typesafe.config.{ Config, ConfigFactory }
-import pipelinesx.logging.Logger
 import scala.io.BufferedSource
 import java.io.{ File, FilenameFilter, FileInputStream, FileOutputStream, InputStream }
 import java.util.zip.{ GZIPInputStream, ZipInputStream }
@@ -84,7 +83,7 @@ final class RecordsReaderImpl[R, S] protected[reader] (
   private def init(whichSource: Int): BufferedSource = {
     val currentResource = resourcePaths(whichSource)
     try {
-      RecordsReader.logger.info(s"Initializing from resource $currentResource (index: $currentResourceIndex)")
+      println(s"${RecordsReader.msgPrefix} Initializing from resource $currentResource (index: $currentResourceIndex)")
       getSource(currentResource)
     } catch {
       case scala.util.control.NonFatal(cause) ⇒
@@ -119,7 +118,7 @@ final class RecordsReaderImpl[R, S] protected[reader] (
     val (line, lineNumber) = iterator.next()
     parse(line) match {
       case Left(error) ⇒
-        RecordsReader.logger.warn(RecordsReader.parseErrorMessageFormat.format(
+        println(RecordsReader.parseErrorMessageFormat.format(
           resourcePaths(currentResourceIndex), lineNumber, error, line))
         next()
       case Right(record) ⇒
@@ -137,9 +136,8 @@ object RecordsReader {
   }
   import SourceKind._
 
-  val parseErrorMessageFormat = "(%s:%d) Invalid record string, %s. line = %s"
-
-  lazy val logger = Logger.make(RecordsReader.getClass)
+  val msgPrefix = "RecordsReader:"
+  val parseErrorMessageFormat = s"$msgPrefix (%s:%d) Invalid record string, %s. line = %s"
 
   private val config: Config = ConfigFactory.load()
 
@@ -156,7 +154,7 @@ object RecordsReader {
       failIfMissing: Boolean   = true)(
       parse: String ⇒ Either[String, R]): RecordsReader[R] = {
 
-    logger.info(s"Reading resources from the file system: ${seqToString(resourcePaths)}")
+    println(s"$msgPrefix Reading resources from the file system: ${seqToString(resourcePaths)}")
     val goodPaths = loadResources(resourcePaths, failIfMissing, FileSystem) { (path: File) ⇒
       if (path.exists()) Right(path)
       else Left(path.getCanonicalPath)
@@ -183,7 +181,7 @@ object RecordsReader {
       failIfMissing: Boolean     = true)(
       parse: String ⇒ Either[String, R]): RecordsReader[R] = {
 
-    logger.info(s"Reading resources from the CLASSPATH: ${seqToString(resourcePaths)}")
+    println(s"$msgPrefix Reading resources from the CLASSPATH: ${seqToString(resourcePaths)}")
     val goodPaths = loadResources(resourcePaths, failIfMissing, CLASSPATH) { (path: String) ⇒
       val classloader = Thread.currentThread().getContextClassLoader()
       if (classloader.getResource(path) == null) Left(path) else Right(path)
@@ -213,7 +211,7 @@ object RecordsReader {
       failIfMissing: Boolean  = true)(
       parse: String ⇒ Either[String, R]): RecordsReader[R] = {
 
-    logger.info(s"Reading resources from URLs: ${seqToString(resourceURLs)}")
+    println(s"$msgPrefix Reading resources from URLs: ${seqToString(resourceURLs)}")
     val goodPaths = loadResources(resourceURLs, failIfMissing, URLs)(downloadURL)
 
     // We now instantiate a File-based reader:
@@ -242,7 +240,7 @@ object RecordsReader {
       failIfMissing:        Boolean = true)(
       parse: String ⇒ Either[String, R]): RecordsReader[R] = {
 
-    logger.info(s"Determining where to find resources from the configuration at key: $configurationKeyRoot")
+    println(s"$msgPrefix Determining where to find resources from the configuration at key: $configurationKeyRoot")
     determineSource(configurationKeyRoot) match {
       case FileSystem ⇒
         val paths = determineFilesFromConfiguration(configurationKeyRoot)
@@ -266,13 +264,13 @@ object RecordsReader {
       find: IN ⇒ Either[String, OUT]): Seq[OUT] = {
 
     if (resources.size == 0) {
-      logger.error(s"No resources were specified in call to method from$kind!")
+      println(s"ERROR: $msgPrefix No resources were specified in call to method from$kind!")
       if (failIfMissing) throw FailedToLoadResources(resources, kind)
       Nil
     } else loadResources2(resources)(find) match {
       case (Nil, good) ⇒ good
       case (bad, good) ⇒
-        logger.error(s"Some resources were not found: ${seqToString(bad)} in the list ${seqToString(resources)}")
+        println(s"ERROR: $msgPrefix Some resources were not found: ${seqToString(bad)} in the list ${seqToString(resources)}")
         if (failIfMissing) throw FailedToLoadResources(bad, kind)
         good
     }
@@ -337,10 +335,10 @@ object RecordsReader {
       url: URL, prefix: String, suffix: String): Either[String, File] = try {
     val target = makeLocalFile(url.toString, prefix, suffix)
     if (target.exists) {
-      logger.info(s"Already downloaded $url to local file $target")
+      println(s"$msgPrefix Already downloaded $url to local file $target")
       Right(target)
     } else {
-      logger.info(s"Downloading $url to local file $target")
+      println(s"$msgPrefix Downloading $url to local file $target")
 
       val len = 1024 * 1024 // arbitrary size
       val buffer = Array.fill[Byte](len)(0)
@@ -388,7 +386,7 @@ object RecordsReader {
           if (files.size == 0) logger.warn(s"No file found in $root for regex $regexString!")
           files
         } else {
-          logger.warn(s"Directory $root doesn't exist or couldn't be read!")
+          println(s"$msgPrefix Directory $root doesn't exist or couldn't be read!")
           Vector.empty
         }
       }
