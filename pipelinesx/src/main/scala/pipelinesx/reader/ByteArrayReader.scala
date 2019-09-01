@@ -1,4 +1,4 @@
-package pipelinesx.ingress
+package pipelinesx.reader
 
 import pipelinesx.logging.{ Logger, LoggingUtil }
 import java.io.{ BufferedInputStream, FileInputStream, InputStream }

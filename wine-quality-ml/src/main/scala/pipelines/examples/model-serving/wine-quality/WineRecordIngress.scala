@@ -8,7 +8,7 @@ import pipelines.akkastream.scaladsl.{ RunnableGraphStreamletLogic }
 import pipelines.streamlets.avro.AvroOutlet
 import pipelines.streamlets.StreamletShape
 import pipelines.examples.modelserving.winequality.data.WineRecord
-import pipelinesx.ingress.RecordsReader
+import pipelinesx.reader.RecordsReader
 import net.ceedubs.ficus.Ficus._
 import com.typesafe.config.{ Config, ConfigFactory }
 import pipelinesx.logging.{ Logger, LoggingUtil }

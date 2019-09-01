@@ -1,4 +1,4 @@
-package pipelinesx.ingress
+package pipelinesx.reader
 
 import net.ceedubs.ficus.Ficus._
 import com.typesafe.config.{ Config, ConfigFactory }

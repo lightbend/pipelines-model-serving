@@ -1,6 +1,6 @@
 package pipelines.examples.modelserving.winequality
 
-import pipelinesx.ingress.ByteArrayReader
+import pipelinesx.reader.ByteArrayReader
 import pipelinesx.modelserving.model.{ ModelDescriptor, ModelType }
 
 /**

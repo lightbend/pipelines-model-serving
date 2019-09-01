@@ -1,6 +1,6 @@
 package pipelines.examples.modelserving.airlineflights
 
-import pipelinesx.ingress.RecordsReader
+import pipelinesx.reader.RecordsReader
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import akka.pattern.ask

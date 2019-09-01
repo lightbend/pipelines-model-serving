@@ -1,4 +1,4 @@
-package pipelinesx.ingress
+package pipelinesx.reader
 
 import org.scalatest.{ FunSpec, BeforeAndAfterAll }
 import pipelinesx.test.OutputInterceptor
@@ -417,7 +417,7 @@ class RecordsReaderTest extends FunSpec with BeforeAndAfterAll with OutputInterc
               RecordsReader.SourceKind.CLASSPATH,
               testGoodRecordsResources,
               RecordsReader.fromConfiguration("records-reader-test-classpath2")(intStringTupleCSVParse()),
-              Seq("[INFO] (pipelinesx.ingress.RecordsReaderTest): Determining where to find resources from the configuration at key: records-reader-test-classpath2"))
+              Seq("[INFO] (pipelinesx.reader.RecordsReaderTest): Determining where to find resources from the configuration at key: records-reader-test-classpath2"))
           }
         }
       }

@@ -1,4 +1,4 @@
-package pipelinesx.ingress
+package pipelinesx.reader
 
 import org.scalatest.FunSpec
 

@@ -6,7 +6,7 @@ import pipelines.akkastream.scaladsl._
 import pipelines.akkastream.AkkaStreamlet
 import pipelines.streamlets.avro.AvroOutlet
 import pipelines.streamlets.StreamletShape
-import pipelinesx.ingress.RecordsReader
+import pipelinesx.reader.RecordsReader
 import net.ceedubs.ficus.Ficus._
 import com.typesafe.config.{ Config, ConfigFactory }
 import scala.concurrent.duration._
