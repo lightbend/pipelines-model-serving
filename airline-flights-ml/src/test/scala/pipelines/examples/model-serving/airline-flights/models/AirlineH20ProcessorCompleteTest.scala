@@ -13,6 +13,7 @@ import hex.genmodel.easy.prediction.BinomialModelPrediction
 import org.scalatest.FlatSpec
 import pipelines.examples.modelserving.airlineflights.data.AirlineFlightRecord
 
+import java.io.File
 import scala.concurrent.duration._
 
 class AirlineH20ProcessorCompleteTest extends FlatSpec {
@@ -52,6 +53,11 @@ class AirlineH20ProcessorCompleteTest extends FlatSpec {
     securityDelay = 0,
     lateAircraftDelay = 0)
 
+  val modelPersist = ModelPersistence[AirlineFlightRecord, BinomialModelPrediction](
+    modelName = "airline",
+    modelFactory = AirlineFlightH2OModelFactory,
+    baseDirPath = new File("./test-persistence"))
+
   private def getModel(): ModelDescriptor = {
     val is = this.getClass.getClassLoader.getResourceAsStream("airlines/models/mojo/gbm_pojo_test.zip")
     val buffer = new Array[Byte](1024)
@@ -70,8 +76,10 @@ class AirlineH20ProcessorCompleteTest extends FlatSpec {
 
     val modelserver = system.actorOf(
       ModelServingActor.props[AirlineFlightRecord, BinomialModelPrediction](
-        "airlines", "streamlet",
-        AirlineFlightH2OModelFactory, () ⇒ new BinomialModelPrediction))
+        "airlines",
+        AirlineFlightH2OModelFactory,
+        modelPersist,
+        () ⇒ new BinomialModelPrediction))
     // Wait for the actor to initialize and restore
     Thread.sleep(2000)
 

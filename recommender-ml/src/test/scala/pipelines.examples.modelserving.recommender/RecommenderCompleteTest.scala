@@ -11,6 +11,7 @@ import pipelines.examples.modelserving.recommender.result.ModelKeyDoubleValueArr
 import org.scalatest.FlatSpec
 import pipelines.examples.modelserving.recommender.models.tensorflow.RecommenderTensorFlowServingModelFactory
 
+import java.io.File
 import scala.concurrent.duration._
 
 class RecommenderCompleteTest extends FlatSpec {
@@ -22,6 +23,11 @@ class RecommenderCompleteTest extends FlatSpec {
   val products = Seq(1L, 2L, 3L, 4L)
 
   val input = new RecommenderRecord(10L, products)
+
+  val modelPersist = ModelPersistence[RecommenderRecord, ModelKeyDoubleValueArrayResult](
+    modelName = "recommender",
+    modelFactory = RecommenderTensorFlowServingModelFactory,
+    baseDirPath = new File("./test-persistence"))
 
   private def getModel(): ModelDescriptor = {
     new ModelDescriptor(
@@ -36,8 +42,10 @@ class RecommenderCompleteTest extends FlatSpec {
 
     val modelserver = system.actorOf(
       ModelServingActor.props[RecommenderRecord, ModelKeyDoubleValueArrayResult](
-        "recommender", "streamlet",
-        RecommenderTensorFlowServingModelFactory, () ⇒ new ModelKeyDoubleValueArrayResult))
+        "recommender",
+        RecommenderTensorFlowServingModelFactory,
+        modelPersist,
+        () ⇒ new ModelKeyDoubleValueArrayResult))
     // Wait for the actor to initialize and restore
     Thread.sleep(2000)
 

@@ -33,3 +33,5 @@ tmp/
 airline-flights-ml/persistence/
 airline-flights-ml/test-persistence/
 persistence/
+recommender-ml/test-persistence
+wine-quality-ml/test-persistence

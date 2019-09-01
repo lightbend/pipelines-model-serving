@@ -12,6 +12,7 @@ import akka.stream.scaladsl.Sink
 import akka.util.Timeout
 import com.lightbend.modelserving.model.persistence.ModelPersistence
 
+import java.io.File
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import pipelines.akkastream.AkkaStreamlet
@@ -40,9 +41,9 @@ final case object AirlineFlightModelServer extends AkkaStreamlet {
   def makeModelServer(sys: ActorSystem): ActorRef = {
 
     val modelPersist = ModelPersistence[AirlineFlightRecord, BinomialModelPrediction](
-      modelFactory = AirlineFlightH2OModelFactory,
       modelName = context.streamletRef,
-      baseDirPath = persistentDataMount.path)
+      modelFactory = AirlineFlightH2OModelFactory,
+      baseDirPath = new File(persistentDataMount.path))
 
     sys.actorOf(
       ModelServingActor.props[AirlineFlightRecord, BinomialModelPrediction](

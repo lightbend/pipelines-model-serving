@@ -6,12 +6,14 @@ import akka.actor.ActorSystem
 import akka.util.Timeout
 import akka.pattern.ask
 import com.lightbend.modelserving.model.{ Model, ModelDescriptor, ModelType, MultiModelFactory }
+import com.lightbend.modelserving.model.persistence.ModelPersistence
 import com.lightbend.modelserving.model.actor.ModelServingActor
 import org.scalatest.FlatSpec
 import pipelines.examples.modelserving.winequality.data.WineRecord
 import pipelines.examples.modelserving.winequality.models.pmml.WinePMMLModelFactory
 import pipelines.examples.modelserving.winequality.models.tensorflow.{ WineTensorFlowBundledModelFactory, WineTensorFlowModelFactory }
 
+import java.io.File
 import scala.concurrent.duration._
 
 class WineProcessorCompleteTest extends FlatSpec {
@@ -25,6 +27,10 @@ class WineProcessorCompleteTest extends FlatSpec {
       ModelType.PMML -> WinePMMLModelFactory,
       ModelType.TENSORFLOW -> WineTensorFlowModelFactory,
       ModelType.TENSORFLOWSAVED -> WineTensorFlowBundledModelFactory))
+  val modelPersist = ModelPersistence[WineRecord, Double](
+    "wine-quality",
+    modelFactory,
+    new File("./test-persistence"))
 
   private def getPMMLModel(): ModelDescriptor = {
     val is = this.getClass.getClassLoader.getResourceAsStream("wine/models/winequalityDecisionTreeClassification.pmml")
@@ -68,7 +74,7 @@ class WineProcessorCompleteTest extends FlatSpec {
 
     val modelserver = system.actorOf(
       ModelServingActor.props[WineRecord, Double](
-        "wine", modelFactory, () ⇒ 0.0))
+        "wine", modelFactory, modelPersist, () ⇒ 0.0))
 
     // Wait for the actor to initialize and restore
     Thread.sleep(3000)
@@ -91,7 +97,7 @@ class WineProcessorCompleteTest extends FlatSpec {
 
     val modelserver = system.actorOf(
       ModelServingActor.props[WineRecord, Double](
-        "wine", modelFactory, () ⇒ 0.0))
+        "wine", modelFactory, modelPersist, () ⇒ 0.0))
 
     // Wait for the actor to initialize and restore
     Thread.sleep(3000)
@@ -114,7 +120,7 @@ class WineProcessorCompleteTest extends FlatSpec {
 
     val modelserver = system.actorOf(
       ModelServingActor.props[WineRecord, Double](
-        "wine", modelFactory, () ⇒ 0.0))
+        "wine", modelFactory, modelPersist, () ⇒ 0.0))
 
     // Wait for the actor to initialize and restore
     Thread.sleep(3000)

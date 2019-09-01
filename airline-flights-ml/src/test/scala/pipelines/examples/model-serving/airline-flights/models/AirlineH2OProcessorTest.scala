@@ -7,6 +7,7 @@ import org.scalatest.FlatSpec
 import pipelines.examples.modelserving.airlineflights.data.AirlineFlightRecord
 import pipelinesx.test.OutputInterceptor
 import hex.genmodel.easy.prediction.BinomialModelPrediction
+import java.io.File
 
 // TODO: Most of this logic is really about ModelPersistence, so move this logic to
 // that project...
@@ -48,8 +49,10 @@ class AirlineH2OProcessorTest extends FlatSpec with OutputInterceptor {
     securityDelay = 0,
     lateAircraftDelay = 0)
 
-  val fp = ModelPersistence[AirlineFlightRecord, BinomialModelPrediction](
-    AirlineFlightH2OModelFactory, "test-persistence")
+  val modelPersist = ModelPersistence[AirlineFlightRecord, BinomialModelPrediction](
+    modelName = "airline",
+    modelFactory = AirlineFlightH2OModelFactory,
+    baseDirPath = new File("./test-persistence"))
 
   def assertResult(result: Model.ModelReturn[BinomialModelPrediction]): Unit = {
     assert("" == result.modelResultMetadata.errors)
@@ -71,7 +74,8 @@ class AirlineH2OProcessorTest extends FlatSpec with OutputInterceptor {
   }
 
   "ModelPersistence.stateExists" should "return false if the model hasn't been saved to the file system" in {
-    assert(fp.stateExists("foobar") == false)
+    modelPersist.clean() // force deletion, in case a snapshot from a previously run test exists.
+    assert(modelPersist.stateExists() == false)
   }
 
   "ModelPersistence.stateExists" should "return true if the model has been saved to the file system" in {
@@ -81,8 +85,8 @@ class AirlineH2OProcessorTest extends FlatSpec with OutputInterceptor {
         case Left(error) ⇒ fail(error)
       }
 
-      assert(Right(true) == fp.saveState(original, savePath))
-      assert(fp.stateExists(savePath) == true, s"${fp.statePath("airline")} should exist, but doesn't!")
+      assert(Right(true) == modelPersist.saveState(original))
+      assert(modelPersist.stateExists() == true, s"${modelPersist.fullPath} should exist, but doesn't!")
       ()
     }
   }
@@ -94,8 +98,8 @@ class AirlineH2OProcessorTest extends FlatSpec with OutputInterceptor {
         case Left(error) ⇒ fail(error)
       }
 
-      assert(Right(true) == fp.saveState(original, savePath))
-      val restoredModel = fp.restoreState(savePath) match {
+      assert(Right(true) == modelPersist.saveState(original))
+      val restoredModel = modelPersist.restoreState() match {
         case Left(error) ⇒ fail(error)
         case Right(m) ⇒ m match {
           case m2: Model[AirlineFlightRecord, BinomialModelPrediction] ⇒ m2

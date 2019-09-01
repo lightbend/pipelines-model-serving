@@ -9,20 +9,27 @@ import pipelinesx.logging.LoggingUtil
 
 /**
  * Persists the model state information to a file for quick recovery.
- * @param modelFactory that encapsulates handling of Model I/O, etc.
  * @param modelName unique name of the model, used in the file name for persistence.
+ * @param modelFactory that encapsulates handling of Model I/O, etc.
  * @param baseDirPath where to write the persistent models. It will be created if necessary.
  */
 final case class ModelPersistence[RECORD, RESULT](
-    modelFactory: ModelFactory[RECORD, RESULT],
     modelName:    String,
+    modelFactory: ModelFactory[RECORD, RESULT],
     baseDirPath:  File) {
 
   private val fileName: String = s"${modelName}_model.dat"
 
   val fullPath: File = new File(baseDirPath, fileName)
 
+  /** Is there a previously-saved state snapshot? */
   def stateExists(): Boolean = fullPath.exists()
+
+  /**
+   * Delete a previously-saved state snapshot, if any.
+   * @return true if deletion successful or there wasn't a previous snapshot, but return false if a snapshot exists, but couldn't be deleted.
+   */
+  def clean(): Boolean = stateExists() == false || fullPath.delete()
 
   /**
    * Restore the state from a file system. Use [[stateExists]] first to determine

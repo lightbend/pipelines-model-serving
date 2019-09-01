@@ -17,6 +17,7 @@ import pipelines.examples.modelserving.recommender.result.ModelKeyDoubleValueArr
 import pipelines.streamlets.{ ReadWriteMany, StreamletShape, VolumeMount }
 import pipelines.streamlets.avro.{ AvroInlet, AvroOutlet }
 
+import java.io.File
 import scala.concurrent.duration._
 import scala.concurrent.Await
 
@@ -38,9 +39,9 @@ final case object RecommenderModelServer extends AkkaStreamlet {
     implicit val askTimeout: Timeout = Timeout(30.seconds)
 
     val modelPersist = ModelPersistence[RecommenderRecord, ModelKeyDoubleValueArrayResult](
-      modelFactory = RecommenderTensorFlowServingModelFactory,
       modelName = context.streamletRef,
-      baseDirPath = persistentDataMount.path)
+      modelFactory = RecommenderTensorFlowServingModelFactory,
+      baseDirPath = new File(persistentDataMount.path))
 
     val modelServer = context.system.actorOf(
       ModelServingActor.props[RecommenderRecord, ModelKeyDoubleValueArrayResult](
@@ -92,10 +93,16 @@ object RecommenderModelServerMain {
     implicit val system: ActorSystem = ActorSystem("ModelServing")
     implicit val askTimeout: Timeout = Timeout(30.seconds)
 
+    val modelPersist = ModelPersistence[RecommenderRecord, ModelKeyDoubleValueArrayResult](
+      modelName = "recommender",
+      modelFactory = RecommenderTensorFlowServingModelFactory,
+      baseDirPath = new File("./persistence"))
+
     val modelServer = system.actorOf(
       ModelServingActor.props[RecommenderRecord, ModelKeyDoubleValueArrayResult](
         "recommender",
         RecommenderTensorFlowServingModelFactory,
+        modelPersist,
         () ⇒ RecommenderTensorFlowServingModel.makeEmptyTFPredictionResult()))
 
     val location = Some("http://recommender1-service-kubeflow.lightshift.lightbend.com/v1/models/recommender1/versions/1:predict")

@@ -9,6 +9,7 @@ import akka.stream.scaladsl.Sink
 import akka.pattern.ask
 import akka.util.Timeout
 
+import java.io.File
 import scala.concurrent.duration._
 import scala.concurrent.Await
 import pipelines.akkastream.AkkaStreamlet
@@ -44,9 +45,9 @@ final case object WineModelServer extends AkkaStreamlet {
     implicit val askTimeout: Timeout = Timeout(30.seconds)
 
     val modelPersist = ModelPersistence[WineRecord, Double](
-      modelFactory = modelFactory,
       modelName = context.streamletRef,
-      baseDirPath = persistentDataMount.path)
+      modelFactory = modelFactory,
+      baseDirPath = new File(persistentDataMount.path))
 
     val modelServer = context.system.actorOf(
       ModelServingActor.props[WineRecord, Double](
@@ -100,9 +101,9 @@ object WineModelServerMain {
     implicit val askTimeout: Timeout = Timeout(30.seconds)
 
     val modelPersist = ModelPersistence[WineRecord, Double](
-      modelFactory = WineModelServer.modelFactory,
       modelName = "wine-quality",
-      baseDirPath = "./persistence")
+      modelFactory = WineModelServer.modelFactory,
+      baseDirPath = new File("./persistence"))
 
     val modelServer = system.actorOf(
       ModelServingActor.props[WineRecord, Double](
