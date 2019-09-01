@@ -4,8 +4,8 @@ import akka.actor.ActorSystem
 import akka.pattern.ask
 import akka.util.Timeout
 import com.lightbend.modelserving.model.actor.ModelServingActor
-import com.lightbend.modelserving.model.persistence.FilePersistence
-import com.lightbend.modelserving.model.{Model, ModelDescriptor, ModelType}
+import com.lightbend.modelserving.model.persistence.ModelPersistence
+import com.lightbend.modelserving.model.{ Model, ModelDescriptor, ModelType }
 import pipelines.examples.modelserving.recommender.data.RecommenderRecord
 import pipelines.examples.modelserving.recommender.result.ModelKeyDoubleValueArrayResult
 import org.scalatest.FlatSpec
@@ -19,9 +19,9 @@ class RecommenderCompleteTest extends FlatSpec {
   implicit val executor = system.getDispatcher
   implicit val askTimeout = Timeout(30.seconds)
 
-  val products =  Seq(1L, 2L, 3L, 4L)
+  val products = Seq(1L, 2L, 3L, 4L)
 
-  val input = new RecommenderRecord(10L,products)
+  val input = new RecommenderRecord(10L, products)
 
   private def getModel(): ModelDescriptor = {
     new ModelDescriptor(
@@ -34,10 +34,10 @@ class RecommenderCompleteTest extends FlatSpec {
 
   "Processing of H2OModel" should "return label yes and probability around 0.6" in {
 
-    FilePersistence.setStreamletName("streamlet")
     val modelserver = system.actorOf(
       ModelServingActor.props[RecommenderRecord, ModelKeyDoubleValueArrayResult](
-        "recommendor", RecommenderTensorFlowServingModelFactory, () ⇒ new ModelKeyDoubleValueArrayResult))
+        "recommender", "streamlet",
+        RecommenderTensorFlowServingModelFactory, () ⇒ new ModelKeyDoubleValueArrayResult))
     // Wait for the actor to initialize and restore
     Thread.sleep(2000)
 

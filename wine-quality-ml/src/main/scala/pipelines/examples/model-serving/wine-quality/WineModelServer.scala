@@ -18,7 +18,7 @@ import pipelines.streamlets.avro.{ AvroInlet, AvroOutlet }
 import com.lightbend.modelserving.model.actor.ModelServingActor
 import com.lightbend.modelserving.model.{ Model, ModelDescriptor, ModelType, MultiModelFactory }
 import com.lightbend.modelserving.model.util.MainBase
-import com.lightbend.modelserving.model.persistence.FilePersistence
+import com.lightbend.modelserving.model.persistence.ModelPersistence
 import pipelines.examples.modelserving.winequality.result.ModelDoubleResult
 
 final case object WineModelServer extends AkkaStreamlet {
@@ -32,7 +32,6 @@ final case object WineModelServer extends AkkaStreamlet {
   private val persistentDataMount =
     VolumeMount("persistence-data-mount", "/data", ReadWriteMany)
   override def volumeMounts = Vector(persistentDataMount)
-  FilePersistence.setGlobalMountPoint(persistentDataMount.path)
 
   val modelFactory = MultiModelFactory(
     Map(
@@ -44,12 +43,17 @@ final case object WineModelServer extends AkkaStreamlet {
 
     implicit val askTimeout: Timeout = Timeout(30.seconds)
 
-    FilePersistence.setStreamletName(context.streamletRef)
-    val modelserver = context.system.actorOf(
+    val modelPersist = ModelPersistence[WineRecord, Double](
+      modelFactory = modelFactory,
+      modelName = context.streamletRef,
+      baseDirPath = persistentDataMount.path)
+
+    val modelServer = context.system.actorOf(
       ModelServingActor.props[WineRecord, Double](
-        "wine",
-        modelFactory,
-        () ⇒ 0.0))
+        label = "wine-quality",
+        modelFactory = modelFactory,
+        modelPersistence = modelPersist,
+        makeDefaultModelOutput = () ⇒ 0.0))
 
     def runnableGraph() = {
       atLeastOnceSource(in1).via(modelFlow).runWith(Sink.ignore)
@@ -58,7 +62,7 @@ final case object WineModelServer extends AkkaStreamlet {
 
     protected def dataFlow =
       FlowWithPipelinesContext[WineRecord].mapAsync(1) { record ⇒
-        modelserver.ask(record).mapTo[Model.ModelReturn[Double]]
+        modelServer.ask(record).mapTo[Model.ModelReturn[Double]]
           .map { modelReturn ⇒
             val result = ModelDoubleResult(value = modelReturn.modelOutput)
             WineResult(record, result, modelReturn.modelResultMetadata)
@@ -67,7 +71,7 @@ final case object WineModelServer extends AkkaStreamlet {
 
     protected def modelFlow =
       FlowWithPipelinesContext[ModelDescriptor].mapAsync(1) {
-        descriptor ⇒ modelserver.ask(descriptor).mapTo[Done]
+        descriptor ⇒ modelServer.ask(descriptor).mapTo[Done]
       }
   }
 }
@@ -95,10 +99,16 @@ object WineModelServerMain {
     implicit val system: ActorSystem = ActorSystem("ModelServing")
     implicit val askTimeout: Timeout = Timeout(30.seconds)
 
-    val modelserver = system.actorOf(
+    val modelPersist = ModelPersistence[WineRecord, Double](
+      modelFactory = WineModelServer.modelFactory,
+      modelName = "wine-quality",
+      baseDirPath = "./persistence")
+
+    val modelServer = system.actorOf(
       ModelServingActor.props[WineRecord, Double](
-        "wine",
+        "wine-quality",
         WineModelServer.modelFactory,
+        modelPersist,
         () ⇒ 0.0))
 
     val path = "wine/models/winequalityDecisionTreeClassification.pmml"
@@ -117,9 +127,9 @@ object WineModelServerMain {
       .0, .0, .0, .0, .0, .0, .0, .0, .0, .0, .0)
 
     for (i ← 0 until count) {
-      modelserver.ask(descriptor)
+      modelServer.ask(descriptor)
       Thread.sleep(100)
-      val result = Await.result(modelserver.ask(record).mapTo[Model.ModelReturn[Double]], 5 seconds)
+      val result = Await.result(modelServer.ask(record).mapTo[Model.ModelReturn[Double]], 5 seconds)
       println(s"$i: result - $result")
       Thread.sleep(frequency.length)
     }

@@ -10,7 +10,7 @@ import akka.actor.ActorSystem
 import akka.pattern.ask
 import akka.stream.scaladsl.Sink
 import akka.util.Timeout
-import com.lightbend.modelserving.model.persistence.FilePersistence
+import com.lightbend.modelserving.model.persistence.ModelPersistence
 import pipelines.akkastream.AkkaStreamlet
 import pipelines.akkastream.scaladsl.{ FlowWithPipelinesContext, RunnableGraphStreamletLogic }
 import pipelines.examples.modelserving.recommender.result.ModelKeyDoubleValueArrayResult
@@ -32,18 +32,22 @@ final case object RecommenderModelServer extends AkkaStreamlet {
   private val persistentDataMount =
     VolumeMount("persistence-data-mount", "/data", ReadWriteMany)
   override def volumeMounts = Vector(persistentDataMount)
-  FilePersistence.setGlobalMountPoint(persistentDataMount.path)
 
   override final def createLogic = new RunnableGraphStreamletLogic() {
 
     implicit val askTimeout: Timeout = Timeout(30.seconds)
 
-    FilePersistence.setStreamletName(context.streamletRef)
-    val modelserver = context.system.actorOf(
+    val modelPersist = ModelPersistence[RecommenderRecord, ModelKeyDoubleValueArrayResult](
+      modelFactory = RecommenderTensorFlowServingModelFactory,
+      modelName = context.streamletRef,
+      baseDirPath = persistentDataMount.path)
+
+    val modelServer = context.system.actorOf(
       ModelServingActor.props[RecommenderRecord, ModelKeyDoubleValueArrayResult](
-        "recommender",
-        RecommenderTensorFlowServingModelFactory,
-        () ⇒ RecommenderTensorFlowServingModel.makeEmptyTFPredictionResult()))
+        label = "recommender",
+        modelFactory = RecommenderTensorFlowServingModelFactory,
+        modelPersistence = modelPersist,
+        makeDefaultModelOutput = () ⇒ RecommenderTensorFlowServingModel.makeEmptyTFPredictionResult()))
 
     def runnableGraph() = {
       atLeastOnceSource(in1).via(modelFlow).runWith(Sink.ignore)
@@ -52,7 +56,7 @@ final case object RecommenderModelServer extends AkkaStreamlet {
 
     protected def dataFlow =
       FlowWithPipelinesContext[RecommenderRecord].mapAsync(1) { record ⇒
-        modelserver.ask(record).mapTo[Model.ModelReturn[ModelKeyDoubleValueArrayResult]]
+        modelServer.ask(record).mapTo[Model.ModelReturn[ModelKeyDoubleValueArrayResult]]
           .map { modelReturn ⇒
             RecommenderResult(record, modelReturn.modelOutput, modelReturn.modelResultMetadata)
           }
@@ -60,7 +64,7 @@ final case object RecommenderModelServer extends AkkaStreamlet {
 
     protected def modelFlow =
       FlowWithPipelinesContext[ModelDescriptor].mapAsync(1) {
-        descriptor ⇒ modelserver.ask(descriptor).mapTo[Done]
+        descriptor ⇒ modelServer.ask(descriptor).mapTo[Done]
       }
   }
 }
@@ -88,7 +92,7 @@ object RecommenderModelServerMain {
     implicit val system: ActorSystem = ActorSystem("ModelServing")
     implicit val askTimeout: Timeout = Timeout(30.seconds)
 
-    val modelserver = system.actorOf(
+    val modelServer = system.actorOf(
       ModelServingActor.props[RecommenderRecord, ModelKeyDoubleValueArrayResult](
         "recommender",
         RecommenderTensorFlowServingModelFactory,
@@ -105,9 +109,9 @@ object RecommenderModelServerMain {
     val record = new RecommenderRecord(10L, Seq(1L, 2L, 3L, 4L))
 
     for (i ← 0 until count) {
-      modelserver.ask(descriptor)
+      modelServer.ask(descriptor)
       Thread.sleep(100)
-      val result = Await.result(modelserver.ask(record).mapTo[RecommenderResult], 5 seconds)
+      val result = Await.result(modelServer.ask(record).mapTo[RecommenderResult], 5 seconds)
       println(s"$i: result - $result")
       Thread.sleep(frequency.length)
     }

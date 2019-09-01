@@ -5,10 +5,10 @@ import java.io.ByteArrayOutputStream
 import akka.actor.ActorSystem
 import akka.util.Timeout
 import akka.pattern.ask
-import com.lightbend.modelserving.model.{Model, ModelDescriptor, ModelType}
+import com.lightbend.modelserving.model.{ Model, ModelDescriptor, ModelType }
 import com.lightbend.modelserving.model.actor.ModelServingActor
 import com.lightbend.modelserving.model.h2o.H2OModel
-import com.lightbend.modelserving.model.persistence.FilePersistence
+import com.lightbend.modelserving.model.persistence.ModelPersistence
 import hex.genmodel.easy.prediction.BinomialModelPrediction
 import org.scalatest.FlatSpec
 import pipelines.examples.modelserving.airlineflights.data.AirlineFlightRecord
@@ -68,10 +68,10 @@ class AirlineH20ProcessorCompleteTest extends FlatSpec {
 
   "Processing of H2OModel" should "return label yes and probability around 0.6" in {
 
-    FilePersistence.setStreamletName("streamlet")
     val modelserver = system.actorOf(
       ModelServingActor.props[AirlineFlightRecord, BinomialModelPrediction](
-        "airlines", AirlineFlightH2OModelFactory, () ⇒ new BinomialModelPrediction))
+        "airlines", "streamlet",
+        AirlineFlightH2OModelFactory, () ⇒ new BinomialModelPrediction))
     // Wait for the actor to initialize and restore
     Thread.sleep(2000)
 

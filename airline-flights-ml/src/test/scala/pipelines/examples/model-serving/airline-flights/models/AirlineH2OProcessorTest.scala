@@ -2,13 +2,13 @@ package pipelines.examples.modelserving.airlineflights.models
 
 import com.lightbend.modelserving.model.{ Model, ModelDescriptor, ModelServingStats, ModelType }
 import com.lightbend.modelserving.model.h2o.H2OModel
-import com.lightbend.modelserving.model.persistence.FilePersistence
+import com.lightbend.modelserving.model.persistence.ModelPersistence
 import org.scalatest.FlatSpec
 import pipelines.examples.modelserving.airlineflights.data.AirlineFlightRecord
 import pipelinesx.test.OutputInterceptor
 import hex.genmodel.easy.prediction.BinomialModelPrediction
 
-// TODO: Most of this logic is really about FilePersistence, so move this logic to
+// TODO: Most of this logic is really about ModelPersistence, so move this logic to
 // that project...
 class AirlineH2OProcessorTest extends FlatSpec with OutputInterceptor {
 
@@ -48,7 +48,7 @@ class AirlineH2OProcessorTest extends FlatSpec with OutputInterceptor {
     securityDelay = 0,
     lateAircraftDelay = 0)
 
-  val fp = FilePersistence[AirlineFlightRecord, BinomialModelPrediction](
+  val fp = ModelPersistence[AirlineFlightRecord, BinomialModelPrediction](
     AirlineFlightH2OModelFactory, "test-persistence")
 
   def assertResult(result: Model.ModelReturn[BinomialModelPrediction]): Unit = {
@@ -70,11 +70,11 @@ class AirlineH2OProcessorTest extends FlatSpec with OutputInterceptor {
     }
   }
 
-  "FilePersistence.stateExists" should "return false if the model hasn't been saved to the file system" in {
+  "ModelPersistence.stateExists" should "return false if the model hasn't been saved to the file system" in {
     assert(fp.stateExists("foobar") == false)
   }
 
-  "FilePersistence.stateExists" should "return true if the model has been saved to the file system" in {
+  "ModelPersistence.stateExists" should "return true if the model has been saved to the file system" in {
     ignoreOutput {
       val original = createModel("airline") match {
         case Right(m)    ⇒ m
@@ -87,7 +87,7 @@ class AirlineH2OProcessorTest extends FlatSpec with OutputInterceptor {
     }
   }
 
-  "FilePersistence.saveState/restoreState" should "should save/restore the model using the file system" in {
+  "ModelPersistence.saveState/restoreState" should "should save/restore the model using the file system" in {
     ignoreOutput {
       val original = createModel("airline") match {
         case Right(m)    ⇒ m

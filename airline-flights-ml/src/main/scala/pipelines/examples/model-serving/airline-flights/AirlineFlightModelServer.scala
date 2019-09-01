@@ -10,7 +10,7 @@ import akka.actor.{ ActorRef, ActorSystem }
 import akka.pattern.ask
 import akka.stream.scaladsl.Sink
 import akka.util.Timeout
-import com.lightbend.modelserving.model.persistence.FilePersistence
+import com.lightbend.modelserving.model.persistence.ModelPersistence
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
@@ -33,17 +33,23 @@ final case object AirlineFlightModelServer extends AkkaStreamlet {
   private val persistentDataMount =
     VolumeMount("persistence-data-mount", "/data", ReadWriteMany)
   override def volumeMounts = Vector(persistentDataMount)
-  FilePersistence.setGlobalMountPoint(persistentDataMount.path)
 
   implicit val askTimeout: Timeout = Timeout(30.seconds)
 
   /** Uses the actor system as an argument to support testing outside of the streamlet. */
   def makeModelServer(sys: ActorSystem): ActorRef = {
 
-    FilePersistence.setStreamletName(context.streamletRef)
+    val modelPersist = ModelPersistence[AirlineFlightRecord, BinomialModelPrediction](
+      modelFactory = AirlineFlightH2OModelFactory,
+      modelName = context.streamletRef,
+      baseDirPath = persistentDataMount.path)
+
     sys.actorOf(
       ModelServingActor.props[AirlineFlightRecord, BinomialModelPrediction](
-        "airlines", AirlineFlightH2OModelFactory, () ⇒ new BinomialModelPrediction))
+        label = "airlines",
+        modelFactory = AirlineFlightH2OModelFactory,
+        modelPersistence = modelPersist,
+        makeDefaultModelOutput = () ⇒ new BinomialModelPrediction))
   }
 
   override final def createLogic = new RunnableGraphStreamletLogic() {
