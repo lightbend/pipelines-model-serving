@@ -1,16 +1,18 @@
 package pipelines.examples.modelserving.recommender
 
+import akka.stream.scaladsl.Sink
 import pipelines.streamlets.StreamletShape
 import pipelines.streamlets.avro.AvroInlet
 import pipelines.akkastream.AkkaStreamlet
+import pipelines.akkastream.scaladsl.RunnableGraphStreamletLogic
 import pipelines.examples.modelserving.recommender.data._
-import pipelinesx.egress.ConsoleEgressLogic
 
 final case object RecommenderResultConsoleEgress extends AkkaStreamlet {
-  val in = AvroInlet[RecommenderResult]("in")
-  final override val shape = StreamletShape.withInlets(in)
+  val inlet = AvroInlet[RecommenderResult]("in")
+  final override val shape = StreamletShape.withInlets(inlet)
 
-  override def createLogic = ConsoleEgressLogic[RecommenderResult](
-    in = in,
-    prefix = "Recommender: ")
+  override def createLogic = new RunnableGraphStreamletLogic {
+    def runnableGraph =
+      atMostOnceSource(inlet).to(Sink.foreach(line ⇒ println("Recommender: " + line)))
+  }
 }
