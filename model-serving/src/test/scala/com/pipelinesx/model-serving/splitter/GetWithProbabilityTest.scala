@@ -27,10 +27,10 @@ class GetWithProbabilityTest extends FlatSpec {
       val index = GetWithProbability.choseOne(probabilities)
       counters(index) = counters(index) + 1
     })
-    0 to probabilities.length - 1 foreach (i ⇒ {
+    0 to probabilities.length - 1 foreach { i ⇒
       println(s"probability ${probabilities(i)} - counter ${counters(i)}")
       assert((3 * probabilities(i) - counters(i)).abs < 10.0)
       ()
-    })
+    }
   }
 }

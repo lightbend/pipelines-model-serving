@@ -2,7 +2,7 @@ package pipelinesx.reader
 
 import net.ceedubs.ficus.Ficus._
 import com.typesafe.config.{ Config, ConfigFactory }
-import pipelinesx.logging.{ LoggingUtil, MutableLogger }
+import pipelinesx.logging.Logger
 import scala.io.BufferedSource
 import java.io.{ File, FilenameFilter, FileInputStream, FileOutputStream, InputStream }
 import java.util.zip.{ GZIPInputStream, ZipInputStream }
@@ -67,7 +67,7 @@ trait RecordsReader[R] {
   def next(): (Long, R)
 }
 
-final class RecordsReaderImpl[R, S] protected[ingress] (
+final class RecordsReaderImpl[R, S] protected[reader] (
     val resourcePaths: Seq[S],
     val origin:        RecordsReader.SourceKind.Value,
     dropFirstN:        Int,
@@ -139,7 +139,7 @@ object RecordsReader {
 
   val parseErrorMessageFormat = "(%s:%d) Invalid record string, %s. line = %s"
 
-  lazy val logger: MutableLogger = LoggingUtil.getLogger(RecordsReader.getClass)
+  lazy val logger = Logger.make(RecordsReader.getClass)
 
   private val config: Config = ConfigFactory.load()
 

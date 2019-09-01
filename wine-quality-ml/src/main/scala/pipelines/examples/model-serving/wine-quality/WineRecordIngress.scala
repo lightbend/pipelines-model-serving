@@ -11,7 +11,6 @@ import pipelines.examples.modelserving.winequality.data.WineRecord
 import pipelinesx.reader.RecordsReader
 import net.ceedubs.ficus.Ficus._
 import com.typesafe.config.{ Config, ConfigFactory }
-import pipelinesx.logging.{ Logger, LoggingUtil }
 import scala.concurrent.duration._
 import pipelinesx.modelserving.model.util.MainBase
 
@@ -81,8 +80,6 @@ object WineRecordIngressUtil {
           s"Failed to parse string ${tokens.mkString(defaultSeparator)}. cause: $nf")
     }
   }
-
-  val logger: Logger = LoggingUtil.getLogger(RecordsReader.getClass)
 }
 
 /**
