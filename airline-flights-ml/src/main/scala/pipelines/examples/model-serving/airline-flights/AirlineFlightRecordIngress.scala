@@ -24,8 +24,9 @@ final case object AirlineFlightRecordIngress extends AkkaStreamlet {
   final override val shape = StreamletShape(out)
 
   override final def createLogic = new RunnableGraphStreamletLogic {
-    def runnableGraph =
-      AirlineFlightRecordIngressUtil.makeSource().to(atMostOnceSink(out))
+    def runnableGraph = AirlineFlightRecordIngressUtil
+      .makeSource(errorLogger = system.log.error _)
+      .to(atMostOnceSink(out))
   }
 }
 
@@ -39,11 +40,21 @@ object AirlineFlightRecordIngressUtil {
     config.as[Option[Int]](rootConfigKey + ".data-frequency-milliseconds").getOrElse(1).milliseconds
 
   def makeSource(
-      configRoot: String         = rootConfigKey,
-      frequency:  FiniteDuration = dataFrequencyMilliseconds): Source[AirlineFlightRecord, NotUsed] = {
+      configRoot:  String         = rootConfigKey,
+      frequency:   FiniteDuration = dataFrequencyMilliseconds,
+      errorLogger: String ⇒ Unit  = println): Source[AirlineFlightRecord, NotUsed] = {
     val reader = makeRecordsReader(configRoot)
     Source.repeat(NotUsed)
-      .map(_ ⇒ reader.next()._2) // Only keep the record part of the tuple
+      .map { _ ⇒
+        reader.next() match {
+          case l@Left((index, error)) ⇒
+            errorLogger(s"#$index: Bad Record: $error")
+            l
+          case r ⇒ r
+        }
+      }
+      .filter(x ⇒ x.isRight)
+      .map(_.right.get._2) // Only keep the record part of the tuple extracted from the Right
       .throttle(1, frequency)
   }
 

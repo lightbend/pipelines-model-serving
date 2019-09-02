@@ -61,9 +61,10 @@ import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream
  * @param extraMissingResourceErrMsg an error message used when a resource doesn't exist.
  * @param getSource function that takes a resource name, opens it as appropriate, and returns a BufferedSource over the lines.
  * @param parse function that parses each line into a record, return an error as a `Left(String)`.
+ * @return a Right(offset, record) or a Left(offset, error string)
  */
 trait RecordsReader[R] {
-  def next(): (Long, R)
+  def next(): Either[(Long, String), (Long, R)]
 }
 
 final class RecordsReaderImpl[R, S] protected[reader] (
@@ -101,29 +102,24 @@ final class RecordsReaderImpl[R, S] protected[reader] (
     iterator = toIterator(currentSource)
   }
 
-  private def failIfAllBad(): Unit =
-    if (currentResourceIndex + 1 >= resourcePaths.size && currentTotalCount == 0)
-      throw RecordsReader.AllRecordsAreBad(resourcePaths.map(_.toString))
-
   /**
    * Returns the next record, with the count of total records returned,
-   * starting at 1. Transparently handles switching to a new resource in the
+   * starting at 1, _not_ the offset into the current file.
+   * Transparently handles switching to a new resource in the
    * list of resources, when needed.
    */
-  def next(): (Long, R) = {
+  def next(): Either[(Long, String), (Long, R)] = {
     if (!iterator.hasNext) {
-      failIfAllBad()
       nextSource()
     }
     val (line, lineNumber) = iterator.next()
+    currentTotalCount += 1
     parse(line) match {
       case Left(error) ⇒
-        println(RecordsReader.parseErrorMessageFormat.format(
+        Left(currentTotalCount -> RecordsReader.parseErrorMessageFormat.format(
           resourcePaths(currentResourceIndex), lineNumber, error, line))
-        next()
       case Right(record) ⇒
-        currentTotalCount += 1
-        (currentTotalCount, record)
+        Right(currentTotalCount -> record)
     }
   }
 }
@@ -383,7 +379,7 @@ object RecordsReader {
         val dir = new File(root)
         if (dir.exists) {
           val files = dir.listFiles(filter).toVector
-          if (files.size == 0) logger.warn(s"No file found in $root for regex $regexString!")
+          if (files.size == 0) println(s"$msgPrefix No file found in $root for regex $regexString!")
           files
         } else {
           println(s"$msgPrefix Directory $root doesn't exist or couldn't be read!")
@@ -468,10 +464,6 @@ object RecordsReader {
   final case class FailedToLoadResources[T](resources: Seq[T], origin: SourceKind.Value, cause: Throwable = null)
     extends ConfigurationError(
       s"Failed to load resources: ${failedMsg(resources, origin: SourceKind.Value)}", cause)
-
-  final case class AllRecordsAreBad[T](resources: Seq[T])
-    extends ConfigurationError(
-      s"All records found in the resources ${seqToString(resources)} failed to parse!!", null)
 
   private def failedMsg[T](resources: Seq[T], origin: SourceKind.Value) =
     if (resources.size == 0) s"list is empty! Check the specification in 'application.conf'."

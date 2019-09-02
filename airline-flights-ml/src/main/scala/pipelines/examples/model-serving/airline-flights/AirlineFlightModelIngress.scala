@@ -28,13 +28,15 @@ final case object AirlineFlightModelIngress extends AkkaStreamlet {
   final override val shape = StreamletShape.withOutlets(out)
 
   override def createLogic = new RunnableGraphStreamletLogic() {
-    def runnableGraph =
-      AirlineFlightModelIngressUtil.makeSource().to(atMostOnceSink(out))
+    def runnableGraph = AirlineFlightModelIngressUtil
+      .makeSource(errorLogger = system.log.error _)
+      .to(atMostOnceSink(out))
   }
 }
 
 /** Encapsulate the logic of iterating through the models ad infinitum. */
-protected final class ModelDescriptorProvider() {
+protected final class ModelDescriptorProvider(
+    errorLogger: String ⇒ Unit = println) {
 
   val sourcePaths: Array[String] =
     AirlineFlightModelIngressUtil.modelSources.toArray
@@ -76,8 +78,9 @@ object AirlineFlightModelIngressUtil {
 
   /** Helper method extracted from AirlineFlightModelIngress for easier unit testing. */
   def makeSource(
-      frequency: FiniteDuration = modelFrequencySeconds): Source[ModelDescriptor, NotUsed] = {
-    val provider = new ModelDescriptorProvider()
+      frequency:   FiniteDuration = modelFrequencySeconds,
+      errorLogger: String ⇒ Unit  = println): Source[ModelDescriptor, NotUsed] = {
+    val provider = new ModelDescriptorProvider(errorLogger)
     Source.repeat(NotUsed)
       .map(_ ⇒ provider.getModelDescriptor())
       .throttle(1, frequency)

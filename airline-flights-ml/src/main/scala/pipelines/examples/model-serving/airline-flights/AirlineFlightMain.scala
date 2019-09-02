@@ -53,14 +53,16 @@ object AirlineFlightMain {
       dropFirstN = 1)(
       AirlineFlightRecordIngressUtil.parse)
     (1 to options.count).foreach { n ⇒
-      val (_, record) = reader.next()
-      val resultFuture = modelServer.ask(record).mapTo[AirlineFlightResult]
-      val result = Await.result(resultFuture, 2 seconds)
-      if (result.modelResultMetadata.errors.length == 0)
-        println(s"$n: scoring returned an error: ${result.modelResultMetadata.errors} (full result: ${result})")
-      else
-        println(s"$n: scoring successful:: ${result.modelResult} (full result: ${result})")
-
+      reader.next() match {
+        case Left((i, error)) ⇒ println(s"ERROR: $n: line = $i, error = $error")
+        case Right((i@_, record)) ⇒
+          val resultFuture = modelServer.ask(record).mapTo[AirlineFlightResult]
+          val result = Await.result(resultFuture, 2 seconds)
+          if (result.modelResultMetadata.errors.length == 0)
+            println(s"ERROR: $n: scoring returned an error: ${result.modelResultMetadata.errors} (full result: ${result})")
+          else
+            println(s"INFO:  $n: scoring successful:: ${result.modelResult} (full result: ${result})")
+      }
       Thread.sleep(100)
     }
 
