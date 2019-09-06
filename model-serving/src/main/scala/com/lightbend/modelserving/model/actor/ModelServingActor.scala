@@ -48,6 +48,7 @@ class ModelServingActor[RECORD, MODEL_OUTPUT](
     case descriptor: ModelDescriptor ⇒
       log.info(s"Received new model from descriptor: ${descriptor.toRichString}...")
 
+      val start = System.currentTimeMillis()
       modelFactory.create(descriptor) match {
         case Right(newModel) ⇒
           // Log old model stats and clean up, if necessary:
@@ -56,6 +57,7 @@ class ModelServingActor[RECORD, MODEL_OUTPUT](
           // Update current model and reset state
           currentModel = Some(newModel)
           currentStats = ModelServingStats(newModel.descriptor)
+          println(s"Created new model in ${System.currentTimeMillis() - start} ms")
           // persist new model
           filePersistence.saveState(newModel, label) match {
             case Left(error)  ⇒ log.error(error)

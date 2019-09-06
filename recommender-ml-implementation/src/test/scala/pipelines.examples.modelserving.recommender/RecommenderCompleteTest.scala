@@ -5,7 +5,7 @@ import akka.pattern.ask
 import akka.util.Timeout
 import com.lightbend.modelserving.model.actor.ModelServingActor
 import com.lightbend.modelserving.model.persistence.FilePersistence
-import com.lightbend.modelserving.model.{Model, ModelDescriptor, ModelType}
+import com.lightbend.modelserving.model.{ Model, ModelDescriptor, ModelType }
 import pipelines.examples.modelserving.recommender.data.RecommenderRecord
 import pipelines.examples.modelserving.recommender.result.ModelKeyDoubleValueArrayResult
 import org.scalatest.FlatSpec
@@ -19,9 +19,9 @@ class RecommenderCompleteTest extends FlatSpec {
   implicit val executor = system.getDispatcher
   implicit val askTimeout = Timeout(30.seconds)
 
-  val products =  Seq(1L, 2L, 3L, 4L)
+  val products = Seq(1L, 2L, 3L, 4L)
 
-  val input = new RecommenderRecord(10L,products)
+  val input = new RecommenderRecord(10L, products)
 
   private def getModel(): ModelDescriptor = {
     new ModelDescriptor(

@@ -88,7 +88,7 @@ object H2OModel {
       val probability = if (probs.length == 2) probs(1) else 0.0
       (prediction.label, probability)
     } catch {
-      case  _ : Throwable => ("", 0)
+      case _: Throwable ⇒ ("", 0)
     }
   }
 }

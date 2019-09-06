@@ -5,12 +5,12 @@ import java.io.ByteArrayOutputStream
 import akka.actor.ActorSystem
 import akka.util.Timeout
 import akka.pattern.ask
-import com.lightbend.modelserving.model.{Model, ModelDescriptor, ModelType, MultiModelFactory}
+import com.lightbend.modelserving.model.{ Model, ModelDescriptor, ModelType, MultiModelFactory }
 import com.lightbend.modelserving.model.actor.ModelServingActor
 import org.scalatest.FlatSpec
 import pipelines.examples.modelserving.winequality.data.WineRecord
 import pipelines.examples.modelserving.winequality.models.pmml.WinePMMLModelFactory
-import pipelines.examples.modelserving.winequality.models.tensorflow.{WineTensorFlowBundledModelFactory, WineTensorFlowModelFactory}
+import pipelines.examples.modelserving.winequality.models.tensorflow.{ WineTensorFlowBundledModelFactory, WineTensorFlowModelFactory }
 
 import scala.concurrent.duration._
 
@@ -64,7 +64,6 @@ class WineProcessorCompleteTest extends FlatSpec {
       modelSourceLocation = Some(url.getPath))
   }
 
-
   "Processing of Wine PMML Model" should "return value of 5.0" in {
 
     val modelserver = system.actorOf(
@@ -79,13 +78,13 @@ class WineProcessorCompleteTest extends FlatSpec {
     // Wait for the model to initialize
     Thread.sleep(3000)
     modelserver.ask(record).mapTo[Model.ModelReturn[Double]]
-      .map(data => {
+      .map(data ⇒ {
         val result = data.modelOutput
         println(s"Executed PMML wine in ${data.modelServingStats.duration} ms with result $result")
         assert(result == 5.0)
         ()
       })
-    Thread.sleep(5000)
+    Thread.sleep(3000)
   }
 
   "Processing of Wine Tensorflow Model" should "return value of 5.0" in {
@@ -102,7 +101,7 @@ class WineProcessorCompleteTest extends FlatSpec {
     // Wait for the model to initialize
     Thread.sleep(3000)
     modelserver.ask(record).mapTo[Model.ModelReturn[Double]]
-      .map(data => {
+      .map(data ⇒ {
         val result = data.modelOutput
         println(s"Executed Tensorflow wine in ${data.modelServingStats.duration} ms with result $result")
         assert(result == 5.0)
@@ -125,7 +124,7 @@ class WineProcessorCompleteTest extends FlatSpec {
     // Wait for the model to initialize
     Thread.sleep(3000)
     modelserver.ask(record).mapTo[Model.ModelReturn[Double]]
-      .map(data => {
+      .map(data ⇒ {
         val result = data.modelOutput
         println(s"Executed Tensorflow bundeled wine in ${data.modelServingStats.duration} ms with result $result")
         assert(result == 5.0)

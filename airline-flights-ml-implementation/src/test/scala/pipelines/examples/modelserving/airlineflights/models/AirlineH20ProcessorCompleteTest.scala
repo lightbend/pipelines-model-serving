@@ -5,7 +5,7 @@ import java.io.ByteArrayOutputStream
 import akka.actor.ActorSystem
 import akka.util.Timeout
 import akka.pattern.ask
-import com.lightbend.modelserving.model.{Model, ModelDescriptor, ModelType}
+import com.lightbend.modelserving.model.{ Model, ModelDescriptor, ModelType }
 import com.lightbend.modelserving.model.actor.ModelServingActor
 import com.lightbend.modelserving.model.h2o.H2OModel
 import com.lightbend.modelserving.model.persistence.FilePersistence

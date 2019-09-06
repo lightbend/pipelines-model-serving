@@ -5,11 +5,11 @@ import java.nio.channels.{ FileChannel, FileLock }
 
 import com.lightbend.modelserving.model.{ Model, ModelDescriptorUtil, ModelFactory }
 import com.lightbend.modelserving.model.ModelDescriptorUtil.implicits._
+import com.lightbend.modelserving.model.speculative.SpeculativeUtils
+import com.lightbend.modelserving.model.splitter.StreamSplitterUtil
 import com.lightbend.modelserving.speculative.SpeculativeStreamMerger
-import com.lightbend.modelserving.splitter.{ OutputPercentage, StreamSplitter }
+import com.lightbend.modelserving.splitter.StreamSplitter
 import pipelinesx.logging.LoggingUtil
-
-import scala.collection.mutable.ListBuffer
 
 /**
  * Persists the state information to a file for quick recovery.
@@ -128,14 +128,7 @@ final case class FilePersistence[RECORD, RESULT](
       fileName: String): Either[String, StreamSplitter] = getInputStream(fileName) match {
     case Right((is, fis)) ⇒
       try {
-        val ninputs = is.readLong().toInt
-        val inputs = new ListBuffer[OutputPercentage]()
-        0 to ninputs - 1 foreach (i ⇒ {
-          val output = is.readLong().toInt
-          val percentage = is.readLong().toInt
-          inputs += new OutputPercentage(output, percentage)
-        })
-        Right(new StreamSplitter(inputs))
+        Right(StreamSplitterUtil.read(is))
       } catch {
         case t: Throwable ⇒
           Left(throwableMsg(s"Error restoring state for data type $fileName.", t))
@@ -153,13 +146,10 @@ final case class FilePersistence[RECORD, RESULT](
    * state isn't already persisted.
    * @return either an error string or the merger.
    */
-  def restoreMergerState(
-      fileName: String): Either[String, SpeculativeStreamMerger] = getInputStream(fileName) match {
+  def restoreMergerState(fileName: String): Either[String, SpeculativeStreamMerger] = getInputStream(fileName) match {
     case Right((is, fis)) ⇒
       try {
-        val tmout = is.readLong()
-        val results = is.readLong().toInt
-        Right(new SpeculativeStreamMerger(tmout, results))
+        Right(SpeculativeUtils.read(is))
       } catch {
         case t: Throwable ⇒
           Left(throwableMsg(s"Error restoring state for data type $fileName.", t))
@@ -210,12 +200,7 @@ final case class FilePersistence[RECORD, RESULT](
     getOutputStream(filePath) match {
       case Right((os, fos)) ⇒
         try {
-          os.writeLong(splitter.split.size.toLong)
-          splitter.split.foreach(record ⇒ {
-            os.writeLong(record.output.toLong)
-            os.writeLong(record.percentage.toLong)
-          })
-
+          StreamSplitterUtil.write(splitter, os)
           Right(true)
         } catch {
           case t: Throwable ⇒
@@ -242,8 +227,7 @@ final case class FilePersistence[RECORD, RESULT](
     getOutputStream(filePath) match {
       case Right((os, fos)) ⇒
         try {
-          os.writeLong(merger.timeout)
-          os.writeLong(merger.results.toLong)
+          SpeculativeUtils.write(merger, os)
           Right(true)
         } catch {
           case t: Throwable ⇒
