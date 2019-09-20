@@ -2,9 +2,9 @@ package pipelines.examples.modelserving.speculative
 
 import pipelines.akkastream._
 import pipelines.akkastream.util.scaladsl.MergeLogic
-import pipelines.examples.modelserving.winequality.speculative.WineResultRun
 import pipelines.streamlets._
 import pipelines.streamlets.avro._
+import pipelines.examples.modelserving.winequality.speculative.WineResultRun
 
 class IntermediateModelResultsMerger extends AkkaStreamlet {
 

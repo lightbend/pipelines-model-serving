@@ -6,9 +6,9 @@ import akka.actor._
 import akka.stream._
 import scala.io.Source
 import pipelines.akkastream.testkit._
-import pipelines.examples.modelserving.winequality.data.WineRecord
 import com.typesafe.config.ConfigFactory
 import pipelinesx.test.OutputInterceptor
+import pipelines.examples.modelserving.winequality.data.WineRecord
 
 class WineRecordIngressTest extends FunSpec with BeforeAndAfterAll with OutputInterceptor {
 

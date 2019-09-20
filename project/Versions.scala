@@ -14,7 +14,7 @@ object Versions {
 
   val akkaHTTPJSONVersion   = "10.1.8"
 
-  val alpakkaFileVersion    = "1.0.0"
+  val alpakkaFileVersion    = "1.1.1"
 
   val alpakkaKafkaVersion   = "1.0.3"
 

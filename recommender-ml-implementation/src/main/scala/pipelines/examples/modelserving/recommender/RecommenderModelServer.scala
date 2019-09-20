@@ -1,7 +1,5 @@
 package pipelines.examples.modelserving.recommender
 
-import pipelines.examples.modelserving.recommender.data.{ RecommenderRecord, RecommenderResult }
-import pipelines.examples.modelserving.recommender.models.tensorflow.{ RecommenderTensorFlowServingModel, RecommenderTensorFlowServingModelFactory }
 import com.lightbend.modelserving.model.actor.ModelServingActor
 import com.lightbend.modelserving.model.{ Model, ModelDescriptor }
 import akka.Done
@@ -10,9 +8,11 @@ import akka.util.Timeout
 import com.lightbend.modelserving.model.persistence.FilePersistence
 import pipelines.akkastream.AkkaStreamlet
 import pipelines.akkastream.scaladsl.{ FlowWithPipelinesContext, RunnableGraphStreamletLogic }
-import pipelines.examples.modelserving.recommender.result.ModelKeyDoubleValueArrayResult
 import pipelines.streamlets.{ ReadWriteMany, StreamletShape, VolumeMount }
 import pipelines.streamlets.avro.{ AvroInlet, AvroOutlet }
+import pipelines.examples.modelserving.recommender.data.{ RecommenderRecord, RecommenderResult }
+import pipelines.examples.modelserving.recommender.models.tensorflow.{ RecommenderTensorFlowServingModel, RecommenderTensorFlowServingModelFactory }
+import pipelines.examples.modelserving.recommender.result.ModelKeyDoubleValueArrayResult
 
 import scala.concurrent.duration._
 

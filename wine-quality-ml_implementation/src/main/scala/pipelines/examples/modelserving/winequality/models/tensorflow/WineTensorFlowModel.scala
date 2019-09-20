@@ -2,8 +2,8 @@ package pipelines.examples.modelserving.winequality.models.tensorflow
 
 import com.lightbend.modelserving.model.tensorflow.TensorFlowModel
 import com.lightbend.modelserving.model.{ Model, ModelDescriptor, ModelFactory }
-import pipelines.examples.modelserving.winequality.data.WineRecord
 import org.tensorflow.Tensor
+import pipelines.examples.modelserving.winequality.data.WineRecord
 
 /**
  * TensorFlow model implementation for wine data

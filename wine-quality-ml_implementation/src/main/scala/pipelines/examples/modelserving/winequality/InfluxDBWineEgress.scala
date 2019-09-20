@@ -3,9 +3,9 @@ package pipelines.examples.modelserving.winequality
 import pipelines.streamlets.StreamletShape
 import pipelines.streamlets.avro.AvroInlet
 import pipelines.akkastream.AkkaStreamlet
-import pipelines.examples.modelserving.winequality.data._
 import pipelinesx.egress.influxdb.{ InfluxDBEgressLogic, InfluxDBUtil }
 import org.influxdb.dto.Point
+import pipelines.examples.modelserving.winequality.data.{ WineRecord, WineResult }
 
 final case object InfluxDBWineResultEgress extends AkkaStreamlet {
   val in = AvroInlet[WineResult]("in")

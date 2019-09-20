@@ -3,8 +3,8 @@ package pipelines.examples.modelserving.bluegreen
 import pipelines.streamlets._
 import pipelines.akkastream._
 import pipelines.akkastream.util.scaladsl.MergeLogic
-import pipelines.examples.modelserving.winequality.data.WineResult
 import pipelines.streamlets.avro._
+import pipelines.examples.modelserving.winequality.data.WineResult
 
 class ModelResultsMerger extends AkkaStreamlet {
 

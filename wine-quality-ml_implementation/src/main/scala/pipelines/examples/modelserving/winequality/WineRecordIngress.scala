@@ -4,16 +4,17 @@ package pipelines.examples.modelserving.winequality
 import akka.NotUsed
 import akka.stream.scaladsl.Source
 import pipelines.akkastream.AkkaStreamlet
-import pipelines.akkastream.scaladsl.{ RunnableGraphStreamletLogic }
-import pipelines.streamlets.avro.AvroOutlet
+import pipelines.akkastream.scaladsl.RunnableGraphStreamletLogic
 import pipelines.streamlets.StreamletShape
-import pipelines.examples.modelserving.winequality.data.WineRecord
 import pipelinesx.ingress.RecordsReader
 import pipelinesx.config.ConfigUtil
 import pipelinesx.config.ConfigUtil.implicits._
 import pipelinesx.logging.{ Logger, LoggingUtil }
+
 import scala.concurrent.duration._
 import com.lightbend.modelserving.model.util.MainBase
+import pipelines.examples.modelserving.winequality.data.WineRecord
+import pipelines.streamlets.avro.AvroOutlet
 
 /**
  * Reads wine records from a CSV file (which actually uses ";" as the separator),

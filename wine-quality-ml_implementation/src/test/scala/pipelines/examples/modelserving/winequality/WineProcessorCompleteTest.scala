@@ -8,11 +8,11 @@ import akka.pattern.ask
 import com.lightbend.modelserving.model.{ Model, ModelDescriptor, ModelType, MultiModelFactory }
 import com.lightbend.modelserving.model.actor.ModelServingActor
 import org.scalatest.FlatSpec
+
+import scala.concurrent.duration._
 import pipelines.examples.modelserving.winequality.data.WineRecord
 import pipelines.examples.modelserving.winequality.models.pmml.WinePMMLModelFactory
 import pipelines.examples.modelserving.winequality.models.tensorflow.{ WineTensorFlowBundledModelFactory, WineTensorFlowModelFactory }
-
-import scala.concurrent.duration._
 
 class WineProcessorCompleteTest extends FlatSpec {
 

@@ -1,6 +1,6 @@
 package pipelines.examples.modelserving.winequality
 
-import java.io.{ ByteArrayOutputStream }
+import java.io.ByteArrayOutputStream
 
 import com.lightbend.modelserving.model.{ Model, ModelDescriptor, ModelServingStats, ModelType, MultiModelFactory }
 import org.scalatest.FlatSpec

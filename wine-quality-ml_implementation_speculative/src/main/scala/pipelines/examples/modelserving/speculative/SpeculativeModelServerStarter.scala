@@ -1,14 +1,14 @@
 package pipelines.examples.modelserving.speculative
 
 import java.util.UUID
+import pipelines.examples.modelserving.winequality.data.WineRecord
 
 import com.lightbend.modelserving.speculative.StartSpeculative
 import pipelines.akkastream.AkkaStreamlet
 import pipelines.akkastream.scaladsl.RunnableGraphStreamletLogic
-import pipelines.examples.modelserving.winequality.data.WineRecord
-import pipelines.examples.modelserving.winequality.speculative.WineRecordRun
 import pipelines.streamlets.StreamletShape
 import pipelines.streamlets.avro.{ AvroInlet, AvroOutlet }
+import pipelines.examples.modelserving.winequality.speculative.WineRecordRun
 
 final case object SpeculativeModelServerStarter extends AkkaStreamlet {
 

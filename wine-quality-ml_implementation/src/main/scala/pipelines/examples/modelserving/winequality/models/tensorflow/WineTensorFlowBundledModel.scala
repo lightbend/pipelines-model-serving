@@ -1,7 +1,7 @@
 package pipelines.examples.modelserving.winequality.models.tensorflow
 
 import com.lightbend.modelserving.model.tensorflow.TensorFlowBundleModel
-import com.lightbend.modelserving.model.{ Model, ModelDescriptor, ModelFactory }
+import com.lightbend.modelserving.model.{ Model, ModelFactory }
 import com.lightbend.modelserving.model.ModelDescriptor
 import pipelines.examples.modelserving.winequality.data.WineRecord
 

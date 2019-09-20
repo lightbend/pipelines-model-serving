@@ -1,6 +1,5 @@
 package pipelines.examples.modelserving.winequality
 
-import pipelines.examples.modelserving.winequality.data.{ WineRecord, WineResult }
 import models.pmml.WinePMMLModelFactory
 import models.tensorflow.{ WineTensorFlowBundledModelFactory, WineTensorFlowModelFactory }
 import akka.Done
@@ -15,6 +14,7 @@ import pipelines.streamlets.avro.{ AvroInlet, AvroOutlet }
 import com.lightbend.modelserving.model.actor.ModelServingActor
 import com.lightbend.modelserving.model.{ Model, ModelDescriptor, ModelType, MultiModelFactory }
 import com.lightbend.modelserving.model.persistence.FilePersistence
+import pipelines.examples.modelserving.winequality.data.{ WineRecord, WineResult }
 import pipelines.examples.modelserving.winequality.result.ModelDoubleResult
 
 final case object WineModelServer extends AkkaStreamlet {

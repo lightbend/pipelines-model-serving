@@ -6,10 +6,10 @@ import akka.util.Timeout
 import com.lightbend.modelserving.model.actor.ModelServingActor
 import com.lightbend.modelserving.model.persistence.FilePersistence
 import com.lightbend.modelserving.model.{ Model, ModelDescriptor, ModelType }
-import pipelines.examples.modelserving.recommender.data.RecommenderRecord
-import pipelines.examples.modelserving.recommender.result.ModelKeyDoubleValueArrayResult
 import org.scalatest.FlatSpec
+import pipelines.examples.modelserving.recommender.data.RecommenderRecord
 import pipelines.examples.modelserving.recommender.models.tensorflow.RecommenderTensorFlowServingModelFactory
+import pipelines.examples.modelserving.recommender.result.ModelKeyDoubleValueArrayResult
 
 import scala.concurrent.duration._
 

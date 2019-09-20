@@ -1,8 +1,8 @@
 package pipelines.examples.modelserving.recommender.models.tensorflow
 
-import pipelines.examples.modelserving.recommender.data.RecommenderRecord
 import com.lightbend.modelserving.model.{ Model, ModelDescriptor, ModelFactory }
 import com.lightbend.modelserving.model.tensorflow.TensorFlowServingModel
+import pipelines.examples.modelserving.recommender.data.RecommenderRecord
 import pipelines.examples.modelserving.recommender.result.ModelKeyDoubleValueArrayResult
 
 class RecommenderTensorFlowServingModel(descriptor: ModelDescriptor)

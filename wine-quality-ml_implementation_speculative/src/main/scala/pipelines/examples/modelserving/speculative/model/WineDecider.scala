@@ -2,9 +2,9 @@ package pipelines.examples.modelserving.speculative.model
 
 import com.lightbend.modelserving.model.ModelResultMetadata
 import com.lightbend.modelserving.model.speculative.Decider
+import util.control.Breaks._
 import pipelines.examples.modelserving.winequality.data.{ WineRecord, WineResult }
 import pipelines.examples.modelserving.winequality.result.ModelDoubleResult
-import util.control.Breaks._
 
 class WineDecider extends Decider[WineResult] {
 

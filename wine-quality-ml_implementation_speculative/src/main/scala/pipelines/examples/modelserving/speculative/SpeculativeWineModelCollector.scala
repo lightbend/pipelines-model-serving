@@ -10,10 +10,10 @@ import com.lightbend.modelserving.speculative.{ SpeculativeStreamMerger, StartSp
 import pipelines.akkastream.AkkaStreamlet
 import pipelines.akkastream.scaladsl.{ FlowWithPipelinesContext, RunnableGraphStreamletLogic }
 import pipelines.examples.modelserving.speculative.model.{ WineDecider, WineSpeculativeRecordSplitter }
-import pipelines.examples.modelserving.winequality.data.WineResult
-import pipelines.examples.modelserving.winequality.speculative.WineResultRun
 import pipelines.streamlets.avro.{ AvroInlet, AvroOutlet }
 import pipelines.streamlets.{ ReadWriteMany, StreamletShape, VolumeMount }
+import pipelines.examples.modelserving.winequality.data.WineResult
+import pipelines.examples.modelserving.winequality.speculative.WineResultRun
 
 import scala.concurrent.duration._
 

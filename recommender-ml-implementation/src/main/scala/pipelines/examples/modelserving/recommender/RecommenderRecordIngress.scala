@@ -1,6 +1,5 @@
 package pipelines.examples.modelserving.recommender
 
-import pipelines.examples.modelserving.recommender.data._
 import akka.NotUsed
 import akka.stream.scaladsl.Source
 import pipelines.akkastream.AkkaStreamlet
@@ -13,6 +12,7 @@ import scala.concurrent.duration._
 import pipelinesx.config.ConfigUtil
 import pipelinesx.config.ConfigUtil.implicits._
 import com.lightbend.modelserving.model.util.MainBase
+import pipelines.examples.modelserving.recommender.data.RecommenderRecord
 
 /**
  * Ingress of data for recommendations. In this case, every second we

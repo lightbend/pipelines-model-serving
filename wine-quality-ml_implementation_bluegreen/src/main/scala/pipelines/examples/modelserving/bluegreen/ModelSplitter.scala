@@ -1,6 +1,5 @@
 package pipelines.examples.modelserving.bluegreen
 
-import pipelines.examples.modelserving.winequality.data.WineRecord
 import akka._
 import akka.util.Timeout
 import akka.pattern.ask
@@ -14,6 +13,7 @@ import com.lightbend.modelserving.model.actor.{ DataSplittingActor, RecordWithOu
 import com.lightbend.modelserving.model.persistence.FilePersistence
 import com.lightbend.modelserving.splitter.StreamSplitter
 import pipelinesx.ingress.InputTrafficSplitter
+import pipelines.examples.modelserving.winequality.data.WineRecord
 
 final case object ModelSplitter extends AkkaStreamlet {
 
