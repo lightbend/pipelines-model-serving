@@ -1,14 +1,14 @@
 package pipelines.examples.modelserving.winequality
 
-import java.nio.file.{ FileSystems, Path }
+import java.nio.file.{FileSystems, Path}
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
-import akka.{ Done, NotUsed }
+import akka.{Done, NotUsed}
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
+import akka.stream.{ActorMaterializer, OverflowStrategy}
 import akka.stream.alpakka.file.scaladsl.LogRotatorSink
-import akka.stream.scaladsl.{ Sink, Source }
+import akka.stream.scaladsl.{Sink, Source}
 import akka.util.ByteString
 import com.lightbend.modelserving.model.util.MainBase
 import org.scalatest.FlatSpec
@@ -28,11 +28,20 @@ class LogRotatorSinkTest extends FlatSpec {
   implicit val materializer = ActorMaterializer()
   implicit val executionContext = system.dispatcher
 
+  val queue = Source.queue[String](3, OverflowStrategy.fail)
+    .to(Sink.foreach(v => println(s"getting $v from the queue")))
+    .run
+
+
   val timeBasedTriggerCreator: () ⇒ ByteString ⇒ Option[Path] = () ⇒ {
     var currentFilename: Option[String] = None
     (_: ByteString) ⇒ {
       val newName = LocalDateTime.now().format(formatter)
       // Hourly
+      currentFilename match {
+        case Some(file) => queue.offer(file)
+        case _ =>
+      }
       if (currentFilename.contains(newName)) {
         None
       } else {
@@ -50,7 +59,7 @@ class LogRotatorSinkTest extends FlatSpec {
   ensureFileExists()
 
   "Incomming messages" should "writtent to file" in {
-    WineRecordIngressReader.makeSource(1.milliseconds).map(m ⇒ ByteString(m.toString + "\n"))
+    WineRecordIngressReader.makeSource(1.seconds).map(m ⇒ ByteString(m.toString + "\n"))
       .runWith(timeBasedSink)
     Thread.sleep(6000)
   }
@@ -60,6 +69,7 @@ class LogRotatorSinkTest extends FlatSpec {
     val dir = destinationDir.toFile
     // make sure all the parent directories exist.
     if (!dir.exists()) dir.mkdir()
+    ()
   }
 }
 

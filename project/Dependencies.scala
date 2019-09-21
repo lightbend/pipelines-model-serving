@@ -6,7 +6,8 @@ object Dependencies {
   val bijection       = "com.twitter"                    %% "bijection-avro"            % bijectionVersion
   val json2avro       = "tech.allegro.schema.json2avro"   % "converter"                 % json2javaVersion
   val akkaSprayJson   = "com.typesafe.akka"              %% "akka-http-spray-json"      % akkaHTTPJSONVersion
-  val alpakkaFile     = "com.lightbend.akka"             %% "akka-stream-alpakka-file"  % alpakkaFileVersion
+  val alpakkaFile     = "com.lightbend.akka"             %% "akka-stream-alpakka-file"  % alpakkaVersion
+  val alpakkaS3       = "com.lightbend.akka"             %% "akka-stream-alpakka-s3"    % alpakkaVersion
   val alpakkaKafka    = "com.typesafe.akka"              %% "akka-stream-kafka"         % alpakkaKafkaVersion
   val tensorflow      = "org.tensorflow"                  % "tensorflow"                % tensorflowVersion
   val tensorflowProto = "org.tensorflow"                  % "proto"                     % tensorflowVersion

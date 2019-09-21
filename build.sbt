@@ -32,7 +32,7 @@ lazy val wineModelServingPipeline = (project in file("./wine-quality-ml"))
 lazy val wineModelServingPipelineImplementation = (project in file("./wine-quality-ml_implementation"))
   .enablePlugins(PipelinesAkkaStreamsLibraryPlugin)
   .settings(
-    libraryDependencies ++= Seq(scalaTest, alpakkaFile),
+    libraryDependencies ++= Seq(scalaTest, alpakkaFile, alpakkaS3),
     avroSpecificSourceDirectories in Compile ++=
       Seq(new java.io.File("model-serving/src/main/avro"))
   )
@@ -131,7 +131,7 @@ lazy val pipelinesx = (project in file("./pipelinesx"))
   .enablePlugins(PipelinesAkkaStreamsLibraryPlugin)
   .settings(
     name := "pipelinesx",
-    libraryDependencies ++= logging ++ Seq(bijection, json2avro, alpakkaFile, influx, scalaTest)
+    libraryDependencies ++= logging ++ Seq(bijection, json2avro, alpakkaFile, alpakkaS3, influx, scalaTest)
   )
   .settings(commonSettings)
 
