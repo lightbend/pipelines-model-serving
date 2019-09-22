@@ -1,18 +1,19 @@
 package pipelines.examples.model
 
-import java.io.ByteArrayOutputStream
+import java.io.{ByteArrayOutputStream, File}
 
 import akka.actor.ActorSystem
 import akka.util.Timeout
 import akka.pattern.ask
-import com.lightbend.modelserving.model.{ Model, ModelDescriptor, ModelType, MultiModelFactory }
+import com.lightbend.modelserving.model.{Model, ModelDescriptor, ModelType, MultiModelFactory}
 import com.lightbend.modelserving.model.actor.ModelServingActor
+import com.lightbend.modelserving.model.tensorflow.Zipper
 import org.scalatest.FlatSpec
 
 import scala.concurrent.duration._
 import pipelines.examples.modelserving.winequality.data.WineRecord
 import pipelines.examples.modelserving.winequality.models.pmml.WinePMMLModelFactory
-import pipelines.examples.modelserving.winequality.models.tensorflow.{ WineTensorFlowBundledModelFactory, WineTensorFlowModelFactory }
+import pipelines.examples.modelserving.winequality.models.tensorflow.{WineTensorFlowBundledModelFactory, WineTensorFlowModelFactory}
 
 class WineProcessorCompleteTest extends FlatSpec {
 
@@ -62,6 +63,17 @@ class WineProcessorCompleteTest extends FlatSpec {
       modelType = ModelType.TENSORFLOWSAVED,
       modelBytes = None,
       modelSourceLocation = Some(url.getPath))
+  }
+
+  private def getTensorflowBundeledModelZipped(): ModelDescriptor = {
+    val directory = new File(this.getClass.getClassLoader.getResource("wine/models/saved/1/").getPath)
+    val data = Zipper.getZippedMessage(directory)
+    new ModelDescriptor(
+      modelName = "Wine model",
+      description = "Wine tensorflow saved model",
+      modelType = ModelType.TENSORFLOWSAVED,
+      modelBytes = Some(data),
+      modelSourceLocation = None)
   }
 
   "Processing of Wine PMML Model" should "return value of 5.0" in {
@@ -121,6 +133,29 @@ class WineProcessorCompleteTest extends FlatSpec {
 
     modelserver.ask(getTensorflowBundeledModel())
     println("Done setting up Tensorflow bundeled model")
+    // Wait for the model to initialize
+    Thread.sleep(3000)
+    modelserver.ask(record).mapTo[Model.ModelReturn[Double]]
+      .map(data ⇒ {
+        val result = data.modelOutput
+        println(s"Executed Tensorflow bundeled wine in ${data.modelServingStats.duration} ms with result $result")
+        assert(result == 5.0)
+        ()
+      })
+    Thread.sleep(5000)
+  } 
+
+  "Processing of zipped Wine Tensorflow bundeled Model" should "return value of 5.0" in {
+
+    val modelserver = system.actorOf(
+      ModelServingActor.props[WineRecord, Double](
+        "wine", modelFactory, () ⇒ 0.0))
+
+    // Wait for the actor to initialize and restore
+    Thread.sleep(3000)
+
+    modelserver.ask(getTensorflowBundeledModelZipped())
+    println("Done setting up zipped Tensorflow bundeled model")
     // Wait for the model to initialize
     Thread.sleep(3000)
     modelserver.ask(record).mapTo[Model.ModelReturn[Double]]

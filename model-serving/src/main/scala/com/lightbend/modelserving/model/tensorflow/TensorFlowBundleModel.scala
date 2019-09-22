@@ -1,16 +1,16 @@
 package com.lightbend.modelserving.model.tensorflow
 
-import java.io.File
+import java.io.{ByteArrayInputStream, ByteArrayOutputStream, File, FileInputStream, FileOutputStream}
 import java.nio.file.Files
-import scala.collection.mutable.{ Map ⇒ MMap }
+import java.util.zip.{ZipEntry, ZipInputStream, ZipOutputStream}
+
+import scala.collection.mutable.{Map => MMap}
 import scala.collection.JavaConverters._
-
-import com.lightbend.modelserving.model.{ ModelBase, ModelDescriptor }
+import com.lightbend.modelserving.model.{ModelBase, ModelDescriptor}
 import com.lightbend.modelserving.model.ModelDescriptorUtil.implicits._
-
 import com.google.protobuf.Descriptors
 import org.tensorflow.SavedModelBundle
-import org.tensorflow.framework.{ MetaGraphDef, SavedModel, SignatureDef, TensorInfo, TensorShapeProto }
+import org.tensorflow.framework.{MetaGraphDef, SavedModel, SignatureDef, TensorInfo, TensorShapeProto}
 
 /**
  * Abstract class for any TensorFlow (SavedModelBundle) model processing. It has to be extended by the user
@@ -21,12 +21,15 @@ import org.tensorflow.framework.{ MetaGraphDef, SavedModel, SignatureDef, Tensor
 abstract class TensorFlowBundleModel[RECORD, MODEL_OUTPUT](descriptor: ModelDescriptor)(makeDefaultModelOutput: () ⇒ MODEL_OUTPUT)
   extends ModelBase[RECORD, MODEL_OUTPUT](descriptor)(makeDefaultModelOutput) with Serializable {
 
-  assert(descriptor.modelSourceLocation != None, s"Invalid descriptor ${descriptor.toRichString}")
+  assert(descriptor.modelSourceLocation != None || descriptor.modelBytes != None, s"Invalid descriptor ${descriptor.toRichString}")
 
   type Signatures = Map[String, Signature]
-
+  val unzipDirectory = "tmp/model"
   // Convert input into file path
-  val path = descriptor.modelSourceLocation.get
+  val path = descriptor.modelSourceLocation match {
+    case Some(location) => location
+    case _ => Zipper.unzipMessage(descriptor.modelBytes.get, unzipDirectory)
+  }
   // get tags. We assume here that the first tag is the one we use
   val tags: Seq[String] = getTags(path)
   val bundle = SavedModelBundle.load(path, tags(0))
@@ -103,3 +106,74 @@ case class Field(name: String, `type`: Descriptors.EnumValueDescriptor, shape: S
 
 /** Definition of the signature */
 case class Signature(inputs: Map[String, Field], outputs: Map[String, Field])
+
+// Support class encapsulating zipping operations
+object Zipper{
+  // Recursively delete files in directory
+  private def deleteRecursively(file: File): Unit = {
+    if(file.exists) {
+      if (file.isDirectory) {
+        file.listFiles.foreach(deleteRecursively)
+      }
+      val _ = file.delete
+    }
+  }
+
+  // delete directory content
+  private def deleteDirectoryContent(file: File): Unit = {
+    if(file.exists) {
+      if (file.isDirectory)
+        file.listFiles.foreach(deleteRecursively)
+    }
+  }
+
+  // Unzip message into directory
+  def unzipMessage(data: Array[Byte], directory : String) : String = {
+    val destination = new File(directory)
+    deleteDirectoryContent(destination)
+    val zis = new ZipInputStream(new ByteArrayInputStream(data))
+    Stream.continually(zis.getNextEntry).takeWhile(_ != null).filter(!_.isDirectory).foreach ( entry => {
+      //      println(s"Unzipping file ${entry.getName}")
+      val outPath = destination.toPath.resolve(entry.getName)
+      val outPathParent = outPath.getParent
+      if (!outPathParent.toFile.exists()) {
+        outPathParent.toFile.mkdirs()
+      }
+      val outFile = outPath.toFile
+      val out = new FileOutputStream(outFile)
+      val buffer = new Array[Byte](4096)
+      Stream.continually(zis.read(buffer)).takeWhile(_ != -1).foreach(out.write(buffer, 0, _))
+      out.close()
+    })
+    destination.listFiles(_.isDirectory).head.getAbsolutePath
+  }
+
+  // recursively zip content of a directory
+  private def addDirToZipArchive(zos: ZipOutputStream, fileToZip: File, parentDirectoryName: Option[String] = None): Unit = {
+    if (fileToZip != null || fileToZip.exists) {
+      val zipEntryName = parentDirectoryName match {
+        case Some(name) => s"$name/${fileToZip.getName}"
+        case _ => fileToZip.getName
+      }
+      fileToZip.isDirectory match {
+        case true => // Process directory
+          fileToZip.listFiles.foreach(addDirToZipArchive(zos, _, Some(zipEntryName)))
+        case _ => //individual file
+          zos.putNextEntry(new ZipEntry(zipEntryName))
+          val fis = new FileInputStream(fileToZip)
+          val buffer = new Array[Byte](4096)
+          Stream.continually(fis.read(buffer)).takeWhile(_ != -1).foreach(zos.write(buffer, 0, _))
+          zos.closeEntry()
+          fis.close()
+      }
+    }
+  }
+
+  // Get a byte array containing all the files in the directory
+  def getZippedMessage(source: File) : Array[Byte] = {
+    val bos = new ByteArrayOutputStream()
+    val zos = new ZipOutputStream(bos)
+    addDirToZipArchive(zos, source, None)
+    bos.toByteArray
+  }
+}
