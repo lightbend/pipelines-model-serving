@@ -24,7 +24,7 @@ abstract class TensorFlowBundleModel[RECORD, MODEL_OUTPUT](descriptor: ModelDesc
   assert(descriptor.modelSourceLocation != None || descriptor.modelBytes != None, s"Invalid descriptor ${descriptor.toRichString}")
 
   type Signatures = Map[String, Signature]
-  val unzipDirectory = "tmp/model"
+  val unzipDirectory = "/tmp/model"
   // Convert input into file path
   val path = descriptor.modelSourceLocation match {
     case Some(location) => location

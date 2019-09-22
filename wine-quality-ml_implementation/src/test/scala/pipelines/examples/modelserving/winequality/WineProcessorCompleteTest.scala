@@ -143,7 +143,7 @@ class WineProcessorCompleteTest extends FlatSpec {
         ()
       })
     Thread.sleep(5000)
-  } 
+  }
 
   "Processing of zipped Wine Tensorflow bundeled Model" should "return value of 5.0" in {
 
