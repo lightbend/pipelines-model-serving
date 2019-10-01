@@ -17,6 +17,8 @@ import org.tensorflow.framework.{MetaGraphDef, SavedModel, SignatureDef, TensorI
  * implement score method, based on his own model
  * This is a very simple implementation, assuming that the TensorFlow saved model bundle is local (constructor, get tags)
  * The realistic implementation has to use some shared data storage, for example, S3, Minio, etc.
+ * @param descriptor model descriptor
+ * @param makeDefaultModelOutput a function to create default output
  */
 abstract class TensorFlowBundleModel[RECORD, MODEL_OUTPUT](descriptor: ModelDescriptor)(makeDefaultModelOutput: () ⇒ MODEL_OUTPUT)
   extends ModelBase[RECORD, MODEL_OUTPUT](descriptor)(makeDefaultModelOutput) with Serializable {
@@ -42,6 +44,9 @@ abstract class TensorFlowBundleModel[RECORD, MODEL_OUTPUT](descriptor: ModelDesc
   // Create TensorFlow session
   val session = bundle.session
 
+  /**
+   * Cleanup when a model is not used anymore
+   */
   override def cleanup(): Unit = {
     try {
       session.close
@@ -57,11 +62,21 @@ abstract class TensorFlowBundleModel[RECORD, MODEL_OUTPUT](descriptor: ModelDesc
     }
   }
 
+  /**
+   * Parse signatures
+   * @param signatures - signatures from metagraph
+   * @returns map of names/signatures
+   */
   private def parseSignatures(signatures: MMap[String, SignatureDef]): Map[String, Signature] = {
     signatures.map(signature ⇒
       signature._1 -> Signature(parseInputOutput(signature._2.getInputsMap.asScala), parseInputOutput(signature._2.getOutputsMap.asScala))).toMap
   }
 
+  /**
+   * Parse Input/Output
+   * @param inputOutputs - Input/Output definition from metagraph
+   * @returns map of names/fields
+   */
   private def parseInputOutput(inputOutputs: MMap[String, TensorInfo]): Map[String, Field] =
     inputOutputs.map {
       case (key, info) ⇒
@@ -84,8 +99,13 @@ abstract class TensorFlowBundleModel[RECORD, MODEL_OUTPUT](descriptor: ModelDesc
         key -> Field(name, dtype, shape)
     }.toMap
 
-  // This method gets all tags in the saved bundle and uses the first one. If you need a specific tag, overwrite this method
-  // With a seq (of one) tags returning desired tag.
+  /**
+   * Gets all tags in the saved bundle and uses the first one. If you need a specific tag, overwrite this method
+   * With a seq (of one) tags returning desired tag.
+   *
+   * @param directory - directory for saved model
+   * @returns sequence of tags
+   */
   protected def getTags(directory: String): Seq[String] = {
     val d = new File(directory)
     val pbfiles = if (d.exists && d.isDirectory)
@@ -107,27 +127,39 @@ case class Field(name: String, `type`: Descriptors.EnumValueDescriptor, shape: S
 /** Definition of the signature */
 case class Signature(inputs: Map[String, Field], outputs: Map[String, Field])
 
-// Support class encapsulating zipping operations
+/**
+ * Support class encapsulating zipping operations
+ */
 object Zipper{
-  // Recursively delete files in directory
-  private def deleteRecursively(file: File): Unit = {
-    if(file.exists) {
-      if (file.isDirectory) {
-        file.listFiles.foreach(deleteRecursively)
+  /**
+   * Recursively delete files in directory
+   * @param directory - directory (File)
+   */
+  private def deleteRecursively(directory: File): Unit = {
+    if(directory.exists) {
+      if (directory.isDirectory) {
+        directory.listFiles.foreach(deleteRecursively)
       }
-      val _ = file.delete
+      val _ = directory.delete
     }
   }
 
-  // delete directory content
-  private def deleteDirectoryContent(file: File): Unit = {
-    if(file.exists) {
-      if (file.isDirectory)
-        file.listFiles.foreach(deleteRecursively)
+  /**
+   * Delete files in directory
+   * @param directory - directory (File)
+   */
+  private def deleteDirectoryContent(directory: File): Unit = {
+    if(directory.exists) {
+      if (directory.isDirectory)
+        directory.listFiles.foreach(deleteRecursively)
     }
   }
 
-  // Unzip message into directory
+  /**
+   * Unzip message into directory
+   * @param data - message (byte array)
+   * @param directory - directory (File)
+   */
   def unzipMessage(data: Array[Byte], directory : String) : String = {
     val destination = new File(directory)
     deleteDirectoryContent(destination)
@@ -148,7 +180,12 @@ object Zipper{
     destination.listFiles(_.isDirectory).head.getAbsolutePath
   }
 
-  // recursively zip content of a directory
+  /**
+   * Recursively zip content of a directory
+   * @param zos - zip output stream
+   * @param fileToZip - file to zip
+   * @param parentDirectoryName - parent directory
+   */
   private def addDirToZipArchive(zos: ZipOutputStream, fileToZip: File, parentDirectoryName: Option[String] = None): Unit = {
     if (fileToZip != null || fileToZip.exists) {
       val zipEntryName = parentDirectoryName match {
@@ -169,7 +206,11 @@ object Zipper{
     }
   }
 
-  // Get a byte array containing all the files in the directory
+  /**
+   * Zip directory into message
+   * @param source - directory (File)
+   * @return message
+   */
   def getZippedMessage(source: File) : Array[Byte] = {
     val bos = new ByteArrayOutputStream()
     val zos = new ZipOutputStream(bos)
