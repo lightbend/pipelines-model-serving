@@ -15,9 +15,9 @@ import pipelinesx.flow.AWSS3Flow
  * @param duration:     Long = 3600000)
  */
 final case class AWSS3EgressLogic[IN](
-    in:        CodecInlet[IN],
-    bucket:    String,
-    keyPrefix: String,
+    in:           CodecInlet[IN],
+    bucket:       String,
+    keyPrefix:    String,
     transformer:  (IN) => String = (t: IN) => t.toString + "/n",
     maxSize:      Long = 512000000,
     duration:     Long = 3600000)
