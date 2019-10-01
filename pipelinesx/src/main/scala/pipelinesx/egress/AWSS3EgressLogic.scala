@@ -27,6 +27,6 @@ final case class AWSS3EgressLogic[IN](
   var AWSS3 = new AWSS3Flow[IN](bucket, keyPrefix)
 
   override def runnableGraph() = atLeastOnceSource(in)
-    .via(AWSS3.S3Flow).map(result => println(s""))
+    .via(AWSS3.S3Flow).map(result => println(s"written a new file to S3 ${result.location}"))
     .to(atLeastOnceSink)
 }
