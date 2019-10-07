@@ -9,7 +9,7 @@ import akka.stream.scaladsl._
 import pipelines.streamlets.StreamletShape
 import pipelines.streamlets.avro.AvroInlet
 import pipelines.akkastream.AkkaStreamlet
-import pipelines.akkastream.testkit._
+import pipelines.akkastream.testkit.scaladsl._
 import com.typesafe.config.ConfigFactory
 import java.io.{ ByteArrayOutputStream, PrintStream }
 

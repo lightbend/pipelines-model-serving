@@ -5,16 +5,16 @@ import akka.pattern.ask
 import akka.util.Timeout
 import com.lightbend.modelserving.model.actor.ModelServingActor
 import com.lightbend.modelserving.model.persistence.FilePersistence
-import com.lightbend.modelserving.model.{ Model, ModelDescriptor, ModelType, MultiModelFactory }
+import com.lightbend.modelserving.model.{Model, ModelDescriptor, ModelType, MultiModelFactory}
 import pipelines.akkastream.AkkaStreamlet
-import pipelines.akkastream.scaladsl.{ FlowWithPipelinesContext, RunnableGraphStreamletLogic }
-import pipelines.streamlets.avro.{ AvroInlet, AvroOutlet }
-import pipelines.streamlets.{ ReadWriteMany, StreamletShape, VolumeMount }
-import pipelines.examples.modelserving.winequality.data.{ WineRecord, WineResult }
+import pipelines.akkastream.scaladsl.{FlowWithPipelinesContext, RunnableGraphStreamletLogic}
+import pipelines.streamlets.avro.{AvroInlet, AvroOutlet}
+import pipelines.streamlets.{ReadWriteMany, StreamletShape, VolumeMount}
+import pipelines.examples.modelserving.winequality.data.{WineRecord, WineResult}
 import pipelines.examples.modelserving.winequality.models.pmml.WinePMMLModelFactory
-import pipelines.examples.modelserving.winequality.models.tensorflow.{ WineTensorFlowBundledModelFactory, WineTensorFlowModelFactory }
+import pipelines.examples.modelserving.winequality.models.tensorflow.{WineTensorFlowBundledModelFactory, WineTensorFlowModelFactory}
 import pipelines.examples.modelserving.winequality.result.ModelDoubleResult
-import pipelines.examples.modelserving.winequality.speculative.{ WineRecordRun, WineResultRun }
+import pipelines.examples.modelserving.winequality.speculative.{WineRecordRun, WineResultRun}
 
 import scala.concurrent.duration._
 
@@ -30,7 +30,6 @@ final case object SpeculativeWineModelServer extends AkkaStreamlet {
   private val persistentDataMount =
     VolumeMount("persistence-data-mount", "/data", ReadWriteMany)
   override def volumeMounts = Vector(persistentDataMount)
-  FilePersistence.setGlobalMountPoint(persistentDataMount.path)
 
   val modelFactory = MultiModelFactory(
     Map(
@@ -41,7 +40,9 @@ final case object SpeculativeWineModelServer extends AkkaStreamlet {
   override final def createLogic = new RunnableGraphStreamletLogic() {
 
     implicit val askTimeout: Timeout = Timeout(30.seconds)
+    // Set persistence
 
+    FilePersistence.setGlobalMountPoint(context.getMountedPath(persistentDataMount).toString)
     FilePersistence.setStreamletName(context.streamletRef)
     val modelserver = context.system.actorOf(
       ModelServingActor.props[WineRecord, Double](

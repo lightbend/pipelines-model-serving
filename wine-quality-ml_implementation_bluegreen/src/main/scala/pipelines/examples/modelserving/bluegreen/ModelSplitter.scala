@@ -8,8 +8,8 @@ import scala.concurrent.duration._
 import pipelines.streamlets._
 import pipelines.akkastream._
 import pipelines.akkastream.scaladsl._
-import pipelines.streamlets.avro.{ AvroInlet, AvroOutlet }
-import com.lightbend.modelserving.model.actor.{ DataSplittingActor, RecordWithOutlet }
+import pipelines.streamlets.avro.{AvroInlet, AvroOutlet}
+import com.lightbend.modelserving.model.actor.{DataSplittingActor, RecordWithOutlet}
 import com.lightbend.modelserving.model.persistence.FilePersistence
 import com.lightbend.modelserving.splitter.StreamSplitter
 import pipelinesx.ingress.InputTrafficSplitter
@@ -27,13 +27,14 @@ final case object ModelSplitter extends AkkaStreamlet {
   private val persistentDataMount =
     VolumeMount("persistence-data-mount", "/data", ReadWriteMany)
   override def volumeMounts = Vector(persistentDataMount)
-  FilePersistence.setGlobalMountPoint(persistentDataMount.path)
 
   override final def createLogic = new RunnableGraphStreamletLogic() {
 
     implicit val askTimeout: Timeout = Timeout(30.seconds)
-
+    // Set persistence
+    FilePersistence.setGlobalMountPoint(context.getMountedPath(persistentDataMount).toString)
     FilePersistence.setStreamletName(context.streamletRef)
+
     val datasplitter = context.system.actorOf(
       DataSplittingActor.props("splitter"))
 

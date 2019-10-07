@@ -15,18 +15,18 @@ import pipelinesx.flow.AWSS3Flow
  * @param duration:     Long = 3600000)
  */
 final case class AWSS3EgressLogic[IN](
-    in:           CodecInlet[IN],
-    bucket:       String,
-    keyPrefix:    String,
-    transformer:  (IN) => String = (t: IN) => t.toString + "/n",
-    maxSize:      Long = 512000000,
-    duration:     Long = 3600000)
-    (implicit val context: StreamletContext)
+    in:          CodecInlet[IN],
+    bucket:      String,
+    keyPrefix:   String,
+    transformer: (IN) ⇒ String  = (t: IN) ⇒ t.toString + "/n",
+    maxSize:     Long           = 512000000,
+    duration:    Long           = 3600000)
+  (implicit val context: AkkaStreamletContext)
   extends RunnableGraphStreamletLogic {
 
   var AWSS3 = new AWSS3Flow[IN](bucket, keyPrefix)
 
   override def runnableGraph() = atLeastOnceSource(in)
-    .via(AWSS3.S3Flow).map(result => println(s"written a new file to S3 ${result.location}"))
+    .via(AWSS3.S3Flow).map(result ⇒ println(s"written a new file to S3 ${result.location}"))
     .to(atLeastOnceSink)
 }

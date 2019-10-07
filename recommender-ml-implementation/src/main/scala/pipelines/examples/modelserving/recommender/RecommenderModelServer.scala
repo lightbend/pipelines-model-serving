@@ -28,13 +28,11 @@ final case object RecommenderModelServer extends AkkaStreamlet {
   private val persistentDataMount =
     VolumeMount("persistence-data-mount", "/data", ReadWriteMany)
   override def volumeMounts = Vector(persistentDataMount)
-  FilePersistence.setGlobalMountPoint(persistentDataMount.path)
 
   override final def createLogic = new RunnableGraphStreamletLogic() {
 
     implicit val askTimeout: Timeout = Timeout(30.seconds)
 
-    FilePersistence.setStreamletName(context.streamletRef)
     val modelserver = context.system.actorOf(
       ModelServingActor.props[RecommenderRecord, ModelKeyDoubleValueArrayResult](
         "recommender",
@@ -42,6 +40,10 @@ final case object RecommenderModelServer extends AkkaStreamlet {
         () ⇒ RecommenderTensorFlowServingModel.makeEmptyTFPredictionResult()))
 
     def runnableGraph() = {
+      // Set persistence
+      FilePersistence.setGlobalMountPoint(context.getMountedPath(persistentDataMount).toString)
+      FilePersistence.setStreamletName(context.streamletRef)
+
       atLeastOnceSource(in1).via(modelFlow).runWith(atLeastOnceSink)
       atLeastOnceSource(in0).via(dataFlow).to(atLeastOnceSink(out))
     }

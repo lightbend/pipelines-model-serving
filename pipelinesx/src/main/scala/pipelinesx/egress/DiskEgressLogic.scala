@@ -26,7 +26,7 @@ final case class DiskEgressLogic[IN](
     outdir:    String,
     separator: String         = "\n")(
     implicit
-    val context: StreamletContext)
+    val context: AkkaStreamletContext)
   extends RunnableGraphStreamletLogic {
 
   private val destinationDir = FileSystems.getDefault.getPath(s"$outdir/${context.streamletRef}")

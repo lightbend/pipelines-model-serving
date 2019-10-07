@@ -15,7 +15,7 @@ import akka.stream.scaladsl.Sink
 abstract class FlowEgressLogic[IN](
     val inlet: CodecInlet[IN])(
     implicit
-    context: StreamletContext)
+    context: AkkaStreamletContext)
   extends RunnableGraphStreamletLogic {
   /**
    * Logic to process the data, such as writing to a database.

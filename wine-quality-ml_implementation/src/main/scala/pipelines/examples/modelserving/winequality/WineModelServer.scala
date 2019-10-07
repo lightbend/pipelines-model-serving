@@ -28,7 +28,6 @@ final case object WineModelServer extends AkkaStreamlet {
   private val persistentDataMount =
     VolumeMount("persistence-data-mount", "/data", ReadWriteMany)
   override def volumeMounts = Vector(persistentDataMount)
-  FilePersistence.setGlobalMountPoint(persistentDataMount.path)
 
   val modelFactory = MultiModelFactory(
     Map(
@@ -39,8 +38,10 @@ final case object WineModelServer extends AkkaStreamlet {
   override final def createLogic = new RunnableGraphStreamletLogic() {
 
     implicit val askTimeout: Timeout = Timeout(30.seconds)
-
+    // Set persistence
+    FilePersistence.setGlobalMountPoint(context.getMountedPath(persistentDataMount).toString)
     FilePersistence.setStreamletName(context.streamletRef)
+
     val modelserver = context.system.actorOf(
       ModelServingActor.props[WineRecord, Double](
         "wine",

@@ -30,20 +30,22 @@ final case object AirlineFlightModelServer extends AkkaStreamlet {
   private val persistentDataMount =
     VolumeMount("persistence-data-mount", "/data", ReadWriteMany)
   override def volumeMounts = Vector(persistentDataMount)
-  FilePersistence.setGlobalMountPoint(persistentDataMount.path)
 
   implicit val askTimeout: Timeout = Timeout(30.seconds)
 
   /** Uses the actor system as an argument to support testing outside of the streamlet. */
   def makeModelServer(sys: ActorSystem): ActorRef = {
 
-    FilePersistence.setStreamletName(context.streamletRef)
     sys.actorOf(
       ModelServingActor.props[AirlineFlightRecord, BinomialModelPrediction](
         "airlines", AirlineFlightH2OModelFactory, () ⇒ new BinomialModelPrediction))
   }
 
   override final def createLogic = new RunnableGraphStreamletLogic() {
+    // Set persistence
+    FilePersistence.setGlobalMountPoint(context.getMountedPath(persistentDataMount).toString)
+    FilePersistence.setStreamletName(context.streamletRef)
+
     def runnableGraph() = {
       atLeastOnceSource(in1).via(modelFlow).runWith(atLeastOnceSink)
       atLeastOnceSource(in0).via(dataFlow).to(atLeastOnceSink(out))

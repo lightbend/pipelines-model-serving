@@ -1,13 +1,13 @@
 package pipelinesx.egress
 
-import java.nio.file.{FileSystems, Path}
+import java.nio.file.{ FileSystems, Path }
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 import akka.Done
 import akka.stream.OverflowStrategy
 import akka.stream.alpakka.file.scaladsl.LogRotatorSink
-import akka.stream.scaladsl.{RunnableGraph, Sink, Source}
+import akka.stream.scaladsl.{ RunnableGraph, Sink, Source }
 import akka.util.ByteString
 import pipelines.akkastream._
 import pipelines.akkastream.scaladsl.RunnableGraphStreamletLogic
@@ -31,16 +31,17 @@ final case class AWSEgressLogic[IN](
     keyPrefix: String,
     separator: String         = "\n")(
     implicit
-    val context: StreamletContext)
+    val context: AkkaStreamletContext)
   extends RunnableGraphStreamletLogic {
 
   private var filename = ""
   private val destinationDir = FileSystems.getDefault.getPath(s"$outdir/${context.streamletRef}")
   private val formatter = DateTimeFormatter.ofPattern("'stream-'yyyy-MM-dd_HH'.messages'")
   val queue = Source.queue[String](3, OverflowStrategy.fail)
-    .map(file => {
+    .map(file ⇒ {
       filename = file
-      ByteString(scala.io.Source.fromFile(file).getLines.mkString)})
+      ByteString(scala.io.Source.fromFile(file).getLines.mkString)
+    })
     .to(S3.multipartUpload(bucket, s"$keyPrefix/$filename"))
     .run()
 
@@ -53,8 +54,8 @@ final case class AWSEgressLogic[IN](
         None
       } else {
         currentFilename match {
-          case Some(file) => queue.offer(file)
-          case _ =>
+          case Some(file) ⇒ queue.offer(file)
+          case _          ⇒
         }
         currentFilename = Some(newName)
         val file = destinationDir.resolve(newName)

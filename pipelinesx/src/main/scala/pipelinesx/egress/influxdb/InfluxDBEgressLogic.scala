@@ -1,7 +1,7 @@
 package pipelinesx.egress.influxdb
 
 import pipelines.streamlets.CodecInlet
-import pipelines.akkastream.StreamletContext
+import pipelines.akkastream._
 import pipelines.akkastream.scaladsl._
 import akka.actor.ActorSystem
 
@@ -20,7 +20,7 @@ final case class InfluxDBEgressLogic[IN](
     configKeyRoot: String,
     configKeys:    InfluxDBEgressLogic.ConfigKeys = InfluxDBEgressLogic.ConfigKeys())(
     implicit
-    context: StreamletContext)
+    context: AkkaStreamletContext)
   extends RunnableGraphStreamletLogic {
 
   def runnableGraph =
@@ -49,7 +49,7 @@ final case class InfluxDBEgressLogic[IN](
     }
   }
 
-  protected def get(context: StreamletContext, key: String): String = try {
+  protected def get(context: AkkaStreamletContext, key: String): String = try {
     val value = context.config.getString(key)
     if (value == null || value == "") throw InfluxDBEgressLogic.ConfigKeyNotFound(key, null)
     else value

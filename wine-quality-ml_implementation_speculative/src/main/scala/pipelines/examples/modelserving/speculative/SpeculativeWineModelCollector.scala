@@ -30,7 +30,6 @@ final case object SpeculativeWineModelCollector extends AkkaStreamlet {
   private val persistentDataMount =
     VolumeMount("persistence-data-mount", "/data", ReadWriteMany)
   override def volumeMounts = Vector(persistentDataMount)
-  FilePersistence.setGlobalMountPoint(persistentDataMount.path)
 
   override final def createLogic = new RunnableGraphStreamletLogic() {
 
@@ -38,7 +37,10 @@ final case object SpeculativeWineModelCollector extends AkkaStreamlet {
     val splitter = new WineSpeculativeRecordSplitter()
     val decider = new WineDecider()
 
+    // Set persistence
+    FilePersistence.setGlobalMountPoint(context.getMountedPath(persistentDataMount).toString)
     FilePersistence.setStreamletName(context.streamletRef)
+
     val splieeterCollector = context.system.actorOf(
       SpeculativeModelServingCollectorActor.props[WineResult](
         "speculativecollector",
