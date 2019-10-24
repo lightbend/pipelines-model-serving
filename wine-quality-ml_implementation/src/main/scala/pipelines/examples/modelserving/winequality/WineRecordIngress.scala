@@ -12,7 +12,6 @@ import pipelinesx.config.ConfigUtil.implicits._
 import pipelinesx.logging.{ Logger, LoggingUtil }
 
 import scala.concurrent.duration._
-import com.lightbend.modelserving.model.util.MainBase
 import pipelines.examples.modelserving.winequality.data.WineRecord
 import pipelines.streamlets.avro.AvroOutlet
 
@@ -83,23 +82,4 @@ object WineRecordIngressUtil {
   }
 
   val logger: Logger = LoggingUtil.getLogger(RecordsReader.getClass)
-}
-
-/**
- * Test program for [[WineRecordIngress]] and [[WineRecordIngressUtil]];
- * reads records and prints them. For testing purposes only.
- * At this time, Pipelines intercepts calls to sbt run and sbt runMain, so use
- * the console instead:
- * ```
- * import pipelines.examples.modelserving.winequality._
- * WineRecordIngressMain.main(Array("-n","10","-f","1000"))
- * ```
- */
-object WineRecordIngressMain extends MainBase[WineRecord](
-  defaultCount = 10,
-  defaultFrequencyMillis = WineRecordIngressUtil.dataFrequencyMilliseconds) {
-
-  override protected def makeSource(frequency: FiniteDuration): Source[WineRecord, NotUsed] =
-    WineRecordIngressUtil.makeSource(
-      WineRecordIngressUtil.rootConfigKey, frequency)
 }

@@ -11,7 +11,6 @@ import pipelinesx.config.ConfigUtil.implicits._
 import scala.concurrent.duration._
 import scala.collection.JavaConverters._
 import com.lightbend.modelserving.model.{ ModelDescriptor, ModelType }
-import com.lightbend.modelserving.model.util.ModelMainBase
 
 /**
  * One at a time every two minutes, loads a PMML or TensorFlow model and
@@ -57,23 +56,4 @@ object WineModelIngressUtil {
       .map(reader ⇒ reader.next())
       .throttle(1, frequency)
   }
-}
-
-/**
- * Test program for [[WineModelIngress]] and [[WineModelIngressUtil]].
- * It reads models and prints their data. For testing purposes only.
- * At this time, Pipelines intercepts calls to sbt run and sbt runMain, so use
- * the console instead:
- * ```
- * import pipelines.examples.modelserving.winequality._
- * WineModelIngressMain.main(Array("-n","5","-f","1000"))
- * ```
- */
-object WineModelIngressMain extends ModelMainBase(
-  defaultCount = 5,
-  defaultFrequencyMillis = WineModelIngressUtil.modelFrequencySeconds * 1000) {
-
-  override protected def makeSource(frequency: FiniteDuration): Source[ModelDescriptor, NotUsed] =
-    WineModelIngressUtil.makeSource(
-      WineModelIngressUtil.wineModelsResources, frequency)
 }

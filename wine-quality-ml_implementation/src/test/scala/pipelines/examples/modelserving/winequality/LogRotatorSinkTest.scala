@@ -1,16 +1,15 @@
 package pipelines.examples.modelserving.winequality
 
-import java.nio.file.{FileSystems, Path}
+import java.nio.file.{ FileSystems, Path }
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
-import akka.{Done, NotUsed}
+import akka.{ Done, NotUsed }
 import akka.actor.ActorSystem
-import akka.stream.{ActorMaterializer, OverflowStrategy}
+import akka.stream.{ ActorMaterializer, OverflowStrategy }
 import akka.stream.alpakka.file.scaladsl.LogRotatorSink
-import akka.stream.scaladsl.{Sink, Source}
+import akka.stream.scaladsl.{ Sink, Source }
 import akka.util.ByteString
-import com.lightbend.modelserving.model.util.MainBase
 import org.scalatest.FlatSpec
 
 import scala.concurrent.Future
@@ -29,9 +28,8 @@ class LogRotatorSinkTest extends FlatSpec {
   implicit val executionContext = system.dispatcher
 
   val queue = Source.queue[String](3, OverflowStrategy.fail)
-    .to(Sink.foreach(v => println(s"getting $v from the queue")))
+    .to(Sink.foreach(v ⇒ println(s"getting $v from the queue")))
     .run
-
 
   val timeBasedTriggerCreator: () ⇒ ByteString ⇒ Option[Path] = () ⇒ {
     var currentFilename: Option[String] = None
@@ -39,8 +37,8 @@ class LogRotatorSinkTest extends FlatSpec {
       val newName = LocalDateTime.now().format(formatter)
       // Hourly
       currentFilename match {
-        case Some(file) => queue.offer(file)
-        case _ =>
+        case Some(file) ⇒ queue.offer(file)
+        case _          ⇒
       }
       if (currentFilename.contains(newName)) {
         None
@@ -59,7 +57,7 @@ class LogRotatorSinkTest extends FlatSpec {
   ensureFileExists()
 
   "Incomming messages" should "writtent to file" in {
-    WineRecordIngressReader.makeSource(1.seconds).map(m ⇒ ByteString(m.toString + "\n"))
+    makeSource(1.seconds).map(m ⇒ ByteString(m.toString + "\n"))
       .runWith(timeBasedSink)
     Thread.sleep(6000)
   }
@@ -71,13 +69,9 @@ class LogRotatorSinkTest extends FlatSpec {
     if (!dir.exists()) dir.mkdir()
     ()
   }
-}
 
-object WineRecordIngressReader extends MainBase[WineRecord](
-  defaultCount = 10,
-  defaultFrequencyMillis = WineRecordIngressUtil.dataFrequencyMilliseconds) {
-
-  override def makeSource(frequency: FiniteDuration): Source[WineRecord, NotUsed] =
+  def makeSource(frequency: FiniteDuration): Source[WineRecord, NotUsed] =
     WineRecordIngressUtil.makeSource(
       WineRecordIngressUtil.rootConfigKey, frequency)
+
 }

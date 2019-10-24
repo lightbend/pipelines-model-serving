@@ -10,7 +10,6 @@ import pipelinesx.config.ConfigUtil
 import pipelinesx.config.ConfigUtil.implicits._
 import scala.concurrent.duration._
 import com.lightbend.modelserving.model.{ ModelDescriptor, ModelType }
-import com.lightbend.modelserving.model.util.ModelMainBase
 
 /**
  * Ingress of model updates. In this case, every two minutes we load and
@@ -73,23 +72,4 @@ object RecommenderModelIngressUtil {
       .map(finder ⇒ finder.getModelDescriptor())
       .throttle(1, frequency)
   }
-}
-
-/**
- * Test program for [[RecommenderModelIngress]] and [[RecommenderModelIngressUtil]].
- * It reads models and prints their data. For testing purposes only.
- * At this time, Pipelines intercepts calls to sbt run and sbt runMain, so use
- * the console instead:
- * ```
- * import pipelines.examples.modelserving.recommender._
- * RecommenderModelIngressMain.main(Array("-n","3","-f","1000"))
- * ```
- */
-object RecommenderModelIngressMain extends ModelMainBase(
-  defaultCount = 3,
-  defaultFrequencyMillis = RecommenderModelIngressUtil.modelFrequencySeconds * 1000) {
-
-  override protected def makeSource(frequency: FiniteDuration): Source[ModelDescriptor, NotUsed] =
-    RecommenderModelIngressUtil.makeSource(
-      RecommenderModelIngressUtil.recommenderServerLocations, frequency)
 }

@@ -11,7 +11,6 @@ import scala.util.Random
 import scala.concurrent.duration._
 import pipelinesx.config.ConfigUtil
 import pipelinesx.config.ConfigUtil.implicits._
-import com.lightbend.modelserving.model.util.MainBase
 import pipelines.examples.modelserving.recommender.data.RecommenderRecord
 
 /**
@@ -53,22 +52,4 @@ object RecommenderRecordIngressUtil {
       new RecommenderRecord(user, products)
     }
   }
-}
-
-/**
- * Test program for [[RecommenderRecordIngress]] and [[RecommenderRecordIngressUtil]];
- * reads records and prints them. For testing purposes only.
- * At this time, Pipelines intercepts calls to sbt run and sbt runMain, so use
- * the console instead:
- * ```
- * import pipelines.examples.modelserving.recommender._
- * RecommenderRecordIngressMain.main(Array("-n","10","-f","1000"))
- * ```
- */
-object RecommenderRecordIngressMain extends MainBase[RecommenderRecord](
-  defaultCount = 10,
-  defaultFrequencyMillis = RecommenderRecordIngressUtil.dataFrequencyMilliseconds) {
-
-  override protected def makeSource(frequency: FiniteDuration): Source[RecommenderRecord, NotUsed] =
-    RecommenderRecordIngressUtil.makeSource(frequency)
 }

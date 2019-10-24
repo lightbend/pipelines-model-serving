@@ -10,7 +10,6 @@ import pipelinesx.ingress.RecordsReader
 import pipelinesx.config.ConfigUtil
 import pipelinesx.config.ConfigUtil.implicits._
 import scala.concurrent.duration._
-import com.lightbend.modelserving.model.util.MainBase
 import pipelines.examples.modelserving.airlineflights.data.AirlineFlightRecord
 
 /**
@@ -96,23 +95,4 @@ object AirlineFlightRecordIngressUtil {
           s"ERROR: Failed to parse string ${tokens.mkString(",")}. cause: $nf")
     }
   }
-}
-
-/**
- * Test program for [[AirlineFlightRecordIngress]] and [[AirlineFlightRecordIngressUtil]];
- * reads records and prints them. For testing purposes only.
- * At this time, Pipelines intercepts calls to sbt run and sbt runMain, so use
- * the console instead:
- * ```
- * import pipelines.examples.modelserving.airlineflights._
- * AirlineFlightRecordIngressMain.main(Array("-n","10","-f","1000"))
- * ```
- */
-object AirlineFlightRecordIngressMain extends MainBase[AirlineFlightRecord](
-  defaultCount = 10,
-  defaultFrequencyMillis = AirlineFlightRecordIngressUtil.dataFrequencyMilliseconds) {
-
-  override protected def makeSource(frequency: FiniteDuration): Source[AirlineFlightRecord, NotUsed] =
-    AirlineFlightRecordIngressUtil.makeSource(
-      AirlineFlightRecordIngressUtil.rootConfigKey, frequency)
 }

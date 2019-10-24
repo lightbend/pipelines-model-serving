@@ -14,7 +14,6 @@ import pipelinesx.config.ConfigUtil.implicits._
 
 import com.lightbend.modelserving.model.{ ModelDescriptor, ModelType }
 import com.lightbend.modelserving.model.ModelDescriptorUtil.implicits._
-import com.lightbend.modelserving.model.util.ModelMainBase
 
 /**
  * Ingress of model updates. In this case, every two minutes we load and
@@ -81,22 +80,3 @@ object AirlineFlightModelIngressUtil {
       .throttle(1, frequency)
   }
 }
-
-/**
- * Test program for [[AirlineFlightModelIngress]] and [[AirlineFlightModelIngressUtil]].
- * It reads models and prints their data. For testing purposes only.
- * At this time, Pipelines intercepts calls to sbt run and sbt runMain, so use
- * the console instead:
- * ```
- * import pipelines.examples.modelserving.airlineflights._
- * AirlineFlightModelIngressMain.main(Array("-n","20","-f","1000"))
- * ```
- */
-object AirlineFlightModelIngressMain extends ModelMainBase(
-  defaultCount = 20,
-  defaultFrequencyMillis = AirlineFlightModelIngressUtil.modelFrequencySeconds * 1000) {
-
-  override protected def makeSource(frequency: FiniteDuration): Source[ModelDescriptor, NotUsed] =
-    AirlineFlightModelIngressUtil.makeSource(frequency)
-}
-

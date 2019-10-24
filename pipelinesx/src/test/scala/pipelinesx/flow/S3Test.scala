@@ -12,7 +12,7 @@ import scala.concurrent.Await
 import scala.concurrent.duration._
 
 // Testing for S3 upload
-class S3Test extends FlatSpec with ScalaFutures{
+class S3Test extends FlatSpec with ScalaFutures {
 
   implicit val actorSystem: ActorSystem = ActorSystem("S3IntegrationSpec")
   implicit val materializer = ActorMaterializer()
