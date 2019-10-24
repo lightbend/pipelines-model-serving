@@ -4,15 +4,15 @@ import akka._
 import akka.stream._
 import akka.stream.contrib.PartitionWith
 import akka.stream.scaladsl._
-import pipelines.akkastream.PipelinesContext
+import akka.kafka.ConsumerMessage.CommittableOffset
 
 /**
  * A StreamletLogic that splits custom source into two of outputs
  */
 abstract class InputTrafficSplitter[T](
-    inlet:   SourceWithContext[Either[T, T], PipelinesContext, NotUsed],
-    outlet1: Sink[(T, PipelinesContext), NotUsed],
-    outlet2: Sink[(T, PipelinesContext), NotUsed]
+    inlet:   SourceWithContext[Either[T, T], CommittableOffset, NotUsed],
+    outlet1: Sink[(T, CommittableOffset), NotUsed],
+    outlet2: Sink[(T, CommittableOffset), NotUsed]
 ) {
 
   def runnableGraph() = {
@@ -21,7 +21,7 @@ abstract class InputTrafficSplitter[T](
       GraphDSL.create(outlet1, outlet2)(Keep.left) { implicit builder: GraphDSL.Builder[NotUsed] ⇒ (o1, o2) ⇒
         import GraphDSL.Implicits._
 
-        val partitionWith = PartitionWith[(Either[T, T], PipelinesContext), (T, PipelinesContext), (T, PipelinesContext)] {
+        val partitionWith = PartitionWith[(Either[T, T], CommittableOffset), (T, CommittableOffset), (T, CommittableOffset)] {
           case (Left(e), offset)  ⇒ Left((e, offset))
           case (Right(e), offset) ⇒ Right((e, offset))
         }

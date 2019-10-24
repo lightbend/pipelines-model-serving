@@ -25,7 +25,7 @@ final case object RecommenderModelIngress extends AkkaStreamlet {
 
   override def createLogic = new RunnableGraphStreamletLogic() {
     def runnableGraph =
-      RecommenderModelIngressUtil.makeSource().to(atMostOnceSink(out))
+      RecommenderModelIngressUtil.makeSource().to(plainSink(out))
   }
 }
 

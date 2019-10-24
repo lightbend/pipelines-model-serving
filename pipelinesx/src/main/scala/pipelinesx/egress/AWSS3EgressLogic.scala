@@ -24,9 +24,8 @@ final case class AWSS3EgressLogic[IN](
   (implicit val context: AkkaStreamletContext)
   extends RunnableGraphStreamletLogic {
 
-  var AWSS3 = new AWSS3Flow[IN](bucket, keyPrefix)
-
-  override def runnableGraph() = atLeastOnceSource(in)
-    .via(AWSS3.S3Flow).map(result ⇒ println(s"written a new file to S3 ${result.location}"))
-    .to(atLeastOnceSink)
+  var AWSS3 = new AWSS3Flow[IN](bucket, keyPrefix, transformer, maxSize, duration)
+  def runnableGraph() = sourceWithOffsetContext(in)
+    .via(AWSS3.S3Flow).map(r ⇒ println(s"Uploaded file to bucket ${r.bucket}, key ${r.key}, etag ${r.etag}"))
+    .to(sinkWithOffsetContext)
 }

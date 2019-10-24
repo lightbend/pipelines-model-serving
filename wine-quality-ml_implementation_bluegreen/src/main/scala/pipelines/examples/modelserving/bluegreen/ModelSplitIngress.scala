@@ -24,7 +24,7 @@ final case object ModelSplitIngress extends AkkaStreamlet {
 
   override def createLogic = new RunnableGraphStreamletLogic() {
     def runnableGraph =
-      ModelSplitIngressUtil.makeSource().to(atMostOnceSink(out))
+      ModelSplitIngressUtil.makeSource().to(plainSink(out))
   }
 }
 

@@ -25,7 +25,7 @@ final case object WineModelIngress extends AkkaStreamlet {
 
   override def createLogic = new RunnableGraphStreamletLogic() {
     def runnableGraph =
-      WineModelIngressUtil.makeSource().to(atMostOnceSink(out))
+      WineModelIngressUtil.makeSource().to(plainSink(out))
   }
 }
 

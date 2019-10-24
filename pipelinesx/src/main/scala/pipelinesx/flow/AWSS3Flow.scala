@@ -1,11 +1,8 @@
 package pipelinesx.flow
 
-import akka.NotUsed
 import akka.stream.Materializer
-import akka.stream.alpakka.s3.MultipartUploadResult
 import akka.stream.alpakka.s3.scaladsl.S3
-import akka.stream.scaladsl.{ Flow, Source }
-import pipelines.akkastream.PipelinesContext
+import akka.stream.scaladsl.Source
 
 import scala.concurrent.ExecutionContext
 
@@ -30,7 +27,7 @@ final case class AWSS3Flow[T](
 
   val collector = new DataCollector[T](transformer, maxSize, duration)
 
-  def S3Flow: Flow[(T, PipelinesContext), (MultipartUploadResult, PipelinesContext), NotUsed] =
+  def S3Flow =
     collector.collectorFlow.mapAsync(1) { p ⇒
       val fileName = p._1._1
       val data = p._1._2

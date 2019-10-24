@@ -29,7 +29,7 @@ final case object AirlineFlightModelIngress extends AkkaStreamlet {
 
   override def createLogic = new RunnableGraphStreamletLogic() {
     def runnableGraph =
-      AirlineFlightModelIngressUtil.makeSource().to(atMostOnceSink(out))
+      AirlineFlightModelIngressUtil.makeSource().to(plainSink(out))
   }
 }
 

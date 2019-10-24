@@ -21,10 +21,10 @@ final case object SpeculativeModelServerStarter extends AkkaStreamlet {
 
     def runnableGraph() = {
 
-      atMostOnceSource(in)
+      plainSource(in)
         .map(WineRecordRun(UUID.randomUUID().toString, _))
-        .alsoTo(atMostOnceSink(out0))
-        .map(r ⇒ StartSpeculative(r.uuid)).to(atMostOnceSink(out1))
+        .alsoTo(plainSink(out0))
+        .map(r ⇒ StartSpeculative(r.uuid)).to(plainSink(out1))
     }
   }
 }

@@ -8,7 +8,7 @@ import com.lightbend.modelserving.model.actor.SpeculativeModelServingCollectorAc
 import com.lightbend.modelserving.model.persistence.FilePersistence
 import com.lightbend.modelserving.speculative.{ SpeculativeStreamMerger, StartSpeculative }
 import pipelines.akkastream.AkkaStreamlet
-import pipelines.akkastream.scaladsl.{ FlowWithPipelinesContext, RunnableGraphStreamletLogic }
+import pipelines.akkastream.scaladsl.{ FlowWithOffsetContext, RunnableGraphStreamletLogic }
 import pipelines.examples.modelserving.speculative.model.{ WineDecider, WineSpeculativeRecordSplitter }
 import pipelines.streamlets.avro.{ AvroInlet, AvroOutlet }
 import pipelines.streamlets.{ ReadWriteMany, StreamletShape, VolumeMount }
@@ -38,8 +38,8 @@ final case object SpeculativeWineModelCollector extends AkkaStreamlet {
     val decider = new WineDecider()
 
     // Set persistence
-    FilePersistence.setGlobalMountPoint(context.getMountedPath(persistentDataMount).toString)
-    FilePersistence.setStreamletName(context.streamletRef)
+    FilePersistence.setGlobalMountPoint(getMountedPath(persistentDataMount).toString)
+    FilePersistence.setStreamletName(streamletRef)
 
     val splieeterCollector = context.system.actorOf(
       SpeculativeModelServingCollectorActor.props[WineResult](
@@ -48,9 +48,9 @@ final case object SpeculativeWineModelCollector extends AkkaStreamlet {
         decider))
 
     def runnableGraph() = {
-      atLeastOnceSource(in1).via(configFlow).to(atLeastOnceSink)
-      atLeastOnceSource(in2).via(startFlow).to(atLeastOnceSink)
-      atMostOnceSource(in0).via(dataFlow).merge(makeSource().via(timeFlow)).to(atMostOnceSink(out))
+      sourceWithOffsetContext(in1).via(configFlow).to(sinkWithOffsetContext)
+      sourceWithOffsetContext(in2).via(startFlow).to(sinkWithOffsetContext)
+      plainSource(in0).via(dataFlow).merge(makeSource().via(timeFlow)).to(plainSink(out))
     }
 
     protected def dataFlow =
@@ -64,12 +64,12 @@ final case object SpeculativeWineModelCollector extends AkkaStreamlet {
       }.collect { case Some(result) ⇒ result }
 
     protected def configFlow =
-      FlowWithPipelinesContext[SpeculativeStreamMerger].mapAsync(1) {
+      FlowWithOffsetContext[SpeculativeStreamMerger].mapAsync(1) {
         descriptor ⇒ splieeterCollector.ask(descriptor).mapTo[Done]
       }
 
     protected def startFlow =
-      FlowWithPipelinesContext[StartSpeculative].mapAsync(1) {
+      FlowWithOffsetContext[StartSpeculative].mapAsync(1) {
         descriptor ⇒ splieeterCollector.ask(descriptor).mapTo[Done]
       }
 

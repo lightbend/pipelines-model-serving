@@ -12,7 +12,7 @@ import com.lightbend.modelserving.model.persistence.FilePersistence
 
 import scala.concurrent.duration._
 import pipelines.akkastream.AkkaStreamlet
-import pipelines.akkastream.scaladsl.{ FlowWithPipelinesContext, RunnableGraphStreamletLogic }
+import pipelines.akkastream.scaladsl.{ FlowWithOffsetContext, RunnableGraphStreamletLogic }
 import pipelines.streamlets.{ ReadWriteMany, StreamletShape, VolumeMount }
 import pipelines.streamlets.avro.{ AvroInlet, AvroOutlet }
 import hex.genmodel.easy.prediction.BinomialModelPrediction
@@ -27,8 +27,7 @@ final case object AirlineFlightModelServer extends AkkaStreamlet {
   final override val shape = StreamletShape.withInlets(in0, in1).withOutlets(out)
 
   // Declare the volume mount: 
-  private val persistentDataMount =
-    VolumeMount("persistence-data-mount", "/data", ReadWriteMany)
+  private val persistentDataMount = VolumeMount("persistence-data-mount", "/data", ReadWriteMany)
   override def volumeMounts = Vector(persistentDataMount)
 
   implicit val askTimeout: Timeout = Timeout(30.seconds)
@@ -43,18 +42,18 @@ final case object AirlineFlightModelServer extends AkkaStreamlet {
 
   override final def createLogic = new RunnableGraphStreamletLogic() {
     // Set persistence
-    FilePersistence.setGlobalMountPoint(context.getMountedPath(persistentDataMount).toString)
-    FilePersistence.setStreamletName(context.streamletRef)
+    FilePersistence.setGlobalMountPoint(getMountedPath(persistentDataMount).toString)
+    FilePersistence.setStreamletName(streamletRef)
 
     def runnableGraph() = {
-      atLeastOnceSource(in1).via(modelFlow).runWith(atLeastOnceSink)
-      atLeastOnceSource(in0).via(dataFlow).to(atLeastOnceSink(out))
+      sourceWithOffsetContext(in1).via(modelFlow).runWith(sinkWithOffsetContext)
+      sourceWithOffsetContext(in0).via(dataFlow).to(sinkWithOffsetContext(out))
     }
 
     val modelServer = makeModelServer(context.system)
 
     protected def dataFlow =
-      FlowWithPipelinesContext[AirlineFlightRecord].mapAsync(1) { record ⇒
+      FlowWithOffsetContext[AirlineFlightRecord].mapAsync(1) { record ⇒
         modelServer.ask(record).mapTo[Model.ModelReturn[BinomialModelPrediction]]
           .map { modelReturn ⇒
             val bmp: BinomialModelPrediction = modelReturn.modelOutput
@@ -67,7 +66,7 @@ final case object AirlineFlightModelServer extends AkkaStreamlet {
       }
 
     protected def modelFlow =
-      FlowWithPipelinesContext[ModelDescriptor].mapAsync(1) {
+      FlowWithOffsetContext[ModelDescriptor].mapAsync(1) {
         descriptor ⇒ modelServer.ask(descriptor).mapTo[Done]
       }
   }

@@ -25,5 +25,5 @@ abstract class FlowEgressLogic[IN](
   def write(record: IN): Unit
 
   def runnableGraph =
-    atMostOnceSource(inlet).to(Sink.foreach(write))
+    plainSource(inlet).to(Sink.foreach(write))
 }

@@ -7,7 +7,7 @@ import akka.pattern.ask
 import akka.util.Timeout
 import com.lightbend.modelserving.model.persistence.FilePersistence
 import pipelines.akkastream.AkkaStreamlet
-import pipelines.akkastream.scaladsl.{ FlowWithPipelinesContext, RunnableGraphStreamletLogic }
+import pipelines.akkastream.scaladsl.{ FlowWithOffsetContext, RunnableGraphStreamletLogic }
 import pipelines.streamlets.{ ReadWriteMany, StreamletShape, VolumeMount }
 import pipelines.streamlets.avro.{ AvroInlet, AvroOutlet }
 import pipelines.examples.modelserving.recommender.data.{ RecommenderRecord, RecommenderResult }
@@ -25,8 +25,7 @@ final case object RecommenderModelServer extends AkkaStreamlet {
   final override val shape = StreamletShape.withInlets(in0, in1).withOutlets(out)
 
   // Declare the volume mount: 
-  private val persistentDataMount =
-    VolumeMount("persistence-data-mount", "/data", ReadWriteMany)
+  private val persistentDataMount = VolumeMount("persistence-data-mount", "/data", ReadWriteMany)
   override def volumeMounts = Vector(persistentDataMount)
 
   override final def createLogic = new RunnableGraphStreamletLogic() {
@@ -41,15 +40,15 @@ final case object RecommenderModelServer extends AkkaStreamlet {
 
     def runnableGraph() = {
       // Set persistence
-      FilePersistence.setGlobalMountPoint(context.getMountedPath(persistentDataMount).toString)
-      FilePersistence.setStreamletName(context.streamletRef)
+      FilePersistence.setGlobalMountPoint(getMountedPath(persistentDataMount).toString)
+      FilePersistence.setStreamletName(streamletRef)
 
-      atLeastOnceSource(in1).via(modelFlow).runWith(atLeastOnceSink)
-      atLeastOnceSource(in0).via(dataFlow).to(atLeastOnceSink(out))
+      sourceWithOffsetContext(in1).via(modelFlow).runWith(sinkWithOffsetContext)
+      sourceWithOffsetContext(in0).via(dataFlow).to(sinkWithOffsetContext(out))
     }
 
     protected def dataFlow =
-      FlowWithPipelinesContext[RecommenderRecord].mapAsync(1) { record ⇒
+      FlowWithOffsetContext[RecommenderRecord].mapAsync(1) { record ⇒
         modelserver.ask(record).mapTo[Model.ModelReturn[ModelKeyDoubleValueArrayResult]]
           .map { modelReturn ⇒
             RecommenderResult(record, modelReturn.modelOutput, modelReturn.modelResultMetadata)
@@ -57,7 +56,7 @@ final case object RecommenderModelServer extends AkkaStreamlet {
       }
 
     protected def modelFlow =
-      FlowWithPipelinesContext[ModelDescriptor].mapAsync(1) {
+      FlowWithOffsetContext[ModelDescriptor].mapAsync(1) {
         descriptor ⇒ modelserver.ask(descriptor).mapTo[Done]
       }
   }

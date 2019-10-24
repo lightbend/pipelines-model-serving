@@ -22,7 +22,7 @@ final case object ModelSpeculativeIngress extends AkkaStreamlet {
 
   override def createLogic = new RunnableGraphStreamletLogic() {
     def runnableGraph =
-      ModelSpeculativeIngressUtil.makeSource().to(atMostOnceSink(out))
+      ModelSpeculativeIngressUtil.makeSource().to(plainSink(out))
   }
 }
 

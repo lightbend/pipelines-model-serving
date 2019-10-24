@@ -7,7 +7,7 @@ import com.lightbend.modelserving.model.actor.ModelServingActor
 import com.lightbend.modelserving.model.persistence.FilePersistence
 import com.lightbend.modelserving.model.{Model, ModelDescriptor, ModelType, MultiModelFactory}
 import pipelines.akkastream.AkkaStreamlet
-import pipelines.akkastream.scaladsl.{FlowWithPipelinesContext, RunnableGraphStreamletLogic}
+import pipelines.akkastream.scaladsl.{FlowWithOffsetContext, RunnableGraphStreamletLogic}
 import pipelines.streamlets.avro.{AvroInlet, AvroOutlet}
 import pipelines.streamlets.{ReadWriteMany, StreamletShape, VolumeMount}
 import pipelines.examples.modelserving.winequality.data.{WineRecord, WineResult}
@@ -42,8 +42,8 @@ final case object SpeculativeWineModelServer extends AkkaStreamlet {
     implicit val askTimeout: Timeout = Timeout(30.seconds)
     // Set persistence
 
-    FilePersistence.setGlobalMountPoint(context.getMountedPath(persistentDataMount).toString)
-    FilePersistence.setStreamletName(context.streamletRef)
+    FilePersistence.setGlobalMountPoint(getMountedPath(persistentDataMount).toString)
+    FilePersistence.setStreamletName(streamletRef)
     val modelserver = context.system.actorOf(
       ModelServingActor.props[WineRecord, Double](
         "wine",
@@ -51,12 +51,12 @@ final case object SpeculativeWineModelServer extends AkkaStreamlet {
         () ⇒ 0.0))
 
     def runnableGraph() = {
-      atLeastOnceSource(in1).via(modelFlow).to(atLeastOnceSink)
-      atLeastOnceSource(in0).via(dataFlow).to(atLeastOnceSink(out))
+      sourceWithOffsetContext(in1).via(modelFlow).to(sinkWithOffsetContext)
+      sourceWithOffsetContext(in0).via(dataFlow).to(sinkWithOffsetContext(out))
     }
 
     protected def dataFlow =
-      FlowWithPipelinesContext[WineRecordRun].mapAsync(1) { record ⇒
+      FlowWithOffsetContext[WineRecordRun].mapAsync(1) { record ⇒
         modelserver.ask(record.inputRecord).mapTo[Model.ModelReturn[Double]]
           .map { modelReturn ⇒
             val result = ModelDoubleResult(value = modelReturn.modelOutput)
@@ -65,7 +65,7 @@ final case object SpeculativeWineModelServer extends AkkaStreamlet {
       }
 
     protected def modelFlow =
-      FlowWithPipelinesContext[ModelDescriptor].mapAsync(1) {
+      FlowWithOffsetContext[ModelDescriptor].mapAsync(1) {
         descriptor ⇒ modelserver.ask(descriptor).mapTo[Done]
       }
   }

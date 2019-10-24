@@ -28,8 +28,8 @@ final case object WineModelIngressRR extends AkkaStreamlet {
 
   override def createLogic = new RunnableGraphStreamletLogic() {
     def runnableGraph = {
-      val outlet0 = atMostOnceSink(out0)
-      val outlet1 = atMostOnceSink(out1)
+      val outlet0 = plainSink(out0)
+      val outlet1 = plainSink(out1)
       new RoundRobinInputSplitter[ModelDescriptor](outlet0, outlet1) {
         def source = WineModelIngressRRUtil.makeSource()
       }.runnableGraph()

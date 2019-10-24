@@ -53,7 +53,7 @@ final case class DiskEgressLogic[IN](
   // make sure all the parent directories exist.
   if (!dir.exists()) dir.mkdir()
 
-  override def runnableGraph(): RunnableGraph[_] = atMostOnceSource(in)
+  override def runnableGraph(): RunnableGraph[_] = plainSource(in)
     .map(m ⇒ ByteString(m.toString + separator))
     .to(timeBasedSink)
 }

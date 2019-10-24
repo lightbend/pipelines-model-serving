@@ -32,24 +32,24 @@ final case object ModelSplitter extends AkkaStreamlet {
 
     implicit val askTimeout: Timeout = Timeout(30.seconds)
     // Set persistence
-    FilePersistence.setGlobalMountPoint(context.getMountedPath(persistentDataMount).toString)
-    FilePersistence.setStreamletName(context.streamletRef)
+    FilePersistence.setGlobalMountPoint(getMountedPath(persistentDataMount).toString)
+    FilePersistence.setStreamletName(streamletRef)
 
     val datasplitter = context.system.actorOf(
       DataSplittingActor.props("splitter"))
 
     def runnableGraph() = {
 
-      val outlet0 = atLeastOnceSink(out0)
-      val outlet1 = atLeastOnceSink(out1)
+      val outlet0 = sinkWithOffsetContext(out0)
+      val outlet1 = sinkWithOffsetContext(out1)
 
-      atLeastOnceSource(in1).via(configFlow).to(atLeastOnceSink)
-      val dt = atLeastOnceSource(in0).via(dataFlow)
+      sourceWithOffsetContext(in1).via(configFlow).to(sinkWithOffsetContext)
+      val dt = sourceWithOffsetContext(in0).via(dataFlow)
       new InputTrafficSplitter[WineRecord](dt, outlet0, outlet1) {}.runnableGraph()
     }
 
     protected def dataFlow() =
-      FlowWithPipelinesContext[WineRecord].mapAsync(1) { record ⇒
+      FlowWithOffsetContext[WineRecord].mapAsync(1) { record ⇒
         datasplitter.ask(RecordWithOutlet(0, record)).mapTo[RecordWithOutlet].
           map(result ⇒ {
             result.outlet match {
@@ -60,7 +60,7 @@ final case object ModelSplitter extends AkkaStreamlet {
       }
 
     protected def configFlow =
-      FlowWithPipelinesContext[StreamSplitter].mapAsync(1) {
+      FlowWithOffsetContext[StreamSplitter].mapAsync(1) {
         descriptor ⇒ datasplitter.ask(descriptor).mapTo[Done]
       }
   }

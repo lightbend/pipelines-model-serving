@@ -24,9 +24,9 @@ final case class InfluxDBEgressLogic[IN](
   extends RunnableGraphStreamletLogic {
 
   def runnableGraph =
-    atLeastOnceSource(in)
+    sourceWithOffsetContext(in)
       .via(flowWithContext(system).asFlow)
-      .to(atLeastOnceSink)
+      .to(sinkWithOffsetContext)
 
   def flowWithContext(system: ActorSystem) = {
     val host = get(context, configKeyRoot + "." + configKeys.influxHost)
@@ -42,7 +42,7 @@ final case class InfluxDBEgressLogic[IN](
 
     val influxDB = InfluxDBUtil.getInfluxDB(host, portInt)
 
-    FlowWithPipelinesContext[IN].map { record: IN ⇒
+    FlowWithOffsetContext[IN].map { record: IN ⇒
       system.log.debug(s"InfluxDBEgressLogic: to $measurement: $record")
       writer.write(record, measurement, db, influxDB)
       record

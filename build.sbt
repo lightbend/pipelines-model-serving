@@ -24,7 +24,6 @@ lazy val wineModelServingPipeline = (project in file("./wine-quality-ml"))
   .settings(
     name := s"wine-quality-ml-$user",
     version := thisVersion,
-    pipelinesDockerRegistry := Some("docker-registry-default.fiorano.lightbend.com"),
   )
   .settings(commonSettings)
   .dependsOn(wineModelServingPipelineImplementation)
@@ -46,7 +45,6 @@ lazy val recommenderModelServingPipeline = (project in file("./recommender-ml"))
   .settings(
     name := s"recommender-ml-$user",
     version := thisVersion,
-    pipelinesDockerRegistry := Some("docker-registry-default.fiorano.lightbend.com"),
   )
   .settings(commonSettings)
   .dependsOn(recommenderModelServingPipelineImplementation)
@@ -68,7 +66,6 @@ lazy val airlineFlightsModelServingPipeline = (project in file("./airline-flight
   .settings(
     name := s"airline-flights-ml-$user",
     version := thisVersion,
-    pipelinesDockerRegistry := Some("docker-registry-default.fiorano.lightbend.com"),
   )
   .settings(commonSettings)
   .dependsOn(airlineFlightsModelServingPipelineImplementation)
@@ -88,7 +85,6 @@ lazy val wineModelServingBlueGreenPipeline = (project in file("./wine-quality-ml
   .settings(
     name := s"wine-quality-bluegreen-ml-$user",
     version := thisVersion,
-    pipelinesDockerRegistry := Some("docker-registry-default.fiorano.lightbend.com"),
   )
   .settings(commonSettings)
   .dependsOn(wineModelServingPipelineBlueGreenImplementation)
@@ -109,7 +105,6 @@ lazy val wineModelServingSpeculativePipeline = (project in file("./wine-quality-
   .settings(
     name := s"wine-quality-speculative-ml-$user",
     version := thisVersion,
-    pipelinesDockerRegistry := Some("docker-registry-default.fiorano.lightbend.com"),
   )
   .settings(commonSettings)
   .dependsOn(wineModelServingPipelineSpeculativeImplementation)
