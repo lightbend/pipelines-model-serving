@@ -66,8 +66,7 @@ final case object AirlineFlightModelServer extends AkkaStreamlet {
       }
 
     protected def modelFlow =
-      FlowWithOffsetContext[ModelDescriptor].mapAsync(1) {
-        descriptor ⇒ modelServer.ask(descriptor).mapTo[Done]
-      }
+      FlowWithOffsetContext[ModelDescriptor]
+        .mapAsync(1) { descriptor ⇒ modelServer.ask(descriptor).mapTo[Done] }
   }
 }

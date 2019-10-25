@@ -43,7 +43,7 @@ final case object ModelSplitter extends AkkaStreamlet {
       val outlet0 = sinkWithOffsetContext(out0)
       val outlet1 = sinkWithOffsetContext(out1)
 
-      sourceWithOffsetContext(in1).via(configFlow).to(sinkWithOffsetContext)
+      sourceWithOffsetContext(in1).via(configFlow).runWith(sinkWithOffsetContext)
       val dt = sourceWithOffsetContext(in0).via(dataFlow)
       new InputTrafficSplitter[WineRecord](dt, outlet0, outlet1) {}.runnableGraph()
     }

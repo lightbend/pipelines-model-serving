@@ -42,8 +42,7 @@ protected final class ModelDescriptorProvider() {
     val buffer = new Array[Byte](1024)
     val content = new ByteArrayOutputStream()
     Stream.continually(is.read(buffer)).takeWhile(_ != -1).foreach(content.write(buffer, 0, _))
-    val mojo = content.toByteArray
-    mojo
+    content.toByteArray
   }
 
   var count = -1

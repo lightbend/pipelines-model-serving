@@ -53,7 +53,7 @@ object WineModelIngressUtil {
       frequency:       FiniteDuration              = modelFrequencySeconds): Source[ModelDescriptor, NotUsed] = {
     val recordsReader = WineModelReader(modelsResources)
     Source.repeat(recordsReader)
-      .map(reader ⇒ reader.next())
+      .map(_ ⇒ recordsReader.next())
       .throttle(1, frequency)
   }
 }

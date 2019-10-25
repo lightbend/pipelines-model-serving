@@ -3,12 +3,13 @@ package pipelines.examples.modelserving.recommender
 import akka.NotUsed
 import akka.stream.scaladsl.Source
 import com.lightbend.modelserving.model.{ ModelDescriptor, ModelIngressTestBase }
+import scala.concurrent.duration._
 
 import scala.concurrent.duration.FiniteDuration
 
 class RecommenderModelIngressTest extends ModelIngressTestBase(
   count = 10,
-  frequencyMillis = RecommenderModelIngressUtil.modelFrequencySeconds * 1000) {
+  frequencyMillis = 1.second) {
 
   override protected def makeSource(frequency: FiniteDuration): Source[ModelDescriptor, NotUsed] =
     RecommenderModelIngressUtil.makeSource(

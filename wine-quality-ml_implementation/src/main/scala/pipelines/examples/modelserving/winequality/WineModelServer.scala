@@ -49,7 +49,7 @@ final case object WineModelServer extends AkkaStreamlet {
         () ⇒ 0.0))
 
     def runnableGraph() = {
-      sourceWithOffsetContext(in1).via(modelFlow).to(sinkWithOffsetContext)
+      sourceWithOffsetContext(in1).via(modelFlow).runWith(sinkWithOffsetContext)
       sourceWithOffsetContext(in0).via(dataFlow).to(sinkWithOffsetContext(out))
     }
 
@@ -63,8 +63,7 @@ final case object WineModelServer extends AkkaStreamlet {
       }
 
     protected def modelFlow =
-      FlowWithOffsetContext[ModelDescriptor].mapAsync(1) {
-        descriptor ⇒ modelserver.ask(descriptor).mapTo[Done]
-      }
+      FlowWithOffsetContext[ModelDescriptor]
+        .mapAsync(1) { descriptor ⇒ modelserver.ask(descriptor).mapTo[Done] }
   }
 }

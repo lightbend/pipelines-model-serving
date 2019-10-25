@@ -51,7 +51,7 @@ final case object SpeculativeWineModelServer extends AkkaStreamlet {
         () ⇒ 0.0))
 
     def runnableGraph() = {
-      sourceWithOffsetContext(in1).via(modelFlow).to(sinkWithOffsetContext)
+      sourceWithOffsetContext(in1).via(modelFlow).runWith(sinkWithOffsetContext)
       sourceWithOffsetContext(in0).via(dataFlow).to(sinkWithOffsetContext(out))
     }
 

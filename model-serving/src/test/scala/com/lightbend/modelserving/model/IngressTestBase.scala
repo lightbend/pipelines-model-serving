@@ -53,7 +53,7 @@ abstract class IngressTestBase[T](
         i += 1
       }
     }
-    ()
+    Thread.sleep(3000)
   }
 }
 

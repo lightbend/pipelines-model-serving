@@ -48,8 +48,8 @@ final case object SpeculativeWineModelCollector extends AkkaStreamlet {
         decider))
 
     def runnableGraph() = {
-      sourceWithOffsetContext(in1).via(configFlow).to(sinkWithOffsetContext)
-      sourceWithOffsetContext(in2).via(startFlow).to(sinkWithOffsetContext)
+      sourceWithOffsetContext(in1).via(configFlow).runWith(sinkWithOffsetContext)
+      sourceWithOffsetContext(in2).via(startFlow).runWith(sinkWithOffsetContext)
       plainSource(in0).via(dataFlow).merge(makeSource().via(timeFlow)).to(plainSink(out))
     }
 

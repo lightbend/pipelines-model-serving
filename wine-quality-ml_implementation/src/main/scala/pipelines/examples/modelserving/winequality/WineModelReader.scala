@@ -1,6 +1,7 @@
 package pipelines.examples.modelserving.winequality
 
-import pipelinesx.ingress.ByteArrayReader
+import java.io.ByteArrayOutputStream
+
 import com.lightbend.modelserving.model.{ ModelDescriptor, ModelType }
 
 /**
@@ -54,12 +55,13 @@ final case class WineModelReader(resourceNames: Map[ModelType, Seq[String]]) {
       next()
   }
 
-  protected def readBytes(source: String): Array[Byte] =
-    ByteArrayReader.fromClasspath(source) match {
-      case Left(error) ⇒
-        throw new IllegalArgumentException(error) // TODO: return Either from readBytes!
-      case Right(array) ⇒ array
-    }
+  protected def readBytes(source: String): Array[Byte] = {
+    val is = this.getClass.getClassLoader.getResourceAsStream(source)
+    val buffer = new Array[Byte](1024)
+    val content = new ByteArrayOutputStream()
+    Stream.continually(is.read(buffer)).takeWhile(_ != -1).foreach(content.write(buffer, 0, _))
+    content.toByteArray
+  }
 
   protected def finished(modelType: ModelType, currentIndex: Int): Boolean =
     resourceNames.get(modelType) match {

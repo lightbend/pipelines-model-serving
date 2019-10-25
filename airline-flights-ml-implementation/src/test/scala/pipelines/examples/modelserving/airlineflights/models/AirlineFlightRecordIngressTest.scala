@@ -5,12 +5,13 @@ import akka.stream.scaladsl.Source
 import com.lightbend.modelserving.model.IngressTestBase
 import pipelines.examples.modelserving.airlineflights.AirlineFlightRecordIngressUtil
 import pipelines.examples.modelserving.airlineflights.data.AirlineFlightRecord
+import scala.concurrent.duration._
 
 import scala.concurrent.duration.FiniteDuration
 
 class AirlineFlightRecordIngressTest extends IngressTestBase[AirlineFlightRecord](
   count = 10,
-  frequencyMillis = AirlineFlightRecordIngressUtil.dataFrequencyMilliseconds) {
+  frequencyMillis = 1.second) {
 
   override protected def makeSource(frequency: FiniteDuration): Source[AirlineFlightRecord, NotUsed] =
     AirlineFlightRecordIngressUtil.makeSource(
