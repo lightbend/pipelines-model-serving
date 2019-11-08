@@ -8,7 +8,7 @@ import java.io.PrintStream
  * Abstraction for writing to output to the console (i.e., stdout).
  * @param in CodecInlet for records of type IN
  * @param prefix prepended to each record. _Add punctuation and whitespace if you want it_
- * @param output PrintStream, which defaults to [[Console.out]].
+ * @param out PrintStream, which defaults to [[Console.out]].
  */
 final case class ConsoleEgressLogic[IN](
     in:     CodecInlet[IN],
