@@ -3,7 +3,6 @@ package pipelinesx.egress
 import pipelines.streamlets._
 import pipelines.akkastream._
 import pipelines.akkastream.scaladsl._
-import akka.stream.scaladsl.Sink
 
 /**
  * An abstraction for the logic in an "Egress" that has a single inlet and then

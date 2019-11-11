@@ -8,12 +8,12 @@ import scala.concurrent.duration._
 import pipelines.streamlets._
 import pipelines.akkastream._
 import pipelines.akkastream.scaladsl._
-import pipelines.streamlets.avro.{ AvroInlet, AvroOutlet }
-import com.lightbend.modelserving.model.actor.{ DataSplittingActor, RecordWithOutlet }
+import pipelines.streamlets.avro.{AvroInlet, AvroOutlet}
+import com.lightbend.modelserving.model.actor.{DataSplittingActor, RecordWithOutlet}
 import com.lightbend.modelserving.model.persistence.FilePersistence
 import com.lightbend.modelserving.splitter.StreamSplitter
-import pipelinesx.ingress.InputTrafficSplitter
 import pipelines.examples.modelserving.winequality.data.WineRecord
+import pipelinesx.ingress.InputTrafficSplitter
 
 final case object ModelSplitter extends AkkaStreamlet {
 
@@ -45,18 +45,13 @@ final case object ModelSplitter extends AkkaStreamlet {
 
       sourceWithOffsetContext(in1).via(configFlow).runWith(sinkWithOffsetContext)
       val dt = sourceWithOffsetContext(in0).via(dataFlow)
-      new InputTrafficSplitter[WineRecord](dt, outlet0, outlet1) {}.runnableGraph()
+      new InputTrafficSplitter[WineRecord](dt, Seq(outlet0, outlet1)) {}.runnableGraph()
     }
 
     protected def dataFlow() =
       FlowWithOffsetContext[WineRecord].mapAsync(1) { record ⇒
-        datasplitter.ask(RecordWithOutlet(0, record)).mapTo[RecordWithOutlet].
-          map(result ⇒ {
-            result.outlet match {
-              case i@_ if (i == 1) ⇒ Right(result.record.asInstanceOf[WineRecord])
-              case _               ⇒ Left(result.record.asInstanceOf[WineRecord])
-            }
-          })
+        datasplitter.ask(RecordWithOutlet(0, record)).mapTo[RecordWithOutlet]
+          .map(r => (r.outlet, r.record.asInstanceOf[WineRecord]))
       }
 
     protected def configFlow =
